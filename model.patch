@@ -1,0 +1,51 @@
+diff --git a/frontend/app/action.tsx b/frontend/app/action.tsx
+index 49f6aaf..e4cb05e 100644
+--- a/frontend/app/action.tsx
++++ b/frontend/app/action.tsx
+@@ -134,7 +134,11 @@ export default function ActionScreen() {
+   };
+ 
+   const stopVoiceInput = async () => {
+-    if (!recording) return;
++    // Web handles stop automatically, only handle mobile recordings
++    if (!recording || Platform.OS === 'web') {
++      setIsRecording(false);
++      return;
++    }
+ 
+     try {
+       setIsRecording(false);
+@@ -143,24 +147,15 @@ export default function ActionScreen() {
+ 
+       if (uri) {
+         setIsProcessing(true);
+-        const formData = new FormData();
+-        formData.append('audio_file', {
+-          uri: uri,
+-          type: 'audio/m4a',
+-          name: 'voice.m4a',
+-        } as any);
+-
+-        const response = await axios.post(`${BACKEND_URL}/api/voice/stt`, formData, {
+-          headers: { 'Content-Type': 'multipart/form-data' },
+-        });
+-
+-        const transcribedText = response.data.transcribed_text;
+-
+-        if (recordingField === 'title') {
+-          setTitle(transcribedText);
+-        } else {
+-          setContent((prev) => (prev ? prev + '\n' + transcribedText : transcribedText));
+-        }
++        
++        // For mobile, we still need to send to backend
++        // But show a message that it requires API setup
++        Alert.alert(
++          'Voice Recognition',
++          'Voice recognition on mobile requires additional API setup. Please type your text for now or use web version for voice input.',
++          [{ text: 'OK' }]
++        );
++        setIsProcessing(false);
+       }
+ 
+       setRecording(null);
