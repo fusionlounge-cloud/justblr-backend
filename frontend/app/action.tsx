@@ -79,20 +79,57 @@ export default function ActionScreen() {
   const startVoiceInput = async (field: 'title' | 'content') => {
     try {
       setRecordingField(field);
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      setRecording(recording);
       setIsRecording(true);
+
+      // Check if running on web - use Web Speech API
+      if (Platform.OS === 'web') {
+        const SpeechRecognition =
+          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+          Alert.alert('Error', 'Speech recognition not supported in this browser');
+          setIsRecording(false);
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-IN'; // English - India for South Indian accents
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          if (field === 'title') {
+            setTitle(transcript);
+          } else {
+            setContent((prev) => (prev ? prev + ' ' + transcript : transcript));
+          }
+          setIsRecording(false);
+        };
+
+        recognition.onerror = (event: any) => {
+          Alert.alert('Error', `Speech recognition failed: ${event.error}`);
+          setIsRecording(false);
+        };
+
+        recognition.start();
+      } else {
+        // Mobile - use expo-av to record audio
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+
+        setRecording(recording);
+      }
     } catch (error) {
       console.error('Failed to start recording:', error);
       Alert.alert('Error', 'Failed to start voice recording');
+      setIsRecording(false);
     }
   };
 
