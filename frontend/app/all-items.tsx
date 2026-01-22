@@ -266,10 +266,9 @@ export default function AllItemsScreen() {
       ) : (
         <ScrollView
           horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={true}
           style={styles.horizontalScroll}
-          snapToInterval={CATEGORY_WIDTH}
+          contentContainerStyle={styles.scrollContent}
           decelerationRate="fast"
         >
           {CATEGORIES.map(renderCategory)}
