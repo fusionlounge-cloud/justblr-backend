@@ -265,7 +265,7 @@ export default function ActionScreen() {
         {mode === 'reminder' && (
           <View>
             <View style={styles.section}>
-              <Text style={styles.label}>What to remind?</Text>
+              <Text style={styles.label}>What to remind? (Optional)</Text>
               <View style={styles.inputRow}>
                 <TextInput
                   style={styles.input}
