@@ -155,16 +155,14 @@ export default function ActionScreen() {
   };
 
   const saveReminder = async () => {
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please provide a title');
-      return;
-    }
+    // Title is now optional - if empty, use action type as title
+    const reminderTitle = title.trim() || `${actionName} Reminder`;
 
     try {
       const scheduledTime = new Date(Date.now() + 3600000); // 1 hour from now
 
       await axios.post(`${BACKEND_URL}/api/reminders`, {
-        title,
+        title: reminderTitle,
         contact_name: contactName || undefined,
         contact_phone: contactPhone || undefined,
         reminder_type: actionType,
