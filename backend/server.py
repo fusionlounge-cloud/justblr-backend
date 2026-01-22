@@ -22,7 +22,10 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # OpenAI client with Emergent LLM key
-openai_client = OpenAI(api_key=os.environ['EMERGENT_LLM_KEY'])
+openai_client = OpenAI(
+    api_key=os.environ['EMERGENT_LLM_KEY'],
+    base_url="https://api.studio.emergentagents.com/v1"
+)
 
 # Create the main app
 app = FastAPI()
