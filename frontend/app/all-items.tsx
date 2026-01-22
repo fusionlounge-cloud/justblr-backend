@@ -321,6 +321,9 @@ const styles = StyleSheet.create({
   horizontalScroll: {
     flex: 1,
   },
+  scrollContent: {
+    flexDirection: 'row',
+  },
   categoryColumn: {
     width: CATEGORY_WIDTH,
     marginHorizontal: (SCREEN_WIDTH - CATEGORY_WIDTH) / 2,
