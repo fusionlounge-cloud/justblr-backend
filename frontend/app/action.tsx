@@ -168,18 +168,6 @@ export default function ActionScreen() {
         notes: content || undefined,
       });
 
-      // Schedule local notification (only on native)
-      if (Notifications && Platform.OS !== 'web') {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `${actionName} Reminder`,
-            body: title,
-            data: { type: actionType, contact: contactName },
-          },
-          trigger: scheduledTime,
-        });
-      }
-
       Alert.alert('Success', `${actionName} reminder created successfully!`, [
         { text: 'OK', onPress: () => router.back() },
       ]);
