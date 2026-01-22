@@ -29,8 +29,8 @@ export default function DashboardScreen() {
         web: 'https://www.facebook.com',
       },
       linkedin: {
-        ios: 'linkedin://home',
-        android: 'linkedin://feed',
+        ios: 'linkedin://',
+        android: 'linkedin://',
         web: 'https://www.linkedin.com',
       },
       whatsapp: {
