@@ -12,26 +12,34 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 
-// Configure notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Platform-specific notification import
+let Notifications: any = null;
+if (Platform.OS !== 'web') {
+  Notifications = require('expo-notifications');
+  // Configure notification handler (only on native)
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
   const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
 
   useEffect(() => {
-    requestNotificationPermissions();
+    if (Platform.OS !== 'web') {
+      requestNotificationPermissions();
+    }
   }, []);
 
   const requestNotificationPermissions = async () => {
+    if (!Notifications || Platform.OS === 'web') return;
+    
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
