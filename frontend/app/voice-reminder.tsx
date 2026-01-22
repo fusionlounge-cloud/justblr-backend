@@ -140,15 +140,17 @@ export default function VoiceReminderScreen() {
         notes: notes || undefined,
       });
 
-      // Schedule local notification
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${reminderType.toUpperCase()} Reminder`,
-          body: title,
-          data: { type: reminderType, contact: contactName },
-        },
-        trigger: scheduledTime,
-      });
+      // Schedule local notification (only on native)
+      if (Notifications && Platform.OS !== 'web') {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${reminderType.toUpperCase()} Reminder`,
+            body: title,
+            data: { type: reminderType, contact: contactName },
+          },
+          trigger: scheduledTime,
+        });
+      }
 
       Alert.alert('Success', 'Reminder created successfully!', [
         { text: 'OK', onPress: () => router.back() },
