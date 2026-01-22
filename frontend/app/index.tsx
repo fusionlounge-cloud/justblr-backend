@@ -13,43 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-// Platform-specific notification import
-let Notifications: any = null;
-if (Platform.OS !== 'web') {
-  Notifications = require('expo-notifications');
-  // Configure notification handler (only on native)
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
-}
-
 export default function DashboardScreen() {
   const router = useRouter();
-  const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      requestNotificationPermissions();
-    }
-  }, []);
-
-  const requestNotificationPermissions = async () => {
-    if (!Notifications || Platform.OS === 'web') return;
-    
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    setHasNotificationPermission(finalStatus === 'granted');
-  };
 
   const openSocialApp = async (appName: string) => {
     const appUrls: { [key: string]: { ios: string; android: string; web: string } } = {
