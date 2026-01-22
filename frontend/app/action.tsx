@@ -50,6 +50,8 @@ export default function ActionScreen() {
         return '#25D366';
       case 'deskwork':
         return '#A78BFA';
+      case 'keepnotes':
+        return '#FFC107';
       default:
         return '#667eea';
     }
@@ -67,6 +69,8 @@ export default function ActionScreen() {
         return 'logo-whatsapp';
       case 'deskwork':
         return 'laptop';
+      case 'keepnotes':
+        return 'create';
       default:
         return 'flash';
     }
