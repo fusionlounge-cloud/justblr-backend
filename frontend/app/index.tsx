@@ -29,23 +29,23 @@ export default function DashboardScreen() {
         web: 'https://www.facebook.com',
       },
       linkedin: {
-        ios: 'linkedin://app',
-        android: 'linkedin://app',
+        ios: 'linkedin://home',
+        android: 'linkedin://feed',
         web: 'https://www.linkedin.com',
       },
       whatsapp: {
-        ios: 'whatsapp://app',
-        android: 'whatsapp://send',
+        ios: 'whatsapp://send?text=Hello',
+        android: 'whatsapp://send?text=Hello',
         web: 'https://web.whatsapp.com',
       },
       wechat: {
-        ios: 'weixin://app',
-        android: 'weixin://app',
+        ios: 'weixin://',
+        android: 'weixin://',
         web: 'https://web.wechat.com',
       },
       alibaba: {
-        ios: 'alibaba://app',
-        android: 'alibaba://app',
+        ios: 'https://m.alibaba.com',
+        android: 'https://m.alibaba.com',
         web: 'https://www.alibaba.com',
       },
     };
@@ -54,26 +54,23 @@ export default function DashboardScreen() {
     if (!urls) return;
 
     try {
-      let canOpen = false;
-      if (Platform.OS === 'ios') {
-        canOpen = await Linking.canOpenURL(urls.ios);
-        if (canOpen) {
-          await Linking.openURL(urls.ios);
-        } else {
-          await Linking.openURL(urls.web);
-        }
-      } else if (Platform.OS === 'android') {
-        canOpen = await Linking.canOpenURL(urls.android);
-        if (canOpen) {
-          await Linking.openURL(urls.android);
-        } else {
-          await Linking.openURL(urls.web);
-        }
+      // Try to open native app first, fallback to web
+      const urlToTry = Platform.OS === 'ios' ? urls.ios : Platform.OS === 'android' ? urls.android : urls.web;
+      
+      const canOpen = await Linking.canOpenURL(urlToTry);
+      if (canOpen) {
+        await Linking.openURL(urlToTry);
       } else {
+        // Fallback to web if app not installed
         await Linking.openURL(urls.web);
       }
     } catch (error) {
-      Alert.alert('Error', `Could not open ${appName}`);
+      // If all fails, try web URL
+      try {
+        await Linking.openURL(urls.web);
+      } catch (webError) {
+        Alert.alert('Error', `Could not open ${appName}`);
+      }
     }
   };
 
