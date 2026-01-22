@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime
-from elevenlabs import ElevenLabs
+from openai import OpenAI
 import base64
 import io
 
@@ -21,8 +21,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# ElevenLabs client
-elevenlabs_client = ElevenLabs(api_key=os.environ['ELEVENLABS_API_KEY'])
+# OpenAI client with Emergent LLM key
+openai_client = OpenAI(api_key=os.environ['EMERGENT_LLM_KEY'])
 
 # Create the main app
 app = FastAPI()
