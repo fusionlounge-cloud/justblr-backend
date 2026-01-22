@@ -14,9 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Contacts from 'expo-contacts';
-import * as Notifications from 'expo-notifications';
-import axios from 'axios';
 import { Audio } from 'expo-av';
+import axios from 'axios';
+
+// Platform-specific notification import
+let Notifications: any = null;
+if (Platform.OS !== 'web') {
+  Notifications = require('expo-notifications');
+}
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
