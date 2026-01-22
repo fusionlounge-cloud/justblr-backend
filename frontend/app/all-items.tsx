@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,8 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CATEGORY_WIDTH = SCREEN_WIDTH * 0.85; // 85% of screen width
 
 interface Reminder {
   id: string;
@@ -124,12 +127,14 @@ export default function AllItemsScreen() {
   const renderReminder = (reminder: Reminder, color: string) => (
     <View key={reminder.id} style={[styles.itemCard, { borderLeftColor: color }]}>
       <View style={styles.itemHeader}>
-        <Ionicons name="alarm" size={20} color={color} />
+        <Ionicons name="alarm" size={18} color={color} />
         <View style={styles.itemInfo}>
-          <Text style={styles.itemTitle}>{reminder.title}</Text>
+          <Text style={styles.itemTitle} numberOfLines={2}>
+            {reminder.title}
+          </Text>
           {reminder.contact_name && (
-            <Text style={styles.itemSubtext}>
-              <Ionicons name="person" size={12} /> {reminder.contact_name}
+            <Text style={styles.itemSubtext} numberOfLines={1}>
+              <Ionicons name="person" size={11} /> {reminder.contact_name}
             </Text>
           )}
           {reminder.notes && (
@@ -145,14 +150,14 @@ export default function AllItemsScreen() {
             style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
             onPress={() => completeReminder(reminder.id)}
           >
-            <Ionicons name="checkmark" size={16} color="#43e97b" />
+            <Ionicons name="checkmark" size={14} color="#43e97b" />
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
           onPress={() => deleteReminder(reminder.id)}
         >
-          <Ionicons name="trash" size={16} color="#FF6B6B" />
+          <Ionicons name="trash" size={14} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
     </View>
@@ -161,15 +166,17 @@ export default function AllItemsScreen() {
   const renderNote = (note: Note, color: string) => (
     <View key={note.id} style={[styles.itemCard, { borderLeftColor: color }]}>
       <View style={styles.itemHeader}>
-        <Ionicons name="document-text" size={20} color={color} />
+        <Ionicons name="document-text" size={18} color={color} />
         <View style={styles.itemInfo}>
-          <Text style={styles.itemTitle}>{note.title}</Text>
+          <Text style={styles.itemTitle} numberOfLines={2}>
+            {note.title}
+          </Text>
           <Text style={styles.itemContent} numberOfLines={2}>
             {note.content}
           </Text>
           {note.tags.length > 0 && (
             <View style={styles.tagsRow}>
-              {note.tags.slice(0, 3).map((tag, idx) => (
+              {note.tags.slice(0, 2).map((tag, idx) => (
                 <Text key={idx} style={styles.tag}>
                   #{tag}
                 </Text>
@@ -183,7 +190,7 @@ export default function AllItemsScreen() {
           style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
           onPress={() => deleteNote(note.id)}
         >
-          <Ionicons name="trash" size={16} color="#FF6B6B" />
+          <Ionicons name="trash" size={14} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
     </View>
@@ -193,24 +200,35 @@ export default function AllItemsScreen() {
     const { reminders: categoryReminders, notes: categoryNotes } = getCategoryItems(category.type);
     const totalItems = categoryReminders.length + categoryNotes.length;
 
-    if (totalItems === 0) return null;
-
     return (
-      <View key={category.type} style={styles.categorySection}>
-        <View style={styles.categoryHeader}>
-          <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-            <Ionicons name={category.icon as any} size={24} color={category.color} />
-          </View>
-          <View style={styles.categoryInfo}>
-            <Text style={[styles.categoryTitle, { color: category.color }]}>{category.name}</Text>
-            <Text style={styles.categoryCount}>
-              {totalItems} item{totalItems !== 1 ? 's' : ''}
-            </Text>
+      <View key={category.type} style={styles.categoryColumn}>
+        {/* Category Header */}
+        <View style={[styles.categoryHeader, { backgroundColor: category.color }]}>
+          <Ionicons name={category.icon as any} size={28} color="#fff" />
+          <Text style={styles.categoryTitle}>{category.name}</Text>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryCount}>{totalItems}</Text>
           </View>
         </View>
 
-        {categoryReminders.map((reminder) => renderReminder(reminder, category.color))}
-        {categoryNotes.map((note) => renderNote(note, category.color))}
+        {/* Items List */}
+        <ScrollView
+          style={styles.itemsList}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.itemsContent}
+        >
+          {totalItems === 0 ? (
+            <View style={styles.emptyCategory}>
+              <Ionicons name="folder-open-outline" size={40} color="#adb5bd" />
+              <Text style={styles.emptyText}>No items</Text>
+            </View>
+          ) : (
+            <>
+              {categoryReminders.map((reminder) => renderReminder(reminder, category.color))}
+              {categoryNotes.map((note) => renderNote(note, category.color))}
+            </>
+          )}
+        </ScrollView>
       </View>
     );
   };
@@ -228,6 +246,12 @@ export default function AllItemsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Instruction */}
+      <View style={styles.instructionBar}>
+        <Ionicons name="arrow-forward" size={16} color="#6c757d" />
+        <Text style={styles.instructionText}>Swipe left/right to see all categories</Text>
+      </View>
+
       {/* Content */}
       {isLoading ? (
         <View style={styles.centerContainer}>
@@ -236,13 +260,19 @@ export default function AllItemsScreen() {
       ) : reminders.length === 0 && notes.length === 0 ? (
         <View style={styles.centerContainer}>
           <Ionicons name="filing-outline" size={64} color="#adb5bd" />
-          <Text style={styles.emptyText}>No items yet</Text>
+          <Text style={styles.emptyMainText}>No items yet</Text>
           <Text style={styles.emptySubtext}>Create reminders or notes to see them here</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
+          snapToInterval={CATEGORY_WIDTH}
+          decelerationRate="fast"
+        >
           {CATEGORIES.map(renderCategory)}
-          <View style={styles.bottomPadding} />
         </ScrollView>
       )}
     </SafeAreaView>
@@ -274,43 +304,70 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#212529',
   },
-  scrollView: {
-    flex: 1,
-  },
-  categorySection: {
-    padding: 16,
-    paddingBottom: 8,
-  },
-  categoryHeader: {
+  instructionBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  categoryIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    gap: 8,
   },
-  categoryInfo: {
+  instructionText: {
+    fontSize: 13,
+    color: '#6c757d',
+    fontWeight: '500',
+  },
+  horizontalScroll: {
     flex: 1,
   },
+  categoryColumn: {
+    width: CATEGORY_WIDTH,
+    marginHorizontal: (SCREEN_WIDTH - CATEGORY_WIDTH) / 2,
+  },
+  categoryHeader: {
+    padding: 20,
+    alignItems: 'center',
+    borderRadius: 16,
+    margin: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+  },
   categoryTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    marginBottom: 2,
+    color: '#fff',
+    marginTop: 8,
+  },
+  categoryBadge: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
   },
   categoryCount: {
     fontSize: 14,
-    color: '#6c757d',
+    fontWeight: '700',
+    color: '#fff',
+  },
+  itemsList: {
+    flex: 1,
+  },
+  itemsContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   itemCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     borderLeftWidth: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -324,52 +381,63 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   itemTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#212529',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   itemSubtext: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6c757d',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   itemNotes: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#495057',
-    marginTop: 4,
+    marginTop: 3,
   },
   itemContent: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#495057',
-    marginTop: 4,
+    marginTop: 3,
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 8,
-    gap: 6,
+    marginTop: 6,
+    gap: 5,
   },
   tag: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#667eea',
     fontWeight: '600',
   },
   itemActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 8,
+    gap: 6,
     marginTop: 8,
   },
   actionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyCategory: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6c757d',
+    marginTop: 12,
   },
   centerContainer: {
     flex: 1,
@@ -377,7 +445,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  emptyText: {
+  emptyMainText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#6c757d',
@@ -388,8 +456,5 @@ const styles = StyleSheet.create({
     color: '#adb5bd',
     marginTop: 8,
     textAlign: 'center',
-  },
-  bottomPadding: {
-    height: 32,
   },
 });
