@@ -83,11 +83,12 @@ export default function ActionScreen() {
 
       // Check if running on web - use Web Speech API
       if (Platform.OS === 'web') {
+        console.log('Starting Web Speech Recognition...');
         const SpeechRecognition =
           (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-          Alert.alert('Error', 'Speech recognition not supported in this browser');
+          Alert.alert('Not Supported', 'Speech recognition is not supported in this browser. Please use Chrome or Safari.');
           setIsRecording(false);
           return;
         }
@@ -97,8 +98,13 @@ export default function ActionScreen() {
         recognition.interimResults = false;
         recognition.lang = 'en-IN'; // English - India for South Indian accents
 
+        recognition.onstart = () => {
+          console.log('Voice recognition started. Please speak...');
+        };
+
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
+          console.log('Transcript:', transcript);
           if (field === 'title') {
             setTitle(transcript);
           } else {
@@ -108,7 +114,19 @@ export default function ActionScreen() {
         };
 
         recognition.onerror = (event: any) => {
-          Alert.alert('Error', `Speech recognition failed: ${event.error}`);
+          console.error('Speech recognition error:', event.error);
+          let errorMsg = 'Speech recognition failed';
+          if (event.error === 'not-allowed') {
+            errorMsg = 'Microphone permission denied. Please allow microphone access in browser settings.';
+          } else if (event.error === 'no-speech') {
+            errorMsg = 'No speech detected. Please try again and speak clearly.';
+          }
+          Alert.alert('Error', errorMsg);
+          setIsRecording(false);
+        };
+
+        recognition.onend = () => {
+          console.log('Voice recognition ended');
           setIsRecording(false);
         };
 
