@@ -11,10 +11,8 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="voice-command" />
-        <Stack.Screen name="voice-reminder" />
-        <Stack.Screen name="reminders" />
-        <Stack.Screen name="voice-note" />
-        <Stack.Screen name="notes" />
+        <Stack.Screen name="action" />
+        <Stack.Screen name="all-items" />
       </Stack>
     </GestureHandlerRootView>
   );

@@ -121,11 +121,12 @@ export default function DashboardScreen() {
     { name: 'Alibaba', icon: 'storefront', color: '#FF6A00', key: 'alibaba' },
   ];
 
-  const actionItems = [
-    { name: 'Voice Reminder', icon: 'mic-circle', color: '#FF6B6B', route: '/voice-reminder' },
-    { name: 'My Reminders', icon: 'alarm', color: '#4ECDC4', route: '/reminders' },
-    { name: 'Voice Note', icon: 'recording', color: '#95E1D3', route: '/voice-note' },
-    { name: 'My Notes', icon: 'document-text', color: '#FFA07A', route: '/notes' },
+  const actionTypes = [
+    { name: 'Meet', icon: 'people', color: '#FF6B6B', type: 'meet' },
+    { name: 'Call', icon: 'call', color: '#4ECDC4', type: 'call' },
+    { name: 'SMS', icon: 'chatbubble', color: '#95E1D3', type: 'sms' },
+    { name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', type: 'whatsapp' },
+    { name: 'Deskwork', icon: 'laptop', color: '#A78BFA', type: 'deskwork' },
   ];
 
   return (
@@ -145,25 +146,43 @@ export default function DashboardScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Action Center Section */}
+        {/* Main Action Types */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="flash" size={24} color="#667eea" />
-            <Text style={styles.sectionTitle}>Action Center</Text>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
           </View>
+          <Text style={styles.sectionDescription}>
+            Tap any action to use voice for reminders or notes
+          </Text>
           <View style={styles.grid}>
-            {actionItems.map((item, index) => (
+            {actionTypes.map((item, index) => (
               <TouchableOpacity
                 key={index}
                 style={[styles.actionCard, { borderLeftColor: item.color }]}
-                onPress={() => router.push(item.route as any)}
+                onPress={() => router.push(`/action?type=${item.type}&name=${item.name}`)}
               >
                 <View style={[styles.iconCircle, { backgroundColor: item.color + '20' }]}>
-                  <Ionicons name={item.icon as any} size={28} color={item.color} />
+                  <Ionicons name={item.icon as any} size={32} color={item.color} />
                 </View>
                 <Text style={styles.actionText}>{item.name}</Text>
+                <Text style={styles.actionSubtext}>Voice Reminder/Note</Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        {/* View All Button */}
+        <View style={styles.section}>
+          <View style={styles.viewAllContainer}>
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={() => router.push('/all-items')}
+            >
+              <Ionicons name="list" size={20} color="#667eea" />
+              <Text style={styles.viewAllText}>View All Reminders & Notes</Text>
+              <Ionicons name="chevron-forward" size={20} color="#667eea" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -254,13 +273,19 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#212529',
     marginLeft: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 16,
+    marginLeft: 32,
   },
   grid: {
     flexDirection: 'row',
@@ -279,19 +304,51 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    alignItems: 'center',
   },
   iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212529',
+    marginBottom: 4,
+  },
+  actionSubtext: {
+    fontSize: 12,
+    color: '#6c757d',
+    textAlign: 'center',
+  },
+  viewAllContainer: {
+    marginTop: 8,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#667eea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewAllText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#495057',
+    color: '#667eea',
+    marginLeft: 8,
+    marginRight: 8,
   },
   socialGrid: {
     flexDirection: 'row',
