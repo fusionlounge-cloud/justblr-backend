@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
+  ScrollView,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -22,6 +22,7 @@ interface Reminder {
   reminder_type: string;
   scheduled_time: string;
   is_completed: boolean;
+  notes?: string;
 }
 
 interface Note {
@@ -32,13 +33,20 @@ interface Note {
   updated_at: string;
 }
 
-type Item = (Reminder | Note) & { itemType: 'reminder' | 'note' };
+const CATEGORIES = [
+  { type: 'meet', name: 'Meet', icon: 'people', color: '#FF6B6B' },
+  { type: 'call', name: 'Call', icon: 'call', color: '#4ECDC4' },
+  { type: 'sms', name: 'SMS', icon: 'chatbubble', color: '#95E1D3' },
+  { type: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366' },
+  { type: 'deskwork', name: 'Deskwork', icon: 'laptop', color: '#A78BFA' },
+  { type: 'keepnotes', name: 'Keep Notes', icon: 'create', color: '#FFC107' },
+];
 
 export default function AllItemsScreen() {
   const router = useRouter();
-  const [items, setItems] = useState<Item[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'reminders' | 'notes'>('all');
 
   useEffect(() => {
     fetchAllItems();
@@ -52,23 +60,8 @@ export default function AllItemsScreen() {
         axios.get(`${BACKEND_URL}/api/notes`),
       ]);
 
-      const remindersWithType: Item[] = remindersRes.data.map((r: Reminder) => ({
-        ...r,
-        itemType: 'reminder' as const,
-      }));
-
-      const notesWithType: Item[] = notesRes.data.map((n: Note) => ({
-        ...n,
-        itemType: 'note' as const,
-      }));
-
-      const combined = [...remindersWithType, ...notesWithType].sort((a, b) => {
-        const dateA = 'updated_at' in a ? new Date(a.updated_at) : new Date(a.scheduled_time);
-        const dateB = 'updated_at' in b ? new Date(b.updated_at) : new Date(b.scheduled_time);
-        return dateB.getTime() - dateA.getTime();
-      });
-
-      setItems(combined);
+      setReminders(remindersRes.data);
+      setNotes(notesRes.data);
     } catch (error) {
       console.error('Failed to fetch items:', error);
       Alert.alert('Error', 'Failed to load items');
@@ -122,139 +115,104 @@ export default function AllItemsScreen() {
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'meet':
-        return '#FF6B6B';
-      case 'call':
-        return '#4ECDC4';
-      case 'sms':
-        return '#95E1D3';
-      case 'whatsapp':
-        return '#25D366';
-      case 'deskwork':
-        return '#A78BFA';
-      default:
-        return '#667eea';
-    }
+  const getCategoryItems = (type: string) => {
+    const categoryReminders = reminders.filter((r) => r.reminder_type === type);
+    const categoryNotes = notes.filter((n) => n.tags.includes(type));
+    return { reminders: categoryReminders, notes: categoryNotes };
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'meet':
-        return 'people';
-      case 'call':
-        return 'call';
-      case 'sms':
-        return 'chatbubble';
-      case 'whatsapp':
-        return 'logo-whatsapp';
-      case 'deskwork':
-        return 'laptop';
-      default:
-        return 'flash';
-    }
-  };
+  const renderReminder = (reminder: Reminder, color: string) => (
+    <View key={reminder.id} style={[styles.itemCard, { borderLeftColor: color }]}>
+      <View style={styles.itemHeader}>
+        <Ionicons name="alarm" size={20} color={color} />
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemTitle}>{reminder.title}</Text>
+          {reminder.contact_name && (
+            <Text style={styles.itemSubtext}>
+              <Ionicons name="person" size={12} /> {reminder.contact_name}
+            </Text>
+          )}
+          {reminder.notes && (
+            <Text style={styles.itemNotes} numberOfLines={2}>
+              {reminder.notes}
+            </Text>
+          )}
+        </View>
+      </View>
+      <View style={styles.itemActions}>
+        {!reminder.is_completed && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
+            onPress={() => completeReminder(reminder.id)}
+          >
+            <Ionicons name="checkmark" size={16} color="#43e97b" />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
+          onPress={() => deleteReminder(reminder.id)}
+        >
+          <Ionicons name="trash" size={16} color="#FF6B6B" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-  const filteredItems = items.filter((item) => {
-    if (filter === 'all') return true;
-    if (filter === 'reminders') return item.itemType === 'reminder';
-    if (filter === 'notes') return item.itemType === 'note';
-    return true;
-  });
+  const renderNote = (note: Note, color: string) => (
+    <View key={note.id} style={[styles.itemCard, { borderLeftColor: color }]}>
+      <View style={styles.itemHeader}>
+        <Ionicons name="document-text" size={20} color={color} />
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemTitle}>{note.title}</Text>
+          <Text style={styles.itemContent} numberOfLines={2}>
+            {note.content}
+          </Text>
+          {note.tags.length > 0 && (
+            <View style={styles.tagsRow}>
+              {note.tags.slice(0, 3).map((tag, idx) => (
+                <Text key={idx} style={styles.tag}>
+                  #{tag}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+      <View style={styles.itemActions}>
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
+          onPress={() => deleteNote(note.id)}
+        >
+          <Ionicons name="trash" size={16} color="#FF6B6B" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-  const renderItem = ({ item }: { item: Item }) => {
-    if (item.itemType === 'reminder') {
-      const reminder = item as Reminder;
-      return (
-        <View style={[styles.card, { borderLeftColor: getTypeColor(reminder.reminder_type) }]}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconBadge}>
-              <Ionicons
-                name={getTypeIcon(reminder.reminder_type) as any}
-                size={20}
-                color={getTypeColor(reminder.reminder_type)}
-              />
-            </View>
-            <View style={styles.cardInfo}>
-              <View style={styles.typeRow}>
-                <Text style={[styles.typeBadge, { color: getTypeColor(reminder.reminder_type) }]}>
-                  {reminder.reminder_type.toUpperCase()}
-                </Text>
-                <Text style={styles.itemType}>Reminder</Text>
-              </View>
-              <Text style={styles.cardTitle}>{reminder.title}</Text>
-              {reminder.contact_name && (
-                <Text style={styles.cardSubtext}>
-                  <Ionicons name="person" size={12} /> {reminder.contact_name}
-                </Text>
-              )}
-            </View>
+  const renderCategory = (category: typeof CATEGORIES[0]) => {
+    const { reminders: categoryReminders, notes: categoryNotes } = getCategoryItems(category.type);
+    const totalItems = categoryReminders.length + categoryNotes.length;
+
+    if (totalItems === 0) return null;
+
+    return (
+      <View key={category.type} style={styles.categorySection}>
+        <View style={styles.categoryHeader}>
+          <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
+            <Ionicons name={category.icon as any} size={24} color={category.color} />
           </View>
-          <View style={styles.cardActions}>
-            {!reminder.is_completed && (
-              <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
-                onPress={() => completeReminder(reminder.id)}
-              >
-                <Ionicons name="checkmark" size={16} color="#43e97b" />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
-              onPress={() => deleteReminder(reminder.id)}
-            >
-              <Ionicons name="trash" size={16} color="#FF6B6B" />
-            </TouchableOpacity>
+          <View style={styles.categoryInfo}>
+            <Text style={[styles.categoryTitle, { color: category.color }]}>{category.name}</Text>
+            <Text style={styles.categoryCount}>
+              {totalItems} item{totalItems !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
-      );
-    } else {
-      const note = item as Note;
-      const noteType = note.tags.find((t) =>
-        ['meet', 'call', 'sms', 'whatsapp', 'deskwork'].includes(t)
-      );
-      return (
-        <View style={[styles.card, { borderLeftColor: getTypeColor(noteType || 'note') }]}>
-          <View style={styles.cardHeader}>
-            <View style={styles.iconBadge}>
-              <Ionicons name="document-text" size={20} color={getTypeColor(noteType || 'note')} />
-            </View>
-            <View style={styles.cardInfo}>
-              <View style={styles.typeRow}>
-                {noteType && (
-                  <Text style={[styles.typeBadge, { color: getTypeColor(noteType) }]}>
-                    {noteType.toUpperCase()}
-                  </Text>
-                )}
-                <Text style={styles.itemType}>Note</Text>
-              </View>
-              <Text style={styles.cardTitle}>{note.title}</Text>
-              <Text style={styles.cardContent} numberOfLines={2}>
-                {note.content}
-              </Text>
-              {note.tags.length > 0 && (
-                <View style={styles.tagsRow}>
-                  {note.tags.slice(0, 3).map((tag, idx) => (
-                    <Text key={idx} style={styles.tag}>
-                      #{tag}
-                    </Text>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-          <View style={styles.cardActions}>
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
-              onPress={() => deleteNote(note.id)}
-            >
-              <Ionicons name="trash" size={16} color="#FF6B6B" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    }
+
+        {categoryReminders.map((reminder) => renderReminder(reminder, category.color))}
+        {categoryNotes.map((note) => renderNote(note, category.color))}
+      </View>
+    );
   };
 
   return (
@@ -265,55 +223,27 @@ export default function AllItemsScreen() {
           <Ionicons name="arrow-back" size={24} color="#212529" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Items</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Filter */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterBtn, filter === 'all' && styles.filterBtnActive]}
-          onPress={() => setFilter('all')}
-        >
-          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterBtn, filter === 'reminders' && styles.filterBtnActive]}
-          onPress={() => setFilter('reminders')}
-        >
-          <Text style={[styles.filterText, filter === 'reminders' && styles.filterTextActive]}>
-            Reminders
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterBtn, filter === 'notes' && styles.filterBtnActive]}
-          onPress={() => setFilter('notes')}
-        >
-          <Text style={[styles.filterText, filter === 'notes' && styles.filterTextActive]}>
-            Notes
-          </Text>
+        <TouchableOpacity onPress={fetchAllItems} style={styles.refreshButton}>
+          <Ionicons name="refresh" size={24} color="#667eea" />
         </TouchableOpacity>
       </View>
 
-      {/* List */}
+      {/* Content */}
       {isLoading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#667eea" />
         </View>
-      ) : filteredItems.length === 0 ? (
+      ) : reminders.length === 0 && notes.length === 0 ? (
         <View style={styles.centerContainer}>
           <Ionicons name="filing-outline" size={64} color="#adb5bd" />
-          <Text style={styles.emptyText}>No items found</Text>
+          <Text style={styles.emptyText}>No items yet</Text>
+          <Text style={styles.emptySubtext}>Create reminders or notes to see them here</Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredItems}
-          renderItem={renderItem}
-          keyExtractor={(item) => `${item.itemType}-${item.id}`}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {CATEGORIES.map(renderCategory)}
+          <View style={styles.bottomPadding} />
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -336,44 +266,49 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
   },
+  refreshButton: {
+    padding: 8,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#212529',
   },
-  placeholder: {
-    width: 40,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    gap: 12,
-  },
-  filterBtn: {
+  scrollView: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
+  },
+  categorySection: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  filterBtnActive: {
-    backgroundColor: '#667eea',
+  categoryIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  filterText: {
+  categoryInfo: {
+    flex: 1,
+  },
+  categoryTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  categoryCount: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#6c757d',
   },
-  filterTextActive: {
-    color: '#fff',
-  },
-  listContent: {
-    padding: 16,
-  },
-  card: {
+  itemCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
@@ -383,48 +318,31 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  cardHeader: {
+  itemHeader: {
     flexDirection: 'row',
     marginBottom: 8,
   },
-  iconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  cardInfo: {
+  itemInfo: {
     flex: 1,
+    marginLeft: 12,
   },
-  typeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    gap: 8,
-  },
-  typeBadge: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  itemType: {
-    fontSize: 11,
-    color: '#6c757d',
-    fontWeight: '600',
-  },
-  cardTitle: {
+  itemTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#212529',
     marginBottom: 4,
   },
-  cardSubtext: {
+  itemSubtext: {
     fontSize: 14,
     color: '#6c757d',
+    marginBottom: 4,
   },
-  cardContent: {
+  itemNotes: {
+    fontSize: 14,
+    color: '#495057',
+    marginTop: 4,
+  },
+  itemContent: {
     fontSize: 14,
     color: '#495057',
     marginTop: 4,
@@ -440,7 +358,7 @@ const styles = StyleSheet.create({
     color: '#667eea',
     fontWeight: '600',
   },
-  cardActions: {
+  itemActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 8,
@@ -461,7 +379,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
+    fontWeight: '600',
     color: '#6c757d',
     marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#adb5bd',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  bottomPadding: {
+    height: 32,
   },
 });
