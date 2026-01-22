@@ -98,27 +98,29 @@ class VoiceCommandResponse(BaseModel):
 
 @api_router.post("/voice/stt", response_model=STTResponse)
 async def speech_to_text(audio_file: UploadFile = File(...)):
-    """Convert speech to text using ElevenLabs"""
+    """Convert speech to text using OpenAI Whisper"""
     try:
         # Read audio file
         audio_content = await audio_file.read()
         
-        # Transcribe using ElevenLabs
-        transcription_response = elevenlabs_client.speech_to_text.convert(
-            file=io.BytesIO(audio_content),
-            model_id="scribe_v1"
+        # Create a file-like object for OpenAI
+        audio_file_obj = io.BytesIO(audio_content)
+        audio_file_obj.name = "audio.m4a"  # OpenAI needs a filename
+        
+        # Transcribe using OpenAI Whisper
+        transcription = openai_client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file_obj,
+            response_format="text"
         )
         
-        # Extract text
-        transcribed_text = transcription_response.text if hasattr(transcription_response, 'text') else str(transcription_response)
-        
         # Create response
-        response = STTResponse(transcribed_text=transcribed_text)
+        response = STTResponse(transcribed_text=transcription)
         
         # Save to database
         await db.transcriptions.insert_one(response.dict())
         
-        logger.info(f"Transcribed audio: {transcribed_text}")
+        logger.info(f"Transcribed audio: {transcription[:100]}...")
         return response
         
     except Exception as e:
