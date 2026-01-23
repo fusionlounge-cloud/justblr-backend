@@ -69,6 +69,19 @@ class VoiceCommandResponse(BaseModel):
     parameters: dict
     message: str
 
+class NoteCreate(BaseModel):
+    title: str
+    content: str
+    tags: List[str] = []
+
+class Note(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    content: str
+    tags: List[str] = []
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
 # ===== VOICE ENDPOINTS =====
 
 @api_router.post("/voice/stt", response_model=STTResponse)
