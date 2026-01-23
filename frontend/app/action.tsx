@@ -19,20 +19,16 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-type ActionMode = 'reminder' | 'note' | null;
-
 export default function ActionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const actionType = params.type as string; // meet, call, sms, whatsapp, deskwork
+  const actionType = params.type as string;
   const actionName = params.name as string;
 
-  const [mode, setMode] = useState<ActionMode>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [tags, setTags] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -81,79 +77,26 @@ export default function ActionScreen() {
       setRecordingField(field);
       setIsRecording(true);
 
-      // Check if running on web - use Web Speech API
-      if (Platform.OS === 'web') {
-        console.log('Starting Web Speech Recognition...');
-        const SpeechRecognition =
-          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
 
-        if (!SpeechRecognition) {
-          Alert.alert('Not Supported', 'Speech recognition is not supported in this browser. Please use Chrome or Safari.');
-          setIsRecording(false);
-          return;
-        }
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
 
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-IN'; // English - India for South Indian accents
-
-        recognition.onstart = () => {
-          console.log('Voice recognition started. Please speak...');
-        };
-
-        recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          console.log('Transcript:', transcript);
-          if (field === 'title') {
-            setTitle(transcript);
-          } else {
-            setContent((prev) => (prev ? prev + ' ' + transcript : transcript));
-          }
-          setIsRecording(false);
-        };
-
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
-          let errorMsg = 'Speech recognition failed';
-          if (event.error === 'not-allowed') {
-            errorMsg = 'Microphone permission denied. Please allow microphone access in browser settings.';
-          } else if (event.error === 'no-speech') {
-            errorMsg = 'No speech detected. Please try again and speak clearly.';
-          }
-          Alert.alert('Error', errorMsg);
-          setIsRecording(false);
-        };
-
-        recognition.onend = () => {
-          console.log('Voice recognition ended');
-          setIsRecording(false);
-        };
-
-        recognition.start();
-      } else {
-        // Mobile - use expo-av to record audio
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-
-        const { recording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-
-        setRecording(recording);
-      }
+      setRecording(recording);
     } catch (error) {
       console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start voice recording');
+      Alert.alert('Error', 'Failed to start voice recording. Please check microphone permissions.');
       setIsRecording(false);
     }
   };
 
   const stopVoiceInput = async () => {
-    // Web handles stop automatically, only handle mobile recordings
-    if (!recording || Platform.OS === 'web') {
+    if (!recording) {
       setIsRecording(false);
       return;
     }
@@ -166,20 +109,32 @@ export default function ActionScreen() {
       if (uri) {
         setIsProcessing(true);
         
-        // For mobile, we still need to send to backend
-        // But show a message that it requires API setup
-        Alert.alert(
-          'Voice Recognition',
-          'Voice recognition on mobile requires additional API setup. Please type your text for now or use web version for voice input.',
-          [{ text: 'OK' }]
-        );
-        setIsProcessing(false);
+        const formData = new FormData();
+        formData.append('audio_file', {
+          uri: uri,
+          type: 'audio/m4a',
+          name: 'voice.m4a',
+        } as any);
+
+        const response = await axios.post(`${BACKEND_URL}/api/voice/stt`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 30000,
+        });
+
+        const transcribedText = response.data.transcribed_text;
+
+        if (recordingField === 'title') {
+          setTitle(transcribedText);
+        } else {
+          setContent((prev) => (prev ? prev + ' ' + transcribedText : transcribedText));
+        }
       }
 
       setRecording(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to process voice:', error);
-      Alert.alert('Error', 'Failed to process voice input');
+      const errorMsg = error.response?.data?.detail || 'Failed to process voice input';
+      Alert.alert('Voice Error', errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -205,11 +160,10 @@ export default function ActionScreen() {
   };
 
   const saveReminder = async () => {
-    // Title is now optional - if empty, use action type as title
     const reminderTitle = title.trim() || `${actionName} Reminder`;
 
     try {
-      const scheduledTime = new Date(Date.now() + 3600000); // 1 hour from now
+      const scheduledTime = new Date(Date.now() + 3600000);
 
       await axios.post(`${BACKEND_URL}/api/reminders`, {
         title: reminderTitle,
@@ -229,290 +183,126 @@ export default function ActionScreen() {
     }
   };
 
-  const saveNote = async () => {
-    if (!title.trim() && !content.trim()) {
-      Alert.alert('Error', 'Please provide at least a title or content');
-      return;
-    }
-
-    try {
-      const tagArray = tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0);
-
-      // Add action type as a tag
-      tagArray.push(actionType);
-
-      await axios.post(`${BACKEND_URL}/api/notes`, {
-        title: title || `${actionName} Note`,
-        content: content,
-        tags: tagArray,
-      });
-
-      Alert.alert('Success', `${actionName} note saved successfully!`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (error) {
-      console.error('Failed to save note:', error);
-      Alert.alert('Error', 'Failed to save note');
-    }
-  };
-
-  const handleSave = () => {
-    if (mode === 'reminder') {
-      saveReminder();
-    } else if (mode === 'note') {
-      saveNote();
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#212529" />
+          <Ionicons name=\"arrow-back\" size={24} color=\"#212529\" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Ionicons name={getIcon() as any} size={24} color={getColor()} />
           <Text style={styles.headerTitle}>{actionName}</Text>
         </View>
-        {mode && (
-          <TouchableOpacity onPress={handleSave} style={[styles.saveButton, { backgroundColor: getColor() }]}>
-            <Text style={styles.saveText}>Save</Text>
-          </TouchableOpacity>
-        )}
-        {!mode && <View style={styles.placeholder} />}
+        <TouchableOpacity onPress={saveReminder} style={[styles.saveButton, { backgroundColor: getColor() }]}>
+          <Text style={styles.saveText}>Save</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Mode Selection */}
-        {!mode && (
-          <View style={styles.modeSection}>
-            <Text style={styles.modeTitle}>What would you like to create?</Text>
+        <View style={styles.section}>
+          <Text style={styles.label}>What to remind? (Optional)</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder={`E.g., ${actionName} with John about project`}
+              value={title}
+              onChangeText={setTitle}
+              multiline
+            />
             <TouchableOpacity
-              style={[styles.modeCard, { borderColor: getColor() }]}
-              onPress={() => setMode('reminder')}
+              style={[
+                styles.voiceButton,
+                isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
+              ]}
+              onPress={
+                isRecording && recordingField === 'title'
+                  ? stopVoiceInput
+                  : () => startVoiceInput('title')
+              }
+              disabled={isProcessing || (isRecording && recordingField !== 'title')}
             >
-              <Ionicons name="alarm" size={40} color={getColor()} />
-              <Text style={styles.modeCardTitle}>Reminder</Text>
-              <Text style={styles.modeCardDesc}>Set a voice reminder for this {actionName.toLowerCase()}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modeCard, { borderColor: getColor() }]}
-              onPress={() => setMode('note')}
-            >
-              <Ionicons name="document-text" size={40} color={getColor()} />
-              <Text style={styles.modeCardTitle}>Note</Text>
-              <Text style={styles.modeCardDesc}>Write a voice note for this {actionName.toLowerCase()}</Text>
+              {isProcessing && recordingField === 'title' ? (
+                <ActivityIndicator size=\"small\" color=\"#fff\" />
+              ) : (
+                <Ionicons
+                  name={isRecording && recordingField === 'title' ? 'stop' : 'mic'}
+                  size={24}
+                  color=\"#fff\"
+                />
+              )}
             </TouchableOpacity>
           </View>
-        )}
+        </View>
 
-        {/* Reminder Form */}
-        {mode === 'reminder' && (
-          <View>
-            <View style={styles.section}>
-              <Text style={styles.label}>What to remind? (Optional)</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={styles.input}
-                  placeholder={`E.g., ${actionName} with John about project`}
-                  value={title}
-                  onChangeText={setTitle}
-                  multiline
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.voiceButton,
-                    isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
-                  ]}
-                  onPress={
-                    isRecording && recordingField === 'title'
-                      ? stopVoiceInput
-                      : () => startVoiceInput('title')
-                  }
-                  disabled={isProcessing || (isRecording && recordingField !== 'title')}
-                >
-                  {isProcessing && recordingField === 'title' ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons
-                      name={isRecording && recordingField === 'title' ? 'stop' : 'mic'}
-                      size={24}
-                      color="#fff"
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {actionType !== 'deskwork' && (
-              <View style={styles.section}>
-                <Text style={styles.label}>Contact (Optional)</Text>
-                <View style={styles.contactContainer}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Contact name"
-                    value={contactName}
-                    onChangeText={setContactName}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Phone number"
-                    value={contactPhone}
-                    onChangeText={setContactPhone}
-                    keyboardType="phone-pad"
-                  />
-                  <TouchableOpacity style={styles.contactButton} onPress={pickContact}>
-                    <Ionicons name="person-add" size={20} color={getColor()} />
-                    <Text style={[styles.contactButtonText, { color: getColor() }]}>Pick from Contacts</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            <View style={styles.section}>
-              <Text style={styles.label}>Additional Notes (Optional)</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={[styles.input, styles.notesInput]}
-                  placeholder="Add any additional details..."
-                  value={content}
-                  onChangeText={setContent}
-                  multiline
-                  numberOfLines={4}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.voiceButton,
-                    isRecording && recordingField === 'content' && { backgroundColor: '#FF6B6B' },
-                  ]}
-                  onPress={
-                    isRecording && recordingField === 'content'
-                      ? stopVoiceInput
-                      : () => startVoiceInput('content')
-                  }
-                  disabled={isProcessing || (isRecording && recordingField !== 'content')}
-                >
-                  {isProcessing && recordingField === 'content' ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons
-                      name={isRecording && recordingField === 'content' ? 'stop' : 'mic'}
-                      size={24}
-                      color="#fff"
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={[styles.infoCard, { backgroundColor: getColor() + '20' }]}>
-              <Ionicons name="time" size={20} color={getColor()} />
-              <Text style={styles.infoText}>
-                Reminder will trigger in 1 hour
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Note Form */}
-        {mode === 'note' && (
-          <View>
-            <View style={styles.section}>
-              <Text style={styles.label}>Title</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={styles.input}
-                  placeholder={`${actionName} note title...`}
-                  value={title}
-                  onChangeText={setTitle}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.voiceButton,
-                    isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
-                  ]}
-                  onPress={
-                    isRecording && recordingField === 'title'
-                      ? stopVoiceInput
-                      : () => startVoiceInput('title')
-                  }
-                  disabled={isProcessing || (isRecording && recordingField !== 'title')}
-                >
-                  {isProcessing && recordingField === 'title' ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons
-                      name={isRecording && recordingField === 'title' ? 'stop' : 'mic'}
-                      size={24}
-                      color="#fff"
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.label}>Content</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={[styles.input, styles.contentInput]}
-                  placeholder="Start typing or use voice..."
-                  value={content}
-                  onChangeText={setContent}
-                  multiline
-                  numberOfLines={10}
-                  textAlignVertical="top"
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.voiceButton,
-                    isRecording && recordingField === 'content' && { backgroundColor: '#FF6B6B' },
-                  ]}
-                  onPress={
-                    isRecording && recordingField === 'content'
-                      ? stopVoiceInput
-                      : () => startVoiceInput('content')
-                  }
-                  disabled={isProcessing || (isRecording && recordingField !== 'content')}
-                >
-                  {isProcessing && recordingField === 'content' ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons
-                      name={isRecording && recordingField === 'content' ? 'stop' : 'mic'}
-                      size={24}
-                      color="#fff"
-                    />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.label}>Tags (comma separated)</Text>
+        {actionType !== 'deskwork' && actionType !== 'keepnotes' && (
+          <View style={styles.section}>
+            <Text style={styles.label}>Contact (Optional)</Text>
+            <View style={styles.contactContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="work, urgent, important..."
-                value={tags}
-                onChangeText={setTags}
+                placeholder=\"Contact name\"
+                value={contactName}
+                onChangeText={setContactName}
               />
-            </View>
-
-            <View style={[styles.infoCard, { backgroundColor: getColor() + '20' }]}>
-              <Ionicons name="information-circle" size={20} color={getColor()} />
-              <Text style={styles.infoText}>
-                Note will be tagged with '{actionType}' automatically
-              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder=\"Phone number\"
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType=\"phone-pad\"
+              />
+              <TouchableOpacity style={styles.contactButton} onPress={pickContact}>
+                <Ionicons name=\"person-add\" size={20} color={getColor()} />
+                <Text style={[styles.contactButtonText, { color: getColor() }]}>Pick from Contacts</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Recording Indicator */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Additional Notes (Optional)</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[styles.input, styles.notesInput]}
+              placeholder=\"Add any additional details...\"
+              value={content}
+              onChangeText={setContent}
+              multiline
+              numberOfLines={4}
+            />
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                isRecording && recordingField === 'content' && { backgroundColor: '#FF6B6B' },
+              ]}
+              onPress={
+                isRecording && recordingField === 'content'
+                  ? stopVoiceInput
+                  : () => startVoiceInput('content')
+              }
+              disabled={isProcessing || (isRecording && recordingField !== 'content')}
+            >
+              {isProcessing && recordingField === 'content' ? (
+                <ActivityIndicator size=\"small\" color=\"#fff\" />
+              ) : (
+                <Ionicons
+                  name={isRecording && recordingField === 'content' ? 'stop' : 'mic'}
+                  size={24}
+                  color=\"#fff\"
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.infoCard, { backgroundColor: getColor() + '20' }]}>
+          <Ionicons name=\"time\" size={20} color={getColor()} />
+          <Text style={styles.infoText}>
+            Reminder will trigger in 1 hour
+          </Text>
+        </View>
+
         {isRecording && (
           <View style={styles.recordingIndicator}>
             <View style={styles.recordingDot} />
@@ -563,47 +353,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-  placeholder: {
-    width: 60,
-  },
   content: {
     flex: 1,
     padding: 20,
-  },
-  modeSection: {
-    marginTop: 20,
-  },
-  modeTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#212529',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  modeCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  modeCardTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#212529',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  modeCardDesc: {
-    fontSize: 14,
-    color: '#6c757d',
-    textAlign: 'center',
   },
   section: {
     marginBottom: 24,
@@ -639,10 +391,6 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     height: 100,
-    textAlignVertical: 'top',
-  },
-  contentInput: {
-    height: 200,
     textAlignVertical: 'top',
   },
   contactContainer: {
