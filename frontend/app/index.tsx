@@ -34,9 +34,9 @@ export default function DashboardScreen() {
         web: 'https://www.linkedin.com',
       },
       whatsapp: {
-        ios: 'whatsapp://',
-        android: 'whatsapp://',
-        web: 'https://web.whatsapp.com',
+        ios: 'whatsapp-business://',
+        android: 'whatsapp-business://',
+        web: 'https://business.whatsapp.com',
       },
       wechat: {
         ios: 'weixin://',
