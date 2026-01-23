@@ -9,7 +9,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime
-from deepgram import DeepgramClient, PrerecordedOptions, FileSource
+from deepgram import (
+    DeepgramClient,
+    PrerecordedOptions as DeepgramPrerecordedOptions,
+    FileSource as DeepgramFileSource
+)
 import base64
 import io
 
