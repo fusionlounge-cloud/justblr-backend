@@ -246,6 +246,42 @@ async def delete_reminder(reminder_id: str):
 
 # ===== HEALTH CHECK =====
 
+@api_router.get("/notes", response_model=List[Note])
+async def get_notes():
+    """Get all notes"""
+    try:
+        notes = await db.notes.find().sort("updated_at", -1).to_list(1000)
+        return [Note(**note) for note in notes]
+    except Exception as e:
+        logger.error(f"Get notes error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/notes", response_model=Note)
+async def create_note(note: NoteCreate):
+    """Create a new note"""
+    try:
+        note_obj = Note(**note.dict())
+        await db.notes.insert_one(note_obj.dict())
+        logger.info(f"Created note: {note_obj.title}")
+        return note_obj
+    except Exception as e:
+        logger.error(f"Note creation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/notes/{note_id}")
+async def delete_note(note_id: str):
+    """Delete a note"""
+    try:
+        result = await db.notes.delete_one({"id": note_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Note not found")
+        return {"message": "Note deleted"}
+    except Exception as e:
+        logger.error(f"Delete note error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== HEALTH CHECK =====
+
 @api_router.get("/")
 async def root():
     return {"message": "Voice Assistant API is running", "version": "2.0.0"}
