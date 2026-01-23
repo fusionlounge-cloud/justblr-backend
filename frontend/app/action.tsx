@@ -7,77 +7,71 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  ActivityIndicator,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Audio } from 'expo-av';
+import { useRouter } from 'expo-router';
 import * as Contacts from 'expo-contacts';
+import { Audio } from 'expo-av';
 import axios from 'axios';
+
+// Platform-specific notification import
+let Notifications: any = null;
+if (Platform.OS !== 'web') {
+  Notifications = require('expo-notifications');
+}
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-export default function ActionScreen() {
+export default function VoiceReminderScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const actionType = params.type as string;
-  const actionName = params.name as string;
-
+  const [reminderType, setReminderType] = useState<'meet' | 'call' | 'sms' | 'whatsapp'>('call');
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [notes, setNotes] = useState('');
+  const [scheduledTime, setScheduledTime] = useState<Date>(new Date(Date.now() + 3600000));
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [recordingField, setRecordingField] = useState<'title' | 'content'>('title');
 
-  const getColor = () => {
-    switch (actionType) {
-      case 'meet':
-        return '#FF6B6B';
-      case 'call':
-        return '#4ECDC4';
-      case 'sms':
-        return '#95E1D3';
-      case 'whatsapp':
-        return '#25D366';
-      case 'deskwork':
-        return '#A78BFA';
-      case 'keepnotes':
-        return '#FFC107';
-      default:
-        return '#667eea';
-    }
-  };
+  const reminderTypes = [
+    { type: 'call' as const, icon: 'call', label: 'Call', color: '#4ECDC4' },
+    { type: 'meet' as const, icon: 'people', label: 'Meet', color: '#FF6B6B' },
+    { type: 'sms' as const, icon: 'chatbubble', label: 'SMS', color: '#95E1D3' },
+    { type: 'whatsapp' as const, icon: 'logo-whatsapp', label: 'WhatsApp', color: '#25D366' },
+  ];
 
-  const getIcon = () => {
-    switch (actionType) {
-      case 'meet':
-        return 'people';
-      case 'call':
-        return 'call';
-      case 'sms':
-        return 'chatbubble';
-      case 'whatsapp':
-        return 'logo-whatsapp';
-      case 'deskwork':
-        return 'laptop';
-      case 'keepnotes':
-        return 'create';
-      default:
-        return 'flash';
-    }
-  };
-
-  const startVoiceInput = async (field: 'title' | 'content') => {
+  const pickContact = async () => {
     try {
-      setRecordingField(field);
-      setIsRecording(true);
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Contact access is required to pick a contact');
+        return;
+      }
 
-      await Audio.requestPermissionsAsync();
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+      });
+
+      if (data.length > 0) {
+        // For simplicity, picking first contact. In production, show a picker
+        Alert.alert(
+          'Pick Contact',
+          'Contact picker will be shown here. For now, manually enter contact details.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Contact picker error:', error);
+      Alert.alert('Error', 'Failed to access contacts');
+    }
+  };
+
+  const startVoiceInput = async () => {
+    try {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -88,18 +82,15 @@ export default function ActionScreen() {
       );
 
       setRecording(recording);
+      setIsRecording(true);
     } catch (error) {
       console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start voice recording. Please check microphone permissions.');
-      setIsRecording(false);
+      Alert.alert('Error', 'Failed to start voice recording');
     }
   };
 
   const stopVoiceInput = async () => {
-    if (!recording) {
-      setIsRecording(false);
-      return;
-    }
+    if (!recording) return;
 
     try {
       setIsRecording(false);
@@ -108,73 +99,60 @@ export default function ActionScreen() {
 
       if (uri) {
         setIsProcessing(true);
-        
         const formData = new FormData();
         formData.append('audio_file', {
           uri: uri,
           type: 'audio/m4a',
-          name: 'voice.m4a',
+          name: 'reminder.m4a',
         } as any);
 
         const response = await axios.post(`${BACKEND_URL}/api/voice/stt`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 30000,
         });
 
         const transcribedText = response.data.transcribed_text;
-
-        if (recordingField === 'title') {
-          setTitle(transcribedText);
-        } else {
-          setContent((prev) => (prev ? prev + ' ' + transcribedText : transcribedText));
-        }
+        setTitle(transcribedText);
       }
 
       setRecording(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to process voice:', error);
-      const errorMsg = error.response?.data?.detail || 'Failed to process voice input';
-      Alert.alert('Voice Error', errorMsg);
+      Alert.alert('Error', 'Failed to process voice input');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const pickContact = async () => {
-    try {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Contact access is required to pick a contact');
-        return;
-      }
-
-      Alert.alert(
-        'Pick Contact',
-        'Contact picker will be shown here. For now, manually enter contact details.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Contact picker error:', error);
-      Alert.alert('Error', 'Failed to access contacts');
+  const createReminder = async () => {
+    if (!title.trim()) {
+      Alert.alert('Error', 'Please provide a reminder title');
+      return;
     }
-  };
-
-  const saveReminder = async () => {
-    const reminderTitle = title.trim() || `${actionName} Reminder`;
 
     try {
-      const scheduledTime = new Date(Date.now() + 3600000);
-
+      // Create reminder in backend
       await axios.post(`${BACKEND_URL}/api/reminders`, {
-        title: reminderTitle,
+        title,
         contact_name: contactName || undefined,
         contact_phone: contactPhone || undefined,
-        reminder_type: actionType,
+        reminder_type: reminderType,
         scheduled_time: scheduledTime.toISOString(),
-        notes: content || undefined,
+        notes: notes || undefined,
       });
 
-      Alert.alert('Success', `${actionName} reminder created successfully!`, [
+      // Schedule local notification (only on native)
+      if (Notifications && Platform.OS !== 'web') {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `${reminderType.toUpperCase()} Reminder`,
+            body: title,
+            data: { type: reminderType, contact: contactName },
+          },
+          trigger: scheduledTime,
+        });
+      }
+
+      Alert.alert('Success', 'Reminder created successfully!', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
@@ -190,127 +168,108 @@ export default function ActionScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#212529" />
         </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Ionicons name={getIcon() as any} size={24} color={getColor()} />
-          <Text style={styles.headerTitle}>{actionName}</Text>
-        </View>
-        <TouchableOpacity onPress={saveReminder} style={[styles.saveButton, { backgroundColor: getColor() }]}>
+        <Text style={styles.headerTitle}>Voice Reminder</Text>
+        <TouchableOpacity onPress={createReminder} style={styles.saveButton}>
           <Text style={styles.saveText}>Save</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Reminder Type Selection */}
         <View style={styles.section}>
-          <Text style={styles.label}>What to remind? (Optional)</Text>
+          <Text style={styles.label}>Reminder Type</Text>
+          <View style={styles.typeGrid}>
+            {reminderTypes.map((type) => (
+              <TouchableOpacity
+                key={type.type}
+                style={[
+                  styles.typeCard,
+                  reminderType === type.type && {
+                    backgroundColor: type.color + '20',
+                    borderColor: type.color,
+                  },
+                ]}
+                onPress={() => setReminderType(type.type)}
+              >
+                <Ionicons name={type.icon as any} size={28} color={type.color} />
+                <Text style={styles.typeLabel}>{type.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Title with Voice Input */}
+        <View style={styles.section}>
+          <Text style={styles.label}>What to remind?</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder={`E.g., ${actionName} with John about project`}
+              placeholder="E.g., Call John about meeting"
               value={title}
               onChangeText={setTitle}
               multiline
             />
             <TouchableOpacity
               style={[
-                styles.voiceButton,
-                isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
+                styles.voiceMicButton,
+                isRecording && { backgroundColor: '#FF6B6B' },
               ]}
-              onPress={
-                isRecording && recordingField === 'title'
-                  ? stopVoiceInput
-                  : () => startVoiceInput('title')
-              }
-              disabled={isProcessing || (isRecording && recordingField !== 'title')}
+              onPress={isRecording ? stopVoiceInput : startVoiceInput}
+              disabled={isProcessing}
             >
-              {isProcessing && recordingField === 'title' ? (
-                <ActivityIndicator size=\"small\" color=\"#fff\" />
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Ionicons
-                  name={isRecording && recordingField === 'title' ? 'stop' : 'mic'}
-                  size={24}
-                  color=\"#fff\"
-                />
+                <Ionicons name={isRecording ? 'stop' : 'mic'} size={24} color="#fff" />
               )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {actionType !== 'deskwork' && actionType !== 'keepnotes' && (
-          <View style={styles.section}>
-            <Text style={styles.label}>Contact (Optional)</Text>
-            <View style={styles.contactContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder=\"Contact name\"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder=\"Phone number\"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-                keyboardType=\"phone-pad\"
-              />
-              <TouchableOpacity style={styles.contactButton} onPress={pickContact}>
-                <Ionicons name=\"person-add\" size={20} color={getColor()} />
-                <Text style={[styles.contactButtonText, { color: getColor() }]}>Pick from Contacts</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
+        {/* Contact Info */}
         <View style={styles.section}>
-          <Text style={styles.label}>Additional Notes (Optional)</Text>
-          <View style={styles.inputRow}>
+          <Text style={styles.label}>Contact (Optional)</Text>
+          <View style={styles.contactContainer}>
             <TextInput
-              style={[styles.input, styles.notesInput]}
-              placeholder=\"Add any additional details...\"
-              value={content}
-              onChangeText={setContent}
-              multiline
-              numberOfLines={4}
+              style={styles.input}
+              placeholder="Contact name"
+              value={contactName}
+              onChangeText={setContactName}
             />
-            <TouchableOpacity
-              style={[
-                styles.voiceButton,
-                isRecording && recordingField === 'content' && { backgroundColor: '#FF6B6B' },
-              ]}
-              onPress={
-                isRecording && recordingField === 'content'
-                  ? stopVoiceInput
-                  : () => startVoiceInput('content')
-              }
-              disabled={isProcessing || (isRecording && recordingField !== 'content')}
-            >
-              {isProcessing && recordingField === 'content' ? (
-                <ActivityIndicator size=\"small\" color=\"#fff\" />
-              ) : (
-                <Ionicons
-                  name={isRecording && recordingField === 'content' ? 'stop' : 'mic'}
-                  size={24}
-                  color=\"#fff\"
-                />
-              )}
+            <TextInput
+              style={styles.input}
+              placeholder="Phone number"
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              keyboardType="phone-pad"
+            />
+            <TouchableOpacity style={styles.contactButton} onPress={pickContact}>
+              <Ionicons name="person-add" size={20} color="#667eea" />
+              <Text style={styles.contactButtonText}>Pick from Contacts</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={[styles.infoCard, { backgroundColor: getColor() + '20' }]}>
-          <Ionicons name=\"time\" size={20} color={getColor()} />
+        {/* Notes */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Additional Notes</Text>
+          <TextInput
+            style={[styles.input, styles.notesInput]}
+            placeholder="Add any additional details..."
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={4}
+          />
+        </View>
+
+        {/* Time Info */}
+        <View style={styles.infoCard}>
+          <Ionicons name="time" size={20} color="#667eea" />
           <Text style={styles.infoText}>
-            Reminder will trigger in 1 hour
+            Reminder will trigger in 1 hour (Customize time coming soon)
           </Text>
         </View>
-
-        {isRecording && (
-          <View style={styles.recordingIndicator}>
-            <View style={styles.recordingDot} />
-            <Text style={styles.recordingText}>
-              Recording {recordingField}... Tap mic to stop
-            </Text>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -333,11 +292,6 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
   },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -346,6 +300,7 @@ const styles = StyleSheet.create({
   saveButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    backgroundColor: '#667eea',
     borderRadius: 8,
   },
   saveText: {
@@ -366,9 +321,29 @@ const styles = StyleSheet.create({
     color: '#212529',
     marginBottom: 12,
   },
+  typeGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  typeCard: {
+    width: '23%',
+    aspectRatio: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+  },
+  typeLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#495057',
+    marginTop: 4,
+  },
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   input: {
     flex: 1,
@@ -380,7 +355,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e9ecef',
   },
-  voiceButton: {
+  voiceMicButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -388,10 +363,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
-  },
-  notesInput: {
-    height: 100,
-    textAlignVertical: 'top',
   },
   contactContainer: {
     gap: 12,
@@ -404,17 +375,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
+    borderColor: '#667eea',
     borderStyle: 'dashed',
   },
   contactButtonText: {
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
+    color: '#667eea',
+  },
+  notesInput: {
+    height: 100,
+    textAlignVertical: 'top',
   },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: '#667eea20',
     borderRadius: 12,
     marginTop: 12,
   },
@@ -423,26 +401,5 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 14,
     color: '#495057',
-  },
-  recordingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FF6B6B20',
-    borderRadius: 12,
-    marginTop: 16,
-  },
-  recordingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF6B6B',
-    marginRight: 12,
-  },
-  recordingText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF6B6B',
   },
 });
