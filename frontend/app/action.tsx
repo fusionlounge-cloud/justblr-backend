@@ -188,7 +188,7 @@ export default function ActionScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name=\"arrow-back\" size={24} color=\"#212529\" />
+          <Ionicons name="arrow-back" size={24} color="#212529" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Ionicons name={getIcon() as any} size={24} color={getColor()} />
