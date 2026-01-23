@@ -61,7 +61,7 @@ class ReminderCreate(BaseModel):
     title: str
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
-    reminder_type: Literal["meet", "call", "sms", "whatsapp"]
+    reminder_type: Literal["meet", "call", "sms", "whatsapp", "deskwork", "keepnotes"]
     scheduled_time: datetime
     notes: Optional[str] = None
 
