@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -9,13 +9,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime
-from deepgram import (
-    DeepgramClient,
-    PrerecordedOptions as DeepgramPrerecordedOptions,
-    FileSource as DeepgramFileSource
-)
-import base64
-import io
+import requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,8 +19,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Deepgram client
-deepgram_client = DeepgramClient(os.environ['DEEPGRAM_API_KEY'])
+# Deepgram API key
+DEEPGRAM_API_KEY = os.environ['DEEPGRAM_API_KEY']
 
 # Create the main app
 app = FastAPI()
@@ -48,16 +42,6 @@ class STTResponse(BaseModel):
     transcribed_text: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-class TTSRequest(BaseModel):
-    text: str
-    voice_id: str = "21m00Tcm4TlvDq8ikWAM"  # Default voice
-
-class TTSResponse(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    audio_base64: str
-    text: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-
 class ReminderCreate(BaseModel):
     title: str
     contact_name: Optional[str] = None
@@ -77,19 +61,6 @@ class Reminder(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_completed: bool = False
 
-class NoteCreate(BaseModel):
-    title: str
-    content: str
-    tags: List[str] = []
-
-class Note(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
-    content: str
-    tags: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
 class VoiceCommandRequest(BaseModel):
     command: str
 
@@ -107,31 +78,40 @@ async def speech_to_text(audio_file: UploadFile = File(...)):
         # Read audio file
         audio_content = await audio_file.read()
         
-        # Prepare audio for Deepgram
-        payload: FileSource = {
-            "buffer": audio_content,
+        # Deepgram API endpoint
+        url = "https://api.deepgram.com/v1/listen"
+        
+        # Headers
+        headers = {
+            "Authorization": f"Token {DEEPGRAM_API_KEY}",
+            "Content-Type": "audio/m4a"
         }
         
-        # Configure Deepgram options for Indian English
-        options = PrerecordedOptions(
-            model="nova-2",  # Latest model with best accuracy
-            language="en-IN",  # English - India
-            smart_format=True,  # Automatic formatting
-            punctuate=True,  # Add punctuation
-            diarize=False,  # Single speaker
-        )
+        # Parameters for Indian English
+        params = {
+            "model": "nova-2",
+            "language": "en-IN",  # English - India
+            "smart_format": "true",
+            "punctuate": "true"
+        }
         
-        # Transcribe using Deepgram
-        response = deepgram_client.listen.prerecorded.v("1").transcribe_file(
-            payload, options
-        )
+        # Make request to Deepgram
+        response = requests.post(url, headers=headers, params=params, data=audio_content, timeout=30)
+        
+        if response.status_code != 200:
+            logger.error(f"Deepgram error: {response.text}")
+            raise HTTPException(status_code=500, detail=f"Deepgram API error: {response.text}")
+        
+        result = response.json()
         
         # Extract transcribed text
         transcribed_text = ""
-        if response.results and response.results.channels:
-            channel = response.results.channels[0]
-            if channel.alternatives and len(channel.alternatives) > 0:
-                transcribed_text = channel.alternatives[0].transcript
+        if result.get("results") and result["results"].get("channels"):
+            channels = result["results"]["channels"]
+            if channels and len(channels) > 0:
+                alternatives = channels[0].get("alternatives")
+                if alternatives and len(alternatives) > 0:
+                    transcribed_text = alternatives[0].get("transcript", "")
         
         if not transcribed_text:
             raise HTTPException(status_code=400, detail="No speech detected in audio")
@@ -145,44 +125,12 @@ async def speech_to_text(audio_file: UploadFile = File(...)):
         logger.info(f"Transcribed audio: {transcribed_text[:100]}...")
         return stt_response
         
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Deepgram request error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Speech-to-text request failed: {str(e)}")
     except Exception as e:
         logger.error(f"STT error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Speech-to-text failed: {str(e)}")
-
-@api_router.post("/voice/tts", response_model=TTSResponse)
-async def text_to_speech(request: TTSRequest):
-    """Convert text to speech using ElevenLabs"""
-    try:
-        # Generate audio using ElevenLabs
-        audio_generator = elevenlabs_client.text_to_speech.convert(
-            text=request.text,
-            voice_id=request.voice_id,
-            model_id="eleven_multilingual_v2"
-        )
-        
-        # Collect audio data
-        audio_data = b""
-        for chunk in audio_generator:
-            audio_data += chunk
-        
-        # Convert to base64
-        audio_b64 = base64.b64encode(audio_data).decode()
-        
-        # Create response
-        response = TTSResponse(
-            audio_base64=audio_b64,
-            text=request.text
-        )
-        
-        # Save to database
-        await db.tts_responses.insert_one(response.dict())
-        
-        logger.info(f"Generated TTS for: {request.text[:50]}...")
-        return response
-        
-    except Exception as e:
-        logger.error(f"TTS error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Text-to-speech failed: {str(e)}")
 
 @api_router.post("/voice/command", response_model=VoiceCommandResponse)
 async def process_voice_command(request: VoiceCommandRequest):
@@ -215,13 +163,6 @@ async def process_voice_command(request: VoiceCommandRequest):
                 action="create_reminder",
                 parameters={"type": reminder_type, "command": request.command},
                 message=f"Creating {reminder_type} reminder"
-            )
-        
-        elif "note" in command_lower or "write" in command_lower:
-            return VoiceCommandResponse(
-                action="create_note",
-                parameters={"content": request.command},
-                message="Creating a new note"
             )
         
         else:
@@ -290,75 +231,18 @@ async def delete_reminder(reminder_id: str):
         logger.error(f"Delete reminder error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ===== NOTE ENDPOINTS =====
-
-@api_router.post("/notes", response_model=Note)
-async def create_note(note: NoteCreate):
-    """Create a new note"""
-    try:
-        note_obj = Note(**note.dict())
-        await db.notes.insert_one(note_obj.dict())
-        logger.info(f"Created note: {note_obj.title}")
-        return note_obj
-    except Exception as e:
-        logger.error(f"Note creation error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.get("/notes", response_model=List[Note])
-async def get_notes():
-    """Get all notes"""
-    try:
-        notes = await db.notes.find().sort("updated_at", -1).to_list(1000)
-        return [Note(**note) for note in notes]
-    except Exception as e:
-        logger.error(f"Get notes error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.put("/notes/{note_id}", response_model=Note)
-async def update_note(note_id: str, note_update: NoteCreate):
-    """Update a note"""
-    try:
-        update_data = note_update.dict()
-        update_data["updated_at"] = datetime.utcnow()
-        
-        result = await db.notes.find_one_and_update(
-            {"id": note_id},
-            {"$set": update_data},
-            return_document=True
-        )
-        
-        if not result:
-            raise HTTPException(status_code=404, detail="Note not found")
-        
-        return Note(**result)
-    except Exception as e:
-        logger.error(f"Update note error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.delete("/notes/{note_id}")
-async def delete_note(note_id: str):
-    """Delete a note"""
-    try:
-        result = await db.notes.delete_one({"id": note_id})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Note not found")
-        return {"message": "Note deleted"}
-    except Exception as e:
-        logger.error(f"Delete note error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 # ===== HEALTH CHECK =====
 
 @api_router.get("/")
 async def root():
-    return {"message": "Voice Assistant API is running", "version": "1.0.0"}
+    return {"message": "Voice Assistant API is running", "version": "2.0.0"}
 
 @api_router.get("/health")
 async def health_check():
     try:
         # Check MongoDB connection
         await db.command("ping")
-        return {"status": "healthy", "database": "connected", "voice": "enabled"}
+        return {"status": "healthy", "database": "connected", "voice": "deepgram"}
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
 
