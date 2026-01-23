@@ -259,7 +259,7 @@ export default function AllItemsScreen() {
         </View>
       ) : reminders.length === 0 && notes.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Ionicons name="filing-outline" size={64} color="#adb5bd" />
+          <Ionicons name="folder-open-outline" size={64} color="#adb5bd" />
           <Text style={styles.emptyMainText}>No items yet</Text>
           <Text style={styles.emptySubtext}>Create reminders or notes to see them here</Text>
         </View>
