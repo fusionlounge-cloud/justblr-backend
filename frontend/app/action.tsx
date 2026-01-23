@@ -12,22 +12,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
 
-// Platform-specific notification import
-let Notifications: any = null;
-if (Platform.OS !== 'web') {
-  Notifications = require('expo-notifications');
-}
-
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-export default function VoiceReminderScreen() {
+export default function ActionScreen() {
   const router = useRouter();
-  const [reminderType, setReminderType] = useState<'meet' | 'call' | 'sms' | 'whatsapp'>('call');
+  const params = useLocalSearchParams();
+  const actionType = params.type as string;
+  const actionName = params.name as string;
   const [title, setTitle] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
