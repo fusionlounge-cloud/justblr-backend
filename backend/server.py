@@ -98,30 +98,48 @@ class VoiceCommandResponse(BaseModel):
 
 @api_router.post("/voice/stt", response_model=STTResponse)
 async def speech_to_text(audio_file: UploadFile = File(...)):
-    """Convert speech to text using OpenAI Whisper"""
+    """Convert speech to text using Deepgram (supports Indian accents)"""
     try:
         # Read audio file
         audio_content = await audio_file.read()
         
-        # Create a file-like object for OpenAI
-        audio_file_obj = io.BytesIO(audio_content)
-        audio_file_obj.name = "audio.m4a"  # OpenAI needs a filename
+        # Prepare audio for Deepgram
+        payload: FileSource = {
+            "buffer": audio_content,
+        }
         
-        # Transcribe using OpenAI Whisper
-        transcription = openai_client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file_obj,
-            response_format="text"
+        # Configure Deepgram options for Indian English
+        options = PrerecordedOptions(
+            model="nova-2",  # Latest model with best accuracy
+            language="en-IN",  # English - India
+            smart_format=True,  # Automatic formatting
+            punctuate=True,  # Add punctuation
+            diarize=False,  # Single speaker
         )
         
+        # Transcribe using Deepgram
+        response = deepgram_client.listen.prerecorded.v("1").transcribe_file(
+            payload, options
+        )
+        
+        # Extract transcribed text
+        transcribed_text = ""
+        if response.results and response.results.channels:
+            channel = response.results.channels[0]
+            if channel.alternatives and len(channel.alternatives) > 0:
+                transcribed_text = channel.alternatives[0].transcript
+        
+        if not transcribed_text:
+            raise HTTPException(status_code=400, detail="No speech detected in audio")
+        
         # Create response
-        response = STTResponse(transcribed_text=transcription)
+        stt_response = STTResponse(transcribed_text=transcribed_text)
         
         # Save to database
-        await db.transcriptions.insert_one(response.dict())
+        await db.transcriptions.insert_one(stt_response.dict())
         
-        logger.info(f"Transcribed audio: {transcription[:100]}...")
-        return response
+        logger.info(f"Transcribed audio: {transcribed_text[:100]}...")
+        return stt_response
         
     except Exception as e:
         logger.error(f"STT error: {str(e)}")
