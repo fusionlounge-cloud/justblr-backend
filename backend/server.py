@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 import uuid
 from datetime import datetime
-from openai import OpenAI
+from deepgram import DeepgramClient, PrerecordedOptions, FileSource
 import base64
 import io
 
@@ -21,11 +21,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# OpenAI client with Emergent LLM key
-openai_client = OpenAI(
-    api_key=os.environ['EMERGENT_LLM_KEY'],
-    base_url="https://api.studio.emergentagents.com/v1"
-)
+# Deepgram client
+deepgram_client = DeepgramClient(os.environ['DEEPGRAM_API_KEY'])
 
 # Create the main app
 app = FastAPI()
