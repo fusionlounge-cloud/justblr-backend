@@ -274,7 +274,16 @@ export default function ActionScreen() {
           <View style={styles.recordingIndicator}>
             <View style={styles.recordingDot} />
             <Text style={styles.recordingText}>
-              Recording {recordingField}... Tap mic to stop
+              🎤 Recording... Speak now! Tap mic when done
+            </Text>
+          </View>
+        )}
+
+        {isProcessing && (
+          <View style={[styles.recordingIndicator, {backgroundColor: '#667eea20'}]}>
+            <ActivityIndicator size="small" color="#667eea" />
+            <Text style={[styles.recordingText, {color: '#667eea'}]}>
+              Processing your voice... Please wait
             </Text>
           </View>
         )}
