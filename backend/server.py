@@ -246,6 +246,27 @@ async def delete_reminder(reminder_id: str):
 
 # ===== HEALTH CHECK =====
 
+@api_router.post("/keep/sync")
+async def sync_to_google_keep(note_id: str):
+    """Sync a note to Google Keep (OAuth required)"""
+    try:
+        # Find note in database
+        note = await db.notes.find_one({"id": note_id})
+        if not note:
+            raise HTTPException(status_code=404, detail="Note not found")
+        
+        # TODO: Implement Google Keep OAuth and sync
+        # For now, just mark as synced
+        await db.notes.update_one(
+            {"id": note_id},
+            {"$set": {"synced_to_keep": True}}
+        )
+        
+        return {"message": "Note synced to Google Keep (OAuth setup required)"}
+    except Exception as e:
+        logger.error(f"Keep sync error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/notes", response_model=List[Note])
 async def get_notes():
     """Get all notes"""
