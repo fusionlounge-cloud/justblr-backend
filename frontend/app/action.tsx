@@ -155,9 +155,41 @@ export default function ActionScreen() {
         notes: content || undefined,
       });
 
-      Alert.alert('Success', `${actionName} reminder created!`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      // For WhatsApp/SMS, offer to open app with message
+      if (actionType === 'whatsapp' || actionType === 'sms') {
+        const message = `${reminderTitle}${content ? '\n\n' + content : ''}`;
+        
+        Alert.alert(
+          'Success!',
+          `${actionName} reminder created! Open ${actionName} now with this message?`,
+          [
+            { text: 'Later', onPress: () => router.back() },
+            {
+              text: `Open ${actionName}`,
+              onPress: async () => {
+                if (actionType === 'whatsapp') {
+                  const phone = contactPhone?.replace(/\D/g, '') || '';
+                  const url = phone 
+                    ? `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`
+                    : `whatsapp://send?text=${encodeURIComponent(message)}`;
+                  await Linking.openURL(url);
+                } else {
+                  const phone = contactPhone?.replace(/\D/g, '') || '';
+                  const url = phone
+                    ? `sms:${phone}?body=${encodeURIComponent(message)}`
+                    : `sms:?body=${encodeURIComponent(message)}`;
+                  await Linking.openURL(url);
+                }
+                router.back();
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Success', `${actionName} reminder created!`, [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      }
     } catch (error) {
       console.error('Failed to create reminder:', error);
       Alert.alert('Error', 'Failed to create reminder');
