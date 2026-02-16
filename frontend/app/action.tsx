@@ -103,7 +103,7 @@ export default function ActionScreen() {
       });
 
       // Transform contacts to our format
-      const formattedContacts: ContactItem[] = [];
+      const formattedContacts = [];
       data.forEach((contact) => {
         if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
           contact.phoneNumbers.forEach((phone) => {
