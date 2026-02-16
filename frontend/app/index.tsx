@@ -116,7 +116,7 @@ export default function DashboardScreen() {
     { name: 'Instagram', icon: 'logo-instagram', color: '#E4405F', key: 'instagram' },
     { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', key: 'facebook' },
     { name: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', key: 'linkedin' },
-    { name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', key: 'whatsapp' },
+    { name: 'WA Business', icon: 'logo-whatsapp', color: '#25D366', key: 'whatsapp' },
     { name: 'WeChat', icon: 'chatbubbles', color: '#09B83E', key: 'wechat' },
     { name: 'Alibaba', icon: 'storefront', color: '#FF6A00', key: 'alibaba' },
   ];
