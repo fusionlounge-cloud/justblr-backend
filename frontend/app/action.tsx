@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   Linking,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +19,12 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
+
+interface ContactItem {
+  id: string;
+  name: string;
+  phoneNumber: string;
+}
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
