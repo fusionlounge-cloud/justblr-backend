@@ -203,7 +203,7 @@ export default function DashboardScreen() {
                 onPress={() => openSocialApp(app.key)}
               >
                 <View style={[styles.socialIcon, { backgroundColor: app.color }]}>
-                  <Ionicons name={app.icon as any} size={32} color="#fff" />
+                  <Ionicons name={app.icon} size={32} color="#fff" />
                 </View>
                 <Text style={styles.socialText}>{app.name}</Text>
               </TouchableOpacity>
