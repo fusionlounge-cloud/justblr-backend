@@ -42,6 +42,13 @@ export default function ActionScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingField, setRecordingField] = useState<'title' | 'content'>('title');
+  
+  // Contact picker state
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [contacts, setContacts] = useState<ContactItem[]>([]);
+  const [filteredContacts, setFilteredContacts] = useState<ContactItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loadingContacts, setLoadingContacts] = useState(false);
 
   const getColor = () => {
     switch (actionType) {
