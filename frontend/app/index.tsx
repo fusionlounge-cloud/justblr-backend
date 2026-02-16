@@ -87,7 +87,7 @@ export default function DashboardScreen() {
     { name: 'Meet', icon: 'people', color: '#FF6B6B', type: 'meet' },
     { name: 'Call', icon: 'call', color: '#4ECDC4', type: 'call' },
     { name: 'SMS', icon: 'chatbubble', color: '#95E1D3', type: 'sms' },
-    { name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', type: 'whatsapp' },
+    { name: 'WhatsApp Business', icon: 'logo-whatsapp', color: '#25D366', type: 'whatsapp' },
     { name: 'Deskwork', icon: 'laptop', color: '#A78BFA', type: 'deskwork' },
     { name: 'Keep Notes', icon: 'create', color: '#FFC107', type: 'keepnotes' },
   ];
