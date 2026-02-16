@@ -247,7 +247,7 @@ export default function AllItemsScreen() {
     </View>
   );
 
-  const renderCategory = (category: typeof CATEGORIES[0]) => {
+  const renderCategory = (category) => {
     const { reminders: categoryReminders, notes: categoryNotes } = getCategoryItems(category.type);
     const totalItems = categoryReminders.length + categoryNotes.length;
 
@@ -255,7 +255,7 @@ export default function AllItemsScreen() {
       <View key={category.type} style={styles.categoryColumn}>
         {/* Category Header */}
         <View style={[styles.categoryHeader, { backgroundColor: category.color }]}>
-          <Ionicons name={category.icon as any} size={28} color="#fff" />
+          <Ionicons name={category.icon} size={28} color="#fff" />
           <Text style={styles.categoryTitle}>{category.name}</Text>
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryCount}>{totalItems}</Text>
