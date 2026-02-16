@@ -88,6 +88,79 @@ export default function ActionScreen() {
     }
   };
 
+  // Load device contacts
+  const loadContacts = async () => {
+    try {
+      setLoadingContacts(true);
+      const { status } = await Contacts.requestPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please grant contact permissions to select contacts for your reminders.',
+          [{ text: 'OK' }]
+        );
+        setLoadingContacts(false);
+        return;
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+      });
+
+      // Transform contacts to our format
+      const formattedContacts: ContactItem[] = [];
+      data.forEach((contact) => {
+        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+          contact.phoneNumbers.forEach((phone) => {
+            if (phone.number) {
+              formattedContacts.push({
+                id: `${contact.id}-${phone.number}`,
+                name: contact.name || 'Unknown',
+                phoneNumber: phone.number,
+              });
+            }
+          });
+        }
+      });
+
+      // Sort by name
+      formattedContacts.sort((a, b) => a.name.localeCompare(b.name));
+      
+      setContacts(formattedContacts);
+      setFilteredContacts(formattedContacts);
+      setShowContactPicker(true);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      Alert.alert('Error', 'Failed to load contacts');
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
+  // Filter contacts based on search
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredContacts(contacts);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = contacts.filter(
+        (contact) =>
+          contact.name.toLowerCase().includes(query) ||
+          contact.phoneNumber.includes(query)
+      );
+      setFilteredContacts(filtered);
+    }
+  }, [searchQuery, contacts]);
+
+  // Select a contact
+  const selectContact = (contact: ContactItem) => {
+    setContactName(contact.name);
+    setContactPhone(contact.phoneNumber);
+    setShowContactPicker(false);
+    setSearchQuery('');
+  };
+
   const startVoiceInput = async (field: 'title' | 'content') => {
     try {
       setRecordingField(field);
