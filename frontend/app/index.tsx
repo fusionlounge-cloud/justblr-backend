@@ -55,7 +55,7 @@ export default function DashboardScreen() {
   };
 
   const openSocialApp = async (appName) => {
-    const appUrls: { [key: string]: { ios: string; android: string; web: string } } = {
+    const appUrls = {
       instagram: {
         ios: 'instagram://app',
         android: 'instagram://app',
