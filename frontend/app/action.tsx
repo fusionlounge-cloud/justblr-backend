@@ -193,11 +193,12 @@ export default function ActionScreen() {
         setIsProcessing(true);
         
         const formData = new FormData();
+        // @ts-ignore - React Native requires this format for file uploads
         formData.append('audio_file', {
           uri: uri,
           type: 'audio/m4a',
           name: 'voice.m4a',
-        } as any);
+        });
 
         const response = await axios.post(`${BACKEND_URL}/api/voice/stt`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
