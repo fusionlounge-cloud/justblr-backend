@@ -215,9 +215,9 @@ export default function ActionScreen() {
       }
 
       setRecording(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to process voice:', error);
-      const errorMsg = error.response?.data?.detail || 'Failed to process voice input';
+      const errorMsg = error?.response?.data?.detail || 'Failed to process voice input';
       Alert.alert('Voice Error', errorMsg);
     } finally {
       setIsProcessing(false);
