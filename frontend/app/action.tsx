@@ -146,7 +146,7 @@ export default function ActionScreen() {
       return;
     }
     
-    // Otherwise load them now
+    // Otherwise load them now with optimizations
     try {
       setLoadingContacts(true);
       const { status } = await Contacts.requestPermissionsAsync();
@@ -163,20 +163,27 @@ export default function ActionScreen() {
 
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+        pageSize: 500,
+        pageOffset: 0,
       });
 
-      // Transform contacts to our format with unique keys
+      // Transform contacts with unique keys and no duplicates
       const formattedContacts = [];
-      let index = 0;
-      data.forEach((contact) => {
+      const seenPhones = new Set();
+      
+      data.forEach((contact, contactIndex) => {
         if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-          contact.phoneNumbers.forEach((phone) => {
+          contact.phoneNumbers.forEach((phone, phoneIndex) => {
             if (phone.number) {
-              formattedContacts.push({
-                id: `contact-${index++}`,
-                name: contact.name || 'Unknown',
-                phoneNumber: phone.number,
-              });
+              const normalizedPhone = phone.number.replace(/\D/g, '');
+              if (!seenPhones.has(normalizedPhone)) {
+                seenPhones.add(normalizedPhone);
+                formattedContacts.push({
+                  id: `load-${Date.now()}-${contactIndex}-${phoneIndex}`,
+                  name: contact.name || 'Unknown',
+                  phoneNumber: phone.number,
+                });
+              }
             }
           });
         }
