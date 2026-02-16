@@ -67,12 +67,13 @@ export default function ActionScreen() {
       });
 
       const formattedContacts = [];
+      let index = 0;
       data.forEach((contact) => {
         if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
           contact.phoneNumbers.forEach((phone) => {
             if (phone.number) {
               formattedContacts.push({
-                id: `${contact.id}-${phone.number}`,
+                id: `contact-${index++}`,
                 name: contact.name || 'Unknown',
                 phoneNumber: phone.number,
               });
