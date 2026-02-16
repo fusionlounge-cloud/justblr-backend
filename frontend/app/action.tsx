@@ -425,6 +425,77 @@ export default function ActionScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Contact Picker Modal */}
+      <Modal
+        visible={showContactPicker}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowContactPicker(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Contact</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => {
+                setShowContactPicker(false);
+                setSearchQuery('');
+              }}
+            >
+              <Ionicons name="close" size={24} color="#212529" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#6c757d" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search contacts..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#6c757d" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <FlatList
+            data={filteredContacts}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.contactItem}
+                onPress={() => selectContact(item)}
+              >
+                <View style={styles.contactAvatar}>
+                  <Text style={styles.contactAvatarText}>
+                    {item.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.contactInfo}>
+                  <Text style={styles.contactName}>{item.name}</Text>
+                  <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#adb5bd" />
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="people-outline" size={48} color="#adb5bd" />
+                <Text style={styles.emptyText}>
+                  {searchQuery ? 'No contacts found' : 'No contacts available'}
+                </Text>
+              </View>
+            }
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            contentContainerStyle={filteredContacts.length === 0 && styles.emptyList}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
