@@ -148,7 +148,7 @@ export default function ActionScreen() {
   }, [searchQuery, contacts]);
 
   // Select a contact
-  const selectContact = (contact: ContactItem) => {
+  const selectContact = (contact) => {
     setContactName(contact.name);
     setContactPhone(contact.phoneNumber);
     setShowContactPicker(false);
