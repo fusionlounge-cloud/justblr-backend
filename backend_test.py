@@ -113,7 +113,7 @@ class VoiceAssistantTester:
         
         created_reminder_ids = []
         
-        # Test creating reminders
+        # Test creating reminders with specific contact validation
         for i, reminder_data in enumerate(test_reminders):
             try:
                 response = self.session.post(
@@ -126,8 +126,25 @@ class VoiceAssistantTester:
                     data = response.json()
                     if "id" in data and data["title"] == reminder_data["title"]:
                         created_reminder_ids.append(data["id"])
-                        self.log_result(f"Create reminder {i+1} ({reminder_data['reminder_type']})", True, 
-                                      f"ID: {data['id']}")
+                        
+                        # Verify contact information is properly stored
+                        contact_validation = True
+                        if "contact_name" in reminder_data:
+                            if data.get("contact_name") != reminder_data["contact_name"]:
+                                self.log_result(f"Create reminder {i+1} - Contact name validation", False, 
+                                              f"Expected: {reminder_data['contact_name']}, Got: {data.get('contact_name')}")
+                                contact_validation = False
+                        
+                        if "contact_phone" in reminder_data:
+                            if data.get("contact_phone") != reminder_data["contact_phone"]:
+                                self.log_result(f"Create reminder {i+1} - Contact phone validation", False,
+                                              f"Expected: {reminder_data['contact_phone']}, Got: {data.get('contact_phone')}")
+                                contact_validation = False
+                        
+                        if contact_validation:
+                            self.log_result(f"Create reminder {i+1} ({reminder_data['reminder_type']}) with contacts", True, 
+                                          f"ID: {data['id']}, Contact: {data.get('contact_name', 'None')}")
+                        
                     else:
                         self.log_result(f"Create reminder {i+1}", False, "Invalid response format", response)
                 else:
@@ -135,12 +152,28 @@ class VoiceAssistantTester:
             except Exception as e:
                 self.log_result(f"Create reminder {i+1}", False, f"Exception: {str(e)}")
         
-        # Test getting all reminders
+        # Verify contact information in retrieved reminders  
         try:
             response = self.session.get(f"{self.base_url}/reminders")
             if response.status_code == 200:
                 data = response.json()
                 if isinstance(data, list) and len(data) >= len(created_reminder_ids):
+                    
+                    # Validate that contact information is properly retrieved
+                    contact_reminders_found = 0
+                    for reminder in data:
+                        if reminder["id"] in created_reminder_ids:
+                            # Check if this reminder has contact information
+                            if reminder.get("contact_name") and reminder.get("contact_phone"):
+                                contact_reminders_found += 1
+                    
+                    if contact_reminders_found >= 3:  # We created 4 reminders, 3 with both contact fields
+                        self.log_result("Get all reminders - Contact fields verification", True, 
+                                      f"Found {contact_reminders_found} reminders with contact info")
+                    else:
+                        self.log_result("Get all reminders - Contact fields verification", False,
+                                      f"Only found {contact_reminders_found} reminders with contact info")
+                    
                     self.log_result("Get all reminders", True, f"Found {len(data)} reminders")
                 else:
                     self.log_result("Get all reminders", False, f"Expected list, got: {type(data)}", response)
