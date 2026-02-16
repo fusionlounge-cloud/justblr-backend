@@ -25,17 +25,17 @@ const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 export default function ActionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const actionType = params.type as string;
-  const actionName = params.name as string;
+  const actionType = String(params.type || '');
+  const actionName = String(params.name || '');
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [recording, setRecording] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [recordingField, setRecordingField] = useState<'title' | 'content'>('title');
+  const [recordingField, setRecordingField] = useState('title');
   
   // Contact picker state
   const [showContactPicker, setShowContactPicker] = useState(false);
