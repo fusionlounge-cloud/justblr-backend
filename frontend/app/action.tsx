@@ -311,26 +311,36 @@ export default function ActionScreen() {
         notes: content || undefined,
       });
 
-      // For WhatsApp/SMS, offer to open app with message
-      if (actionType === 'whatsapp' || actionType === 'sms') {
+      // For WhatsApp/SMS/Call, offer to open app with message
+      if (actionType === 'whatsapp' || actionType === 'sms' || actionType === 'call') {
         const message = `${reminderTitle}${content ? '\n\n' + content : ''}`;
+        const phone = contactPhone?.replace(/\D/g, '') || '';
+        
+        let openButtonText = `Open ${actionName}`;
+        if (actionType === 'call') openButtonText = 'Call Now';
+        if (actionType === 'sms') openButtonText = 'Send SMS';
+        if (actionType === 'whatsapp') openButtonText = 'Open WhatsApp';
         
         Alert.alert(
           'Success!',
-          `${actionName} reminder created! Open ${actionName} now with this message?`,
+          `${actionName} reminder created!${phone ? ` Open ${actionName} now?` : ''}`,
           [
             { text: 'Later', onPress: () => router.back() },
             {
-              text: `Open ${actionName}`,
+              text: openButtonText,
               onPress: async () => {
-                if (actionType === 'whatsapp') {
-                  const phone = contactPhone?.replace(/\D/g, '') || '';
+                if (actionType === 'call') {
+                  if (phone) {
+                    await Linking.openURL(`tel:${phone}`);
+                  } else {
+                    await Linking.openURL('tel:');
+                  }
+                } else if (actionType === 'whatsapp') {
                   const url = phone 
                     ? `whatsapp-business://send?phone=${phone}&text=${encodeURIComponent(message)}`
                     : `whatsapp-business://send?text=${encodeURIComponent(message)}`;
                   await Linking.openURL(url);
                 } else {
-                  const phone = contactPhone?.replace(/\D/g, '') || '';
                   const url = phone
                     ? `sms:${phone}?body=${encodeURIComponent(message)}`
                     : `sms:?body=${encodeURIComponent(message)}`;
