@@ -119,7 +119,7 @@ export default function AllItemsScreen() {
     ]);
   };
 
-  const completeReminder = async (id: string) => {
+  const completeReminder = async (id) => {
     try {
       await axios.put(`${BACKEND_URL}/api/reminders/${id}/complete`);
       fetchAllItems(true); // Maintain scroll position
@@ -128,7 +128,44 @@ export default function AllItemsScreen() {
     }
   };
 
-  const getCategoryItems = (type: string) => {
+  // Execute action directly (Call, SMS, WhatsApp)
+  const executeAction = async (reminder) => {
+    const phone = reminder.contact_phone?.replace(/\D/g, '') || '';
+    const message = `${reminder.title}${reminder.notes ? '\n\n' + reminder.notes : ''}`;
+    
+    try {
+      if (reminder.reminder_type === 'call') {
+        if (phone) {
+          await Linking.openURL(`tel:${phone}`);
+        } else {
+          Alert.alert('No Phone Number', 'This reminder has no phone number attached.');
+        }
+      } else if (reminder.reminder_type === 'sms') {
+        const url = phone 
+          ? `sms:${phone}?body=${encodeURIComponent(message)}`
+          : `sms:?body=${encodeURIComponent(message)}`;
+        await Linking.openURL(url);
+      } else if (reminder.reminder_type === 'whatsapp') {
+        const url = phone 
+          ? `whatsapp-business://send?phone=${phone}&text=${encodeURIComponent(message)}`
+          : `whatsapp-business://send?text=${encodeURIComponent(message)}`;
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          await Linking.openURL(url);
+        } else {
+          // Fallback to regular whatsapp
+          const fallbackUrl = phone 
+            ? `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`
+            : `whatsapp://send?text=${encodeURIComponent(message)}`;
+          await Linking.openURL(fallbackUrl);
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open app');
+    }
+  };
+
+  const getCategoryItems = (type) => {
     const categoryReminders = reminders.filter((r) => r.reminder_type === type);
     const categoryNotes = notes.filter((n) => n.tags.includes(type));
     return { reminders: categoryReminders, notes: categoryNotes };
