@@ -503,6 +503,21 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
+  bigExecuteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 10,
+    gap: 8,
+  },
+  bigExecuteBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   emptyCategory: {
     flex: 1,
     justifyContent: 'center',
