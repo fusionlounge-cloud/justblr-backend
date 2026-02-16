@@ -171,46 +171,68 @@ export default function AllItemsScreen() {
     return { reminders: categoryReminders, notes: categoryNotes };
   };
 
-  const renderReminder = (reminder: Reminder, color: string) => (
-    <View key={reminder.id} style={[styles.itemCard, { borderLeftColor: color }]}>
-      <View style={styles.itemHeader}>
-        <Ionicons name="alarm" size={18} color={color} />
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemTitle} numberOfLines={2}>
-            {reminder.title}
-          </Text>
-          {reminder.contact_name && (
-            <Text style={styles.itemSubtext} numberOfLines={1}>
-              <Ionicons name="person" size={11} /> {reminder.contact_name}
+  const renderReminder = (reminder, color) => {
+    const canExecute = ['call', 'sms', 'whatsapp'].includes(reminder.reminder_type);
+    const getExecuteIcon = () => {
+      if (reminder.reminder_type === 'call') return 'call';
+      if (reminder.reminder_type === 'sms') return 'chatbubble';
+      if (reminder.reminder_type === 'whatsapp') return 'logo-whatsapp';
+      return 'play';
+    };
+    
+    return (
+      <View key={reminder.id} style={[styles.itemCard, { borderLeftColor: color }]}>
+        <TouchableOpacity 
+          style={styles.itemHeader}
+          onPress={() => canExecute && executeAction(reminder)}
+          disabled={!canExecute}
+        >
+          <Ionicons name="alarm" size={18} color={color} />
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemTitle} numberOfLines={2}>
+              {reminder.title}
             </Text>
+            {reminder.contact_name && (
+              <Text style={styles.itemSubtext} numberOfLines={1}>
+                <Ionicons name="person" size={11} /> {reminder.contact_name}
+              </Text>
+            )}
+            {reminder.notes && (
+              <Text style={styles.itemNotes} numberOfLines={2}>
+                {reminder.notes}
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
+        <View style={styles.itemActions}>
+          {canExecute && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.executeBtn, { backgroundColor: color + '30' }]}
+              onPress={() => executeAction(reminder)}
+            >
+              <Ionicons name={getExecuteIcon()} size={16} color={color} />
+            </TouchableOpacity>
           )}
-          {reminder.notes && (
-            <Text style={styles.itemNotes} numberOfLines={2}>
-              {reminder.notes}
-            </Text>
+          {!reminder.is_completed && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
+              onPress={() => completeReminder(reminder.id)}
+            >
+              <Ionicons name="checkmark" size={14} color="#43e97b" />
+            </TouchableOpacity>
           )}
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
+            onPress={() => deleteReminder(reminder.id)}
+          >
+            <Ionicons name="trash" size={14} color="#FF6B6B" />
+          </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.itemActions}>
-        {!reminder.is_completed && (
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
-            onPress={() => completeReminder(reminder.id)}
-          >
-            <Ionicons name="checkmark" size={14} color="#43e97b" />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
-          onPress={() => deleteReminder(reminder.id)}
-        >
-          <Ionicons name="trash" size={14} color="#FF6B6B" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
-  const renderNote = (note: Note, color: string) => (
+  const renderNote = (note, color) => (
     <View key={note.id} style={[styles.itemCard, { borderLeftColor: color }]}>
       <View style={styles.itemHeader}>
         <Ionicons name="document-text" size={18} color={color} />
