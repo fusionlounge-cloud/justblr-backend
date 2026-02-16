@@ -115,22 +115,36 @@ export default function AllItemsScreen() {
     const phone = reminder.contact_phone?.replace(/\D/g, '') || '';
     const message = `${reminder.title}${reminder.notes ? '\n\n' + reminder.notes : ''}`;
     
+    console.log('Executing action:', reminder.reminder_type, 'Phone:', phone);
+    
     try {
       if (reminder.reminder_type === 'call') {
         if (phone) {
-          await Linking.openURL(`tel:${phone}`);
+          const url = `tel:${phone}`;
+          console.log('Opening URL:', url);
+          await Linking.openURL(url);
         } else {
-          Alert.alert('No Phone Number', 'This reminder has no phone number attached.');
+          // Open phone dialer without number
+          Alert.alert(
+            'No Phone Number',
+            'This reminder has no phone number. Would you like to open the phone dialer?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Dialer', onPress: () => Linking.openURL('tel:') }
+            ]
+          );
         }
       } else if (reminder.reminder_type === 'sms') {
         const url = phone 
           ? `sms:${phone}?body=${encodeURIComponent(message)}`
           : `sms:?body=${encodeURIComponent(message)}`;
+        console.log('Opening SMS URL:', url);
         await Linking.openURL(url);
       } else if (reminder.reminder_type === 'whatsapp') {
         const url = phone 
           ? `whatsapp-business://send?phone=${phone}&text=${encodeURIComponent(message)}`
           : `whatsapp-business://send?text=${encodeURIComponent(message)}`;
+        console.log('Opening WhatsApp URL:', url);
         const canOpen = await Linking.canOpenURL(url);
         if (canOpen) {
           await Linking.openURL(url);
@@ -143,7 +157,8 @@ export default function AllItemsScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to open app');
+      console.error('Execute action error:', error);
+      Alert.alert('Error', 'Failed to open app. Please try again.');
     }
   };
 
