@@ -128,8 +128,15 @@ export default function ActionScreen() {
     }
   };
 
-  // Load device contacts
+  // Load device contacts - now instant since contacts are pre-loaded
   const loadContacts = async () => {
+    // If contacts already loaded, just show the picker instantly
+    if (contactsLoaded && contacts.length > 0) {
+      setShowContactPicker(true);
+      return;
+    }
+    
+    // Otherwise load them now
     try {
       setLoadingContacts(true);
       const { status } = await Contacts.requestPermissionsAsync();
@@ -148,14 +155,15 @@ export default function ActionScreen() {
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
       });
 
-      // Transform contacts to our format
+      // Transform contacts to our format with unique keys
       const formattedContacts = [];
+      let index = 0;
       data.forEach((contact) => {
         if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
           contact.phoneNumbers.forEach((phone) => {
             if (phone.number) {
               formattedContacts.push({
-                id: `${contact.id}-${phone.number}`,
+                id: `contact-${index++}`,
                 name: contact.name || 'Unknown',
                 phoneNumber: phone.number,
               });
@@ -169,6 +177,7 @@ export default function ActionScreen() {
       
       setContacts(formattedContacts);
       setFilteredContacts(formattedContacts);
+      setContactsLoaded(true);
       setShowContactPicker(true);
     } catch (error) {
       console.error('Error loading contacts:', error);
