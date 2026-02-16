@@ -274,11 +274,16 @@ export default function AllItemsScreen() {
         </View>
       ) : (
         <ScrollView
+          ref={scrollViewRef}
           horizontal
           showsHorizontalScrollIndicator={true}
           style={styles.horizontalScroll}
           contentContainerStyle={styles.scrollContent}
           decelerationRate="fast"
+          onScroll={(event) => {
+            setCurrentScrollX(event.nativeEvent.contentOffset.x);
+          }}
+          scrollEventThrottle={16}
         >
           {CATEGORIES.map(renderCategory)}
         </ScrollView>
