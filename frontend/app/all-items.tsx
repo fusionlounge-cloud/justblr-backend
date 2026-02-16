@@ -23,6 +23,7 @@ interface Reminder {
   id: string;
   title: string;
   contact_name?: string;
+  contact_phone?: string;
   reminder_type: string;
   scheduled_time: string;
   is_completed: boolean;
