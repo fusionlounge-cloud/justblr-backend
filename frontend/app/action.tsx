@@ -489,7 +489,7 @@ export default function ActionScreen() {
                 </Text>
               </View>
             }
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            ItemSeparatorComponent={ContactSeparator}
             contentContainerStyle={filteredContacts.length === 0 && styles.emptyList}
           />
         </SafeAreaView>
