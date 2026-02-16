@@ -50,6 +50,8 @@ export default function AllItemsScreen() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [currentScrollX, setCurrentScrollX] = useState(0);
 
   useEffect(() => {
     fetchAllItems();
