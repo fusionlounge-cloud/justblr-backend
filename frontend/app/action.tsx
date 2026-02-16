@@ -39,8 +39,8 @@ export default function ActionScreen() {
   
   // Contact picker state
   const [showContactPicker, setShowContactPicker] = useState(false);
-  const [contacts, setContacts] = useState<ContactItem[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<ContactItem[]>([]);
+  const [contacts, setContacts] = useState([]);
+  const [filteredContacts, setFilteredContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
 
