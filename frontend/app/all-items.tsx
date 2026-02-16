@@ -30,10 +30,10 @@ const CATEGORIES = [
 
 export default function AllItemsScreen() {
   const router = useRouter();
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [reminders, setReminders] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef(null);
   const [currentScrollX, setCurrentScrollX] = useState(0);
 
   useEffect(() => {
