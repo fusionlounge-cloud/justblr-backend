@@ -301,6 +301,19 @@ async def delete_note(note_id: str):
         logger.error(f"Delete note error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===== GOOGLE CONTACTS ENDPOINTS =====
+
+@api_router.get("/contacts/google")
+async def get_google_contacts():
+    """Get Google Contacts (OAuth required)"""
+    try:
+        # TODO: Implement Google Contacts OAuth
+        # For now return message
+        return {"message": "Google Contacts OAuth setup required", "contacts": []}
+    except Exception as e:
+        logger.error(f"Google Contacts error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ===== HEALTH CHECK =====
 
 @api_router.get("/")
