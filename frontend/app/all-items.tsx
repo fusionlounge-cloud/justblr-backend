@@ -91,7 +91,7 @@ export default function AllItemsScreen() {
         onPress: async () => {
           try {
             await axios.delete(`${BACKEND_URL}/api/reminders/${id}`);
-            fetchAllItems();
+            fetchAllItems(true); // Maintain scroll position
           } catch (error) {
             Alert.alert('Error', 'Failed to delete reminder');
           }
@@ -109,7 +109,7 @@ export default function AllItemsScreen() {
         onPress: async () => {
           try {
             await axios.delete(`${BACKEND_URL}/api/notes/${id}`);
-            fetchAllItems();
+            fetchAllItems(true); // Maintain scroll position
           } catch (error) {
             Alert.alert('Error', 'Failed to delete note');
           }
@@ -121,7 +121,7 @@ export default function AllItemsScreen() {
   const completeReminder = async (id: string) => {
     try {
       await axios.put(`${BACKEND_URL}/api/reminders/${id}/complete`);
-      fetchAllItems();
+      fetchAllItems(true); // Maintain scroll position
     } catch (error) {
       Alert.alert('Error', 'Failed to complete reminder');
     }
