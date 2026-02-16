@@ -219,10 +219,10 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.commandCard}>
             <Text style={styles.commandTitle}>Try saying:</Text>
-            <Text style={styles.commandExample}>• "Open Instagram"</Text>
-            <Text style={styles.commandExample}>• "Create a reminder to call John"</Text>
-            <Text style={styles.commandExample}>• "Take a note"</Text>
-            <Text style={styles.commandExample}>• "Open WhatsApp"</Text>
+            <Text style={styles.commandExample}>• Open Instagram</Text>
+            <Text style={styles.commandExample}>• Create a reminder to call John</Text>
+            <Text style={styles.commandExample}>• Take a note</Text>
+            <Text style={styles.commandExample}>• Open WhatsApp</Text>
           </View>
         </View>
       </ScrollView>
