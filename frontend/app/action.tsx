@@ -46,6 +46,49 @@ export default function ActionScreen() {
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [contactsLoaded, setContactsLoaded] = useState(false);
+
+  // Pre-load contacts in background when screen opens (for Call, SMS, WhatsApp, Meet)
+  useEffect(() => {
+    const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
+    if (needsContacts && !contactsLoaded) {
+      preloadContacts();
+    }
+  }, [actionType]);
+
+  // Pre-load contacts silently in background
+  const preloadContacts = async () => {
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') return;
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+      });
+
+      const formattedContacts = [];
+      data.forEach((contact) => {
+        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+          contact.phoneNumbers.forEach((phone) => {
+            if (phone.number) {
+              formattedContacts.push({
+                id: `${contact.id}-${phone.number}`,
+                name: contact.name || 'Unknown',
+                phoneNumber: phone.number,
+              });
+            }
+          });
+        }
+      });
+
+      formattedContacts.sort((a, b) => a.name.localeCompare(b.name));
+      setContacts(formattedContacts);
+      setFilteredContacts(formattedContacts);
+      setContactsLoaded(true);
+    } catch (error) {
+      console.error('Error preloading contacts:', error);
+    }
+  };
 
   const getColor = () => {
     switch (actionType) {
