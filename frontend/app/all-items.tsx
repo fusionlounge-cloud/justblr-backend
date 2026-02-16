@@ -83,7 +83,7 @@ export default function AllItemsScreen() {
     ]);
   };
 
-  const deleteNote = async (id: string) => {
+  const deleteNote = async (id) => {
     Alert.alert('Delete Note', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
