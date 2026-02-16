@@ -19,25 +19,6 @@ const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CATEGORY_WIDTH = SCREEN_WIDTH * 0.85; // 85% of screen width
 
-interface Reminder {
-  id: string;
-  title: string;
-  contact_name?: string;
-  contact_phone?: string;
-  reminder_type: string;
-  scheduled_time: string;
-  is_completed: boolean;
-  notes?: string;
-}
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  updated_at: string;
-}
-
 const CATEGORIES = [
   { type: 'meet', name: 'Meet', icon: 'people', color: '#FF6B6B' },
   { type: 'call', name: 'Call', icon: 'call', color: '#4ECDC4' },
