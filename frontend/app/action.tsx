@@ -171,8 +171,8 @@ export default function ActionScreen() {
                 if (actionType === 'whatsapp') {
                   const phone = contactPhone?.replace(/\D/g, '') || '';
                   const url = phone 
-                    ? `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`
-                    : `whatsapp://send?text=${encodeURIComponent(message)}`;
+                    ? `whatsapp-business://send?phone=${phone}&text=${encodeURIComponent(message)}`
+                    : `whatsapp-business://send?text=${encodeURIComponent(message)}`;
                   await Linking.openURL(url);
                 } else {
                   const phone = contactPhone?.replace(/\D/g, '') || '';
