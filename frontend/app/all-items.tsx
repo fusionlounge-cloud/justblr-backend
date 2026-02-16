@@ -65,7 +65,7 @@ export default function AllItemsScreen() {
     }
   };
 
-  const deleteReminder = async (id: string) => {
+  const deleteReminder = async (id) => {
     Alert.alert('Delete Reminder', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
