@@ -57,7 +57,7 @@ export default function AllItemsScreen() {
     fetchAllItems();
   }, []);
 
-  const fetchAllItems = async () => {
+  const fetchAllItems = async (maintainScroll = false) => {
     try {
       setIsLoading(true);
       const [remindersRes, notesRes] = await Promise.all([
@@ -67,6 +67,13 @@ export default function AllItemsScreen() {
 
       setReminders(remindersRes.data);
       setNotes(notesRes.data);
+      
+      // Restore scroll position after data loads
+      if (maintainScroll && scrollViewRef.current) {
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ x: currentScrollX, animated: false });
+        }, 100);
+      }
     } catch (error) {
       console.error('Failed to fetch items:', error);
       Alert.alert('Error', 'Failed to load items');
