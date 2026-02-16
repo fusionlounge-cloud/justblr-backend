@@ -505,6 +505,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  executeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
   emptyCategory: {
     flex: 1,
     justifyContent: 'center',
