@@ -162,13 +162,16 @@ export default function AllItemsScreen() {
       return 'play';
     };
     
+    const getExecuteLabel = () => {
+      if (reminder.reminder_type === 'call') return 'CALL NOW';
+      if (reminder.reminder_type === 'sms') return 'SEND SMS';
+      if (reminder.reminder_type === 'whatsapp') return 'WHATSAPP';
+      return '';
+    };
+    
     return (
       <View key={reminder.id} style={[styles.itemCard, { borderLeftColor: color }]}>
-        <TouchableOpacity 
-          style={styles.itemHeader}
-          onPress={() => canExecute && executeAction(reminder)}
-          disabled={!canExecute}
-        >
+        <View style={styles.itemHeader}>
           <Ionicons name="alarm" size={18} color={color} />
           <View style={styles.itemInfo}>
             <Text style={styles.itemTitle} numberOfLines={2}>
@@ -179,22 +182,31 @@ export default function AllItemsScreen() {
                 <Ionicons name="person" size={11} /> {reminder.contact_name}
               </Text>
             )}
+            {reminder.contact_phone && (
+              <Text style={styles.itemSubtext} numberOfLines={1}>
+                <Ionicons name="call" size={11} /> {reminder.contact_phone}
+              </Text>
+            )}
             {reminder.notes && (
               <Text style={styles.itemNotes} numberOfLines={2}>
                 {reminder.notes}
               </Text>
             )}
           </View>
-        </TouchableOpacity>
+        </View>
+        
+        {/* Big Execute Button for Call/SMS/WhatsApp */}
+        {canExecute && (
+          <TouchableOpacity
+            style={[styles.bigExecuteBtn, { backgroundColor: color }]}
+            onPress={() => executeAction(reminder)}
+          >
+            <Ionicons name={getExecuteIcon()} size={20} color="#fff" />
+            <Text style={styles.bigExecuteBtnText}>{getExecuteLabel()}</Text>
+          </TouchableOpacity>
+        )}
+        
         <View style={styles.itemActions}>
-          {canExecute && (
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.executeBtn, { backgroundColor: color + '30' }]}
-              onPress={() => executeAction(reminder)}
-            >
-              <Ionicons name={getExecuteIcon()} size={16} color={color} />
-            </TouchableOpacity>
-          )}
           {!reminder.is_completed && (
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
