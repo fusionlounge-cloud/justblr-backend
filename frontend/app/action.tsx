@@ -56,27 +56,36 @@ export default function ActionScreen() {
     }
   }, [actionType]);
 
-  // Pre-load contacts silently in background
+  // Pre-load contacts silently in background - OPTIMIZED for speed
   const preloadContacts = async () => {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
       if (status !== 'granted') return;
 
+      // Limit to first 500 contacts for faster loading
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+        pageSize: 500,
+        pageOffset: 0,
       });
 
       const formattedContacts = [];
-      let index = 0;
-      data.forEach((contact) => {
+      const seenPhones = new Set(); // Avoid duplicate phone numbers
+      
+      data.forEach((contact, contactIndex) => {
         if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-          contact.phoneNumbers.forEach((phone) => {
+          contact.phoneNumbers.forEach((phone, phoneIndex) => {
             if (phone.number) {
-              formattedContacts.push({
-                id: `contact-${index++}`,
-                name: contact.name || 'Unknown',
-                phoneNumber: phone.number,
-              });
+              const normalizedPhone = phone.number.replace(/\D/g, '');
+              // Skip duplicates
+              if (!seenPhones.has(normalizedPhone)) {
+                seenPhones.add(normalizedPhone);
+                formattedContacts.push({
+                  id: `${Date.now()}-${contactIndex}-${phoneIndex}`, // Unique ID
+                  name: contact.name || 'Unknown',
+                  phoneNumber: phone.number,
+                });
+              }
             }
           });
         }
