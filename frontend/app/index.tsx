@@ -16,7 +16,45 @@ import { useRouter } from 'expo-router';
 export default function DashboardScreen() {
   const router = useRouter();
 
-  const openSocialApp = async (appName: string) => {
+  // Open Google Keep app
+  const openGoogleKeep = async () => {
+    const keepUrls = {
+      ios: 'comgooglekeep://',
+      android: 'com.google.android.keep',
+      web: 'https://keep.google.com',
+    };
+
+    try {
+      const urlToTry = Platform.OS === 'ios' ? keepUrls.ios : 
+        Platform.OS === 'android' ? `intent://#Intent;package=${keepUrls.android};end` : keepUrls.web;
+      
+      const canOpen = await Linking.canOpenURL(urlToTry);
+      if (canOpen) {
+        await Linking.openURL(urlToTry);
+      } else {
+        // Fallback to web if app not installed
+        await Linking.openURL(keepUrls.web);
+      }
+    } catch (error) {
+      // If all fails, try web URL
+      try {
+        await Linking.openURL(keepUrls.web);
+      } catch (webError) {
+        Alert.alert('Google Keep', 'Could not open Google Keep. Please install the app or visit keep.google.com');
+      }
+    }
+  };
+
+  // Handle action button press
+  const handleActionPress = (type, name) => {
+    if (type === 'keepnotes') {
+      openGoogleKeep();
+    } else {
+      router.push(`/action?type=${type}&name=${name}`);
+    }
+  };
+
+  const openSocialApp = async (appName) => {
     const appUrls: { [key: string]: { ios: string; android: string; web: string } } = {
       instagram: {
         ios: 'instagram://app',
