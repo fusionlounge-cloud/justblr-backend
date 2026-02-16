@@ -338,7 +338,23 @@ export default function ActionScreen() {
 
         {actionType !== 'deskwork' && actionType !== 'keepnotes' && (
           <View style={styles.section}>
-            <Text style={styles.label}>Contact (Optional)</Text>
+            <View style={styles.contactHeader}>
+              <Text style={styles.label}>Contact (Optional)</Text>
+              <TouchableOpacity
+                style={styles.pickContactButton}
+                onPress={loadContacts}
+                disabled={loadingContacts}
+              >
+                {loadingContacts ? (
+                  <ActivityIndicator size="small" color="#667eea" />
+                ) : (
+                  <>
+                    <Ionicons name="person-add" size={18} color="#667eea" />
+                    <Text style={styles.pickContactText}>Pick Contact</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
             <TextInput
               style={styles.input}
               placeholder="Contact name"
