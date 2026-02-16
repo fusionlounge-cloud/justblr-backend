@@ -161,13 +161,15 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 key={index}
                 style={[styles.actionCard, { borderLeftColor: item.color }]}
-                onPress={() => router.push(`/action?type=${item.type}&name=${item.name}`)}
+                onPress={() => handleActionPress(item.type, item.name)}
               >
                 <View style={[styles.iconCircle, { backgroundColor: item.color + '20' }]}>
-                  <Ionicons name={item.icon as any} size={32} color={item.color} />
+                  <Ionicons name={item.icon} size={32} color={item.color} />
                 </View>
                 <Text style={styles.actionText}>{item.name}</Text>
-                <Text style={styles.actionSubtext}>Voice Reminder/Note</Text>
+                <Text style={styles.actionSubtext}>
+                  {item.type === 'keepnotes' ? 'Open Google Keep' : 'Voice Reminder/Note'}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
