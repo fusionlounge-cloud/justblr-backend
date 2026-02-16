@@ -22,6 +22,9 @@ import axios from 'axios';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
+// Separator component for FlatList
+const ContactSeparator = () => <View style={{ height: 1, backgroundColor: '#e9ecef', marginLeft: 72 }} />;
+
 export default function ActionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
