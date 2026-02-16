@@ -155,7 +155,7 @@ export default function ActionScreen() {
     setSearchQuery('');
   };
 
-  const startVoiceInput = async (field: 'title' | 'content') => {
+  const startVoiceInput = async (field) => {
     try {
       setRecordingField(field);
       setIsRecording(true);
