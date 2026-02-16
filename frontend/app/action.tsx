@@ -20,11 +20,11 @@ import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
 
-interface ContactItem {
+type ContactItem = {
   id: string;
   name: string;
   phoneNumber: string;
-}
+};
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
