@@ -76,8 +76,16 @@ class VoiceAssistantTester:
         """Test Reminders CRUD operations"""
         print("\n=== TESTING REMINDERS API ===")
         
-        # Test data for different reminder types
+        # Test data from the specific request - focus on contact integration
         test_reminders = [
+            {
+                "title": "Call John",
+                "contact_name": "John Doe",
+                "contact_phone": "+1234567890", 
+                "reminder_type": "call",
+                "scheduled_time": "2025-06-15T10:00:00Z",
+                "notes": "Discuss project updates"
+            },
             {
                 "title": "Call Sarah about project meeting",
                 "reminder_type": "call",
@@ -85,13 +93,6 @@ class VoiceAssistantTester:
                 "contact_name": "Sarah Johnson",
                 "contact_phone": "+1234567890",
                 "notes": "Discuss Q4 project timeline"
-            },
-            {
-                "title": "Meet with team for standup",
-                "reminder_type": "meet",
-                "scheduled_time": (datetime.utcnow() + timedelta(days=1)).isoformat(),
-                "contact_name": "Development Team",
-                "notes": "Daily standup meeting"
             },
             {
                 "title": "Send SMS to mom",
