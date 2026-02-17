@@ -473,12 +473,15 @@ export default function ActionScreen() {
             <Ionicons name="search" size={20} color="#6c757d" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search contacts..."
+              placeholder="Type name to search..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
             />
-            {searchQuery.length > 0 && (
+            {loadingContacts && (
+              <ActivityIndicator size="small" color="#667eea" />
+            )}
+            {searchQuery.length > 0 && !loadingContacts && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
                 <Ionicons name="close-circle" size={20} color="#6c757d" />
               </TouchableOpacity>
@@ -507,10 +510,19 @@ export default function ActionScreen() {
             )}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="people-outline" size={48} color="#adb5bd" />
+                <Ionicons name={searchQuery.length < 2 ? "search" : "people-outline"} size={48} color="#adb5bd" />
                 <Text style={styles.emptyText}>
-                  {searchQuery ? 'No contacts found' : 'No contacts available'}
+                  {searchQuery.length < 2 
+                    ? 'Type at least 2 characters to search' 
+                    : loadingContacts 
+                      ? 'Searching...' 
+                      : 'No contacts found'}
                 </Text>
+                {searchQuery.length < 2 && (
+                  <Text style={[styles.emptyText, {fontSize: 13, marginTop: 8}]}>
+                    Example: "John" or "Mom"
+                  </Text>
+                )}
               </View>
             }
             ItemSeparatorComponent={ContactSeparator}
