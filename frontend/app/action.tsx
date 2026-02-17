@@ -143,7 +143,7 @@ export default function ActionScreen() {
       return;
     }
     
-    // Otherwise load them now - FAST version
+    // Otherwise load them now
     try {
       setLoadingContacts(true);
       const { status } = await Contacts.requestPermissionsAsync();
@@ -158,17 +158,18 @@ export default function ActionScreen() {
         return;
       }
 
-      // Load ONLY 100 contacts for speed
+      // Load ALL contacts
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        pageSize: 100,
-        pageOffset: 0,
         sort: Contacts.SortTypes.FirstName,
       });
 
-      // Simple fast processing
+      // Store raw data for searching
+      setAllContactsData(data);
+
+      // Format first 50 for initial display
       const formattedContacts = [];
-      for (let i = 0; i < data.length && formattedContacts.length < 100; i++) {
+      for (let i = 0; i < data.length && formattedContacts.length < 50; i++) {
         const contact = data[i];
         if (contact.phoneNumbers?.[0]?.number) {
           formattedContacts.push({
