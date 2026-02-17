@@ -191,20 +191,43 @@ export default function ActionScreen() {
     }
   };
 
-  // Filter contacts based on search
+  // Filter contacts based on search - searches ALL contacts, not just displayed
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredContacts(contacts);
     } else {
       const query = searchQuery.toLowerCase();
-      const filtered = contacts.filter(
-        (contact) =>
-          contact.name.toLowerCase().includes(query) ||
-          contact.phoneNumber.includes(query)
-      );
-      setFilteredContacts(filtered);
+      
+      // Search in ALL contacts (raw data), not just displayed ones
+      if (allContactsData) {
+        const searchResults = [];
+        for (let i = 0; i < allContactsData.length && searchResults.length < 50; i++) {
+          const contact = allContactsData[i];
+          const name = (contact.name || '').toLowerCase();
+          const phone = contact.phoneNumbers?.[0]?.number || '';
+          
+          if (name.includes(query) || phone.includes(query)) {
+            if (contact.phoneNumbers?.[0]?.number) {
+              searchResults.push({
+                id: `s${i}`,
+                name: contact.name || 'Unknown',
+                phoneNumber: contact.phoneNumbers[0].number,
+              });
+            }
+          }
+        }
+        setFilteredContacts(searchResults);
+      } else {
+        // Fallback to filtering displayed contacts
+        const filtered = contacts.filter(
+          (contact) =>
+            contact.name.toLowerCase().includes(query) ||
+            contact.phoneNumber.includes(query)
+        );
+        setFilteredContacts(filtered);
+      }
     }
-  }, [searchQuery, contacts]);
+  }, [searchQuery, contacts, allContactsData]);
 
   // Select a contact
   const selectContact = (contact) => {
