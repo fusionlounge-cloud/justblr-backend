@@ -148,28 +148,6 @@ export default function ActionScreen() {
     }
   };
 
-  // Open contact picker - INSTANT (no loading)
-  const loadContacts = () => {
-    if (!contactsPermission) {
-      Alert.alert(
-        'Permission Required',
-        'Please grant contact permissions to select contacts.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-    setShowContactPicker(true);
-  };
-
-  // Select a contact
-  const selectContact = (contact) => {
-    setContactName(contact.name);
-    setContactPhone(contact.phoneNumber);
-    setShowContactPicker(false);
-    setSearchQuery('');
-    setFilteredContacts([]);
-  };
-
   const startVoiceInput = async (field) => {
     try {
       setRecordingField(field);
