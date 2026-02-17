@@ -48,7 +48,7 @@ export default function ActionScreen() {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [contactsLoaded, setContactsLoaded] = useState(false);
 
-  // Pre-load contacts in background when screen opens (for Call, SMS, WhatsApp, Meet)
+  // Pre-load contacts in background when screen opens
   useEffect(() => {
     const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
     if (needsContacts && !contactsLoaded) {
@@ -56,42 +56,33 @@ export default function ActionScreen() {
     }
   }, [actionType]);
 
-  // Pre-load contacts silently in background - OPTIMIZED for speed
+  // ULTRA-FAST contact loading - only first 100 contacts, minimal processing
   const preloadContacts = async () => {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
       if (status !== 'granted') return;
 
-      // Limit to first 500 contacts for faster loading
+      // Load ONLY 100 contacts for instant speed
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        pageSize: 500,
+        pageSize: 100,
         pageOffset: 0,
+        sort: Contacts.SortTypes.FirstName, // Let system sort
       });
 
+      // Simple fast processing - no deduplication, no sorting
       const formattedContacts = [];
-      const seenPhones = new Set(); // Avoid duplicate phone numbers
-      
-      data.forEach((contact, contactIndex) => {
-        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-          contact.phoneNumbers.forEach((phone, phoneIndex) => {
-            if (phone.number) {
-              const normalizedPhone = phone.number.replace(/\D/g, '');
-              // Skip duplicates
-              if (!seenPhones.has(normalizedPhone)) {
-                seenPhones.add(normalizedPhone);
-                formattedContacts.push({
-                  id: `${Date.now()}-${contactIndex}-${phoneIndex}`, // Unique ID
-                  name: contact.name || 'Unknown',
-                  phoneNumber: phone.number,
-                });
-              }
-            }
+      for (let i = 0; i < data.length && formattedContacts.length < 100; i++) {
+        const contact = data[i];
+        if (contact.phoneNumbers?.[0]?.number) {
+          formattedContacts.push({
+            id: `c${i}`,
+            name: contact.name || 'Unknown',
+            phoneNumber: contact.phoneNumbers[0].number,
           });
         }
-      });
+      }
 
-      formattedContacts.sort((a, b) => a.name.localeCompare(b.name));
       setContacts(formattedContacts);
       setFilteredContacts(formattedContacts);
       setContactsLoaded(true);
