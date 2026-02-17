@@ -112,8 +112,10 @@ export default function AllItemsScreen() {
 
   // Execute action directly (Call, SMS, WhatsApp)
   const executeAction = async (reminder) => {
-    const phone = reminder.contact_phone?.replace(/\D/g, '') || '';
-    const message = `${reminder.title}${reminder.notes ? '\n\n' + reminder.notes : ''}`;
+    // Keep + sign in phone number, only remove spaces and dashes
+    const phone = reminder.contact_phone?.replace(/[^\d+]/g, '') || '';
+    // Only send notes as message content, NOT the title
+    const message = reminder.notes || '';
     
     console.log('Executing action:', reminder.reminder_type, 'Phone:', phone);
     
@@ -124,7 +126,6 @@ export default function AllItemsScreen() {
           console.log('Opening URL:', url);
           await Linking.openURL(url);
         } else {
-          // Open phone dialer without number
           Alert.alert(
             'No Phone Number',
             'This reminder has no phone number. Would you like to open the phone dialer?',
@@ -136,23 +137,22 @@ export default function AllItemsScreen() {
         }
       } else if (reminder.reminder_type === 'sms') {
         const url = phone 
-          ? `sms:${phone}?body=${encodeURIComponent(message)}`
-          : `sms:?body=${encodeURIComponent(message)}`;
+          ? `sms:${phone}${message ? `?body=${encodeURIComponent(message)}` : ''}`
+          : `sms:${message ? `?body=${encodeURIComponent(message)}` : ''}`;
         console.log('Opening SMS URL:', url);
         await Linking.openURL(url);
       } else if (reminder.reminder_type === 'whatsapp') {
         const url = phone 
-          ? `whatsapp-business://send?phone=${phone}&text=${encodeURIComponent(message)}`
-          : `whatsapp-business://send?text=${encodeURIComponent(message)}`;
+          ? `whatsapp-business://send?phone=${phone}${message ? `&text=${encodeURIComponent(message)}` : ''}`
+          : `whatsapp-business://send${message ? `?text=${encodeURIComponent(message)}` : ''}`;
         console.log('Opening WhatsApp URL:', url);
         const canOpen = await Linking.canOpenURL(url);
         if (canOpen) {
           await Linking.openURL(url);
         } else {
-          // Fallback to regular whatsapp
           const fallbackUrl = phone 
-            ? `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`
-            : `whatsapp://send?text=${encodeURIComponent(message)}`;
+            ? `whatsapp://send?phone=${phone}${message ? `&text=${encodeURIComponent(message)}` : ''}`
+            : `whatsapp://send${message ? `?text=${encodeURIComponent(message)}` : ''}`;
           await Linking.openURL(fallbackUrl);
         }
       }
