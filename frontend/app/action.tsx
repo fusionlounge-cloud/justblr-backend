@@ -502,117 +502,71 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FF6B6B',
   },
-  // Contact picker styles
-  contactHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  pickContactButton: {
+  // Contact autocomplete styles
+  contactInputWrapper: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#667eea15',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
   },
-  pickContactText: {
-    color: '#667eea',
-    fontWeight: '600',
-    fontSize: 14,
+  contactLoader: {
+    position: 'absolute',
+    right: 16,
   },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
+  suggestionsContainer: {
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  modalCloseButton: {
-    padding: 4,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    margin: 16,
-    paddingHorizontal: 16,
     borderRadius: 12,
+    marginTop: 8,
     borderWidth: 1,
     borderColor: '#e9ecef',
+    maxHeight: 250,
+    overflow: 'hidden',
   },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#212529',
-  },
-  contactItem: {
+  suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  contactAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  suggestionAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#667eea',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  contactAvatarText: {
+  suggestionAvatarText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
   },
-  contactInfo: {
+  suggestionInfo: {
     flex: 1,
   },
-  contactName: {
-    fontSize: 16,
+  suggestionName: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#212529',
-    marginBottom: 2,
   },
-  contactPhone: {
-    fontSize: 14,
+  suggestionPhone: {
+    fontSize: 13,
     color: '#6c757d',
+    marginTop: 2,
   },
-  separator: {
-    height: 1,
-    backgroundColor: '#e9ecef',
-    marginLeft: 72,
-  },
-  emptyContainer: {
+  selectedContact: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#43e97b15',
+    borderRadius: 8,
+    gap: 8,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#6c757d',
-    marginTop: 12,
-  },
-  emptyList: {
-    flex: 1,
+  selectedContactText: {
+    color: '#212529',
+    fontSize: 14,
   },
 });
