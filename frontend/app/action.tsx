@@ -293,41 +293,50 @@ export default function ActionScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#212529" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Ionicons name={getIcon()} size={24} color={getColor()} />
-          <Text style={styles.headerTitle}>{actionName}</Text>
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#212529" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Ionicons name={getIcon()} size={24} color={getColor()} />
+            <Text style={styles.headerTitle}>{actionName}</Text>
+          </View>
+          <TouchableOpacity onPress={saveReminder} style={[styles.saveButton, { backgroundColor: getColor() }]}>
+            <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={saveReminder} style={[styles.saveButton, { backgroundColor: getColor() }]}>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
-      </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={styles.label}>What to remind? (Optional)</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder={`E.g., ${actionName} with John`}
-              value={title}
-              onChangeText={setTitle}
-              multiline
-            />
-            <TouchableOpacity
-              style={[
-                styles.voiceButton,
-                isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
-              ]}
-              onPress={
-                isRecording && recordingField === 'title'
-                  ? stopVoiceInput
-                  : () => startVoiceInput('title')
-              }
-              disabled={isProcessing || (isRecording && recordingField !== 'title')}
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.section}>
+            <Text style={styles.label}>What to remind? (Optional)</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                placeholder={`E.g., ${actionName} with John`}
+                value={title}
+                onChangeText={setTitle}
+                multiline
+              />
+              <TouchableOpacity
+                style={[
+                  styles.voiceButton,
+                  isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
+                ]}
+                onPress={
+                  isRecording && recordingField === 'title'
+                    ? stopVoiceInput
+                    : () => startVoiceInput('title')
+                }
+                disabled={isProcessing || (isRecording && recordingField !== 'title')}
             >
               {isProcessing && recordingField === 'title' ? (
                 <ActivityIndicator size="small" color="#fff" />
