@@ -232,51 +232,10 @@ export default function ActionScreen() {
         notes: content || undefined,
       });
 
-      // For WhatsApp/SMS/Call, offer to open app with message
-      if (actionType === 'whatsapp' || actionType === 'sms' || actionType === 'call') {
-        const message = `${reminderTitle}${content ? '\n\n' + content : ''}`;
-        const phone = contactPhone?.replace(/\D/g, '') || '';
-        
-        let openButtonText = `Open ${actionName}`;
-        if (actionType === 'call') openButtonText = 'Call Now';
-        if (actionType === 'sms') openButtonText = 'Send SMS';
-        if (actionType === 'whatsapp') openButtonText = 'Open WhatsApp';
-        
-        Alert.alert(
-          'Success!',
-          `${actionName} reminder created!${phone ? ` Open ${actionName} now?` : ''}`,
-          [
-            { text: 'Later', onPress: () => router.back() },
-            {
-              text: openButtonText,
-              onPress: async () => {
-                if (actionType === 'call') {
-                  if (phone) {
-                    await Linking.openURL(`tel:${phone}`);
-                  } else {
-                    await Linking.openURL('tel:');
-                  }
-                } else if (actionType === 'whatsapp') {
-                  const url = phone 
-                    ? `whatsapp-business://send?phone=${phone}&text=${encodeURIComponent(message)}`
-                    : `whatsapp-business://send?text=${encodeURIComponent(message)}`;
-                  await Linking.openURL(url);
-                } else {
-                  const url = phone
-                    ? `sms:${phone}?body=${encodeURIComponent(message)}`
-                    : `sms:?body=${encodeURIComponent(message)}`;
-                  await Linking.openURL(url);
-                }
-                router.back();
-              },
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Success', `${actionName} reminder created!`, [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
-      }
+      // Just save and go back - no prompts
+      Alert.alert('Saved!', `${actionName} reminder created.`, [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch (error) {
       console.error('Failed to create reminder:', error);
       Alert.alert('Error', 'Failed to create reminder');
