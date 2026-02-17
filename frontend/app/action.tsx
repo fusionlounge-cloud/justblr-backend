@@ -385,7 +385,9 @@ export default function ActionScreen() {
           <View style={styles.section}>
             <View style={styles.contactLabelRow}>
               <Text style={styles.label}>Contact (Optional)</Text>
-              {loadingContacts ? (
+              {Platform.OS === 'web' ? (
+                <Text style={styles.contactStatus}>Enter manually on web</Text>
+              ) : loadingContacts ? (
                 <Text style={styles.contactStatus}>Loading contacts...</Text>
               ) : contactsCount > 0 ? (
                 <Text style={styles.contactStatus}>{contactsCount} contacts</Text>
@@ -394,7 +396,7 @@ export default function ActionScreen() {
             <View style={styles.contactInputWrapper}>
               <TextInput
                 style={styles.input}
-                placeholder={loadingContacts ? "Loading contacts..." : "Type name to search..."}
+                placeholder={Platform.OS === 'web' ? "Enter name" : loadingContacts ? "Loading contacts..." : "Type name to search..."}
                 value={contactName}
                 onChangeText={(text) => {
                   setContactName(text);
@@ -403,11 +405,23 @@ export default function ActionScreen() {
                   }
                 }}
                 onFocus={() => contactSuggestions.length > 0 && setShowSuggestions(true)}
-                editable={!loadingContacts}
+                editable={!loadingContacts || Platform.OS === 'web'}
               />
-              {loadingContacts && (
+              {loadingContacts && Platform.OS !== 'web' && (
                 <ActivityIndicator size="small" color="#667eea" style={styles.contactLoader} />
               )}
+            </View>
+            
+            {/* Phone number input for web - manual entry */}
+            {Platform.OS === 'web' && (
+              <TextInput
+                style={[styles.input, { marginTop: 10 }]}
+                placeholder="Enter phone number (with +country code)"
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType="phone-pad"
+              />
+            )}
             </View>
             
             {/* Contact Suggestions Dropdown - Scrollable */}
