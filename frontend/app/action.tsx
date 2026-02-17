@@ -422,7 +422,6 @@ export default function ActionScreen() {
                 keyboardType="phone-pad"
               />
             )}
-            </View>
             
             {/* Contact Suggestions Dropdown - Scrollable */}
             {showSuggestions && contactSuggestions.length > 0 && (
