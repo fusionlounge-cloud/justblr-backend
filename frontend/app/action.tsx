@@ -484,6 +484,16 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  contactLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  contactStatus: {
+    fontSize: 12,
+    color: '#6c757d',
+  },
   label: {
     fontSize: 16,
     fontWeight: '700',
