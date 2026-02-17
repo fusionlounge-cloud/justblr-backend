@@ -54,6 +54,13 @@ export default function ActionScreen() {
         return;
       }
       
+      // Contacts don't work on web
+      if (Platform.OS === 'web') {
+        setLoadingContacts(false);
+        setContactsCount(0);
+        return;
+      }
+      
       // Check if contacts are already cached in memory
       if (isCacheValid()) {
         const cached = getContactsCache();
