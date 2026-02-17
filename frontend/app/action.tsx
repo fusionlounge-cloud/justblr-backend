@@ -41,7 +41,7 @@ export default function ActionScreen() {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [contactsPermission, setContactsPermission] = useState(false);
 
-  // Just request permission on mount - DON'T load contacts
+  // Request permission on mount
   useEffect(() => {
     const checkPermission = async () => {
       const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
@@ -53,39 +53,35 @@ export default function ActionScreen() {
     checkPermission();
   }, [actionType]);
 
-  // Search contacts ON DEMAND - only when user types (fast!)
+  // Search contacts when user types in contact name field
   const searchContacts = async (query) => {
-    if (!contactsPermission) {
-      Alert.alert('Permission Required', 'Please enable contacts permission in settings');
-      return;
-    }
-
-    if (query.length < 2) {
-      setFilteredContacts([]);
+    if (!contactsPermission || query.length < 2) {
+      setContactSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
     setLoadingContacts(true);
     try {
-      // Use native search - MUCH faster than loading all contacts
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        name: query, // Native search filter - super fast!
-        pageSize: 20,
+        name: query,
+        pageSize: 10,
       });
 
       const results = [];
-      for (let i = 0; i < data.length && results.length < 20; i++) {
+      for (let i = 0; i < data.length && results.length < 10; i++) {
         const contact = data[i];
         if (contact.phoneNumbers?.[0]?.number) {
           results.push({
-            id: `q${i}-${Date.now()}`,
+            id: `c${i}`,
             name: contact.name || 'Unknown',
             phoneNumber: contact.phoneNumbers[0].number,
           });
         }
       }
-      setFilteredContacts(results);
+      setContactSuggestions(results);
+      setShowSuggestions(results.length > 0);
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -93,17 +89,26 @@ export default function ActionScreen() {
     }
   };
 
-  // Debounced search - triggers 300ms after user stops typing
+  // Debounced search when contactName changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchQuery.length >= 2) {
-        searchContacts(searchQuery);
+      if (contactName.length >= 2 && !contactPhone) {
+        searchContacts(contactName);
       } else {
-        setFilteredContacts([]);
+        setContactSuggestions([]);
+        setShowSuggestions(false);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [contactName]);
+
+  // Select a contact from suggestions
+  const selectContact = (contact) => {
+    setContactName(contact.name);
+    setContactPhone(contact.phoneNumber);
+    setShowSuggestions(false);
+    setContactSuggestions([]);
+  };
 
   const getColor = () => {
     switch (actionType) {
