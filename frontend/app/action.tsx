@@ -150,100 +150,18 @@ export default function ActionScreen() {
     }
   };
 
-  // Load device contacts - INSTANT if pre-loaded
-  const loadContacts = async () => {
-    // If contacts already loaded, just show the picker INSTANTLY
-    if (contactsLoaded && contacts.length > 0) {
-      setShowContactPicker(true);
+  // Open contact picker - INSTANT (no loading)
+  const loadContacts = () => {
+    if (!contactsPermission) {
+      Alert.alert(
+        'Permission Required',
+        'Please grant contact permissions to select contacts.',
+        [{ text: 'OK' }]
+      );
       return;
     }
-    
-    // Otherwise load them now
-    try {
-      setLoadingContacts(true);
-      const { status } = await Contacts.requestPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Please grant contact permissions to select contacts for your reminders.',
-          [{ text: 'OK' }]
-        );
-        setLoadingContacts(false);
-        return;
-      }
-
-      // Load ALL contacts
-      const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        sort: Contacts.SortTypes.FirstName,
-      });
-
-      // Store raw data for searching
-      setAllContactsData(data);
-
-      // Format first 50 for initial display
-      const formattedContacts = [];
-      for (let i = 0; i < data.length && formattedContacts.length < 50; i++) {
-        const contact = data[i];
-        if (contact.phoneNumbers?.[0]?.number) {
-          formattedContacts.push({
-            id: `l${i}`,
-            name: contact.name || 'Unknown',
-            phoneNumber: contact.phoneNumbers[0].number,
-          });
-        }
-      }
-      
-      setContacts(formattedContacts);
-      setFilteredContacts(formattedContacts);
-      setContactsLoaded(true);
-      setShowContactPicker(true);
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-      Alert.alert('Error', 'Failed to load contacts');
-    } finally {
-      setLoadingContacts(false);
-    }
+    setShowContactPicker(true);
   };
-
-  // Filter contacts based on search - searches ALL contacts, not just displayed
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredContacts(contacts);
-    } else {
-      const query = searchQuery.toLowerCase();
-      
-      // Search in ALL contacts (raw data), not just displayed ones
-      if (allContactsData) {
-        const searchResults = [];
-        for (let i = 0; i < allContactsData.length && searchResults.length < 50; i++) {
-          const contact = allContactsData[i];
-          const name = (contact.name || '').toLowerCase();
-          const phone = contact.phoneNumbers?.[0]?.number || '';
-          
-          if (name.includes(query) || phone.includes(query)) {
-            if (contact.phoneNumbers?.[0]?.number) {
-              searchResults.push({
-                id: `s${i}`,
-                name: contact.name || 'Unknown',
-                phoneNumber: contact.phoneNumbers[0].number,
-              });
-            }
-          }
-        }
-        setFilteredContacts(searchResults);
-      } else {
-        // Fallback to filtering displayed contacts
-        const filtered = contacts.filter(
-          (contact) =>
-            contact.name.toLowerCase().includes(query) ||
-            contact.phoneNumber.includes(query)
-        );
-        setFilteredContacts(filtered);
-      }
-    }
-  }, [searchQuery, contacts, allContactsData]);
 
   // Select a contact
   const selectContact = (contact) => {
@@ -251,6 +169,7 @@ export default function ActionScreen() {
     setContactPhone(contact.phoneNumber);
     setShowContactPicker(false);
     setSearchQuery('');
+    setFilteredContacts([]);
   };
 
   const startVoiceInput = async (field) => {
