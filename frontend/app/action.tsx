@@ -412,7 +412,6 @@ export default function ActionScreen() {
               )}
             </View>
             
-            {/* Phone number input for web - manual entry */}
             {Platform.OS === 'web' && (
               <TextInput
                 style={[styles.input, { marginTop: 10 }]}
@@ -423,7 +422,6 @@ export default function ActionScreen() {
               />
             )}
             
-            {/* Contact Suggestions Dropdown - Scrollable */}
             {showSuggestions && contactSuggestions.length > 0 && (
               <View style={styles.suggestionsContainer}>
                 <ScrollView 
