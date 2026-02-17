@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-const CATEGORIES = [
+// Quick Actions - all 6
+const QUICK_ACTIONS = [
   { type: 'meet', name: 'Meet', icon: 'people', color: '#FF6B6B' },
   { type: 'call', name: 'Call', icon: 'call', color: '#4ECDC4' },
   { type: 'sms', name: 'SMS', icon: 'chatbubble', color: '#95E1D3' },
@@ -26,15 +27,29 @@ const CATEGORIES = [
   { type: 'keepnotes', name: 'Notes', icon: 'create', color: '#FBBF24' },
 ];
 
+// Reminder categories - 5 (no Notes)
+const REMINDER_CATEGORIES = [
+  { type: 'meet', name: 'Meet', icon: 'people', color: '#FF6B6B' },
+  { type: 'call', name: 'Call', icon: 'call', color: '#4ECDC4' },
+  { type: 'sms', name: 'SMS', icon: 'chatbubble', color: '#95E1D3' },
+  { type: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366' },
+  { type: 'deskwork', name: 'Deskwork', icon: 'laptop', color: '#A78BFA' },
+];
+
 export default function DashboardScreen() {
   const router = useRouter();
   const [reminders, setReminders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
 
-  useEffect(() => {
-    fetchReminders();
-  }, []);
+  // Refresh reminders when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchReminders();
+    }, [])
+  );
 
   const fetchReminders = async () => {
     try {
@@ -54,20 +69,19 @@ export default function DashboardScreen() {
       web: 'https://keep.google.com',
     };
     try {
-      const urlToTry = Platform.OS === 'ios' ? keepUrls.ios : 
-        Platform.OS === 'android' ? `intent://#Intent;package=${keepUrls.android};end` : keepUrls.web;
-      const canOpen = await Linking.canOpenURL(urlToTry);
-      if (canOpen) {
-        await Linking.openURL(urlToTry);
-      } else {
+      if (Platform.OS === 'web') {
         await Linking.openURL(keepUrls.web);
+      } else {
+        const urlToTry = Platform.OS === 'ios' ? keepUrls.ios : `intent://#Intent;package=${keepUrls.android};end`;
+        const canOpen = await Linking.canOpenURL(urlToTry);
+        if (canOpen) {
+          await Linking.openURL(urlToTry);
+        } else {
+          await Linking.openURL(keepUrls.web);
+        }
       }
     } catch (error) {
-      try {
-        await Linking.openURL(keepUrls.web);
-      } catch (webError) {
-        Alert.alert('Google Keep', 'Could not open Google Keep');
-      }
+      Alert.alert('Error', 'Could not open Google Keep');
     }
   };
 
@@ -94,6 +108,49 @@ export default function DashboardScreen() {
     } catch (error) {
       Alert.alert('Error', 'Failed to delete');
     }
+  };
+
+  const bulkDelete = async () => {
+    if (selectedItems.length === 0) return;
+    
+    Alert.alert(
+      'Delete Selected',
+      `Delete ${selectedItems.length} reminder(s)?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await Promise.all(selectedItems.map(id => 
+                axios.delete(`${BACKEND_URL}/api/reminders/${id}`)
+              ));
+              setSelectedItems([]);
+              setBulkSelectMode(false);
+              fetchReminders();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete some items');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const toggleItemSelection = (id) => {
+    if (selectedItems.includes(id)) {
+      setSelectedItems(selectedItems.filter(i => i !== id));
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
+  };
+
+  const selectAllInCategory = () => {
+    if (!selectedCategory) return;
+    const categoryReminders = getCategoryReminders(selectedCategory.type);
+    const allIds = categoryReminders.map(r => r.id);
+    setSelectedItems(allIds);
   };
 
   const executeAction = async (reminder) => {
@@ -133,56 +190,31 @@ export default function DashboardScreen() {
 
   const openSocialApp = async (appName) => {
     const appUrls = {
-      instagram: {
-        ios: 'instagram://',
-        android: 'com.instagram.android',
-        web: 'https://instagram.com',
-      },
-      facebook: {
-        ios: 'fb://',
-        android: 'com.facebook.katana',
-        web: 'https://facebook.com',
-      },
-      linkedin: {
-        ios: 'linkedin://',
-        android: 'com.linkedin.android',
-        web: 'https://linkedin.com',
-      },
-      whatsapp: {
-        ios: 'whatsapp-business://',
-        android: 'com.whatsapp.w4b',
-        web: 'https://business.whatsapp.com',
-      },
-      wechat: {
-        ios: 'weixin://',
-        android: 'com.tencent.mm',
-        web: 'https://wechat.com',
-      },
-      alibaba: {
-        ios: 'alibabaapp://',
-        android: 'com.alibaba.intl.android.apps.poseidon',
-        web: 'https://alibaba.com',
-      },
+      instagram: { ios: 'instagram://', android: 'com.instagram.android', web: 'https://instagram.com' },
+      facebook: { ios: 'fb://', android: 'com.facebook.katana', web: 'https://facebook.com' },
+      linkedin: { ios: 'linkedin://', android: 'com.linkedin.android', web: 'https://linkedin.com' },
+      whatsapp: { ios: 'whatsapp-business://', android: 'com.whatsapp.w4b', web: 'https://web.whatsapp.com' },
+      wechat: { ios: 'weixin://', android: 'com.tencent.mm', web: 'https://wechat.com' },
+      alibaba: { ios: 'alibabaapp://', android: 'com.alibaba.intl.android.apps.poseidon', web: 'https://alibaba.com' },
     };
 
     const urls = appUrls[appName];
     if (!urls) return;
 
     try {
-      const urlToTry = Platform.OS === 'ios' ? urls.ios : 
-        Platform.OS === 'android' ? `intent://#Intent;package=${urls.android};end` : urls.web;
-      const canOpen = await Linking.canOpenURL(urlToTry);
-      if (canOpen) {
-        await Linking.openURL(urlToTry);
-      } else {
+      if (Platform.OS === 'web') {
         await Linking.openURL(urls.web);
+      } else {
+        const urlToTry = Platform.OS === 'ios' ? urls.ios : `intent://#Intent;package=${urls.android};end`;
+        const canOpen = await Linking.canOpenURL(urlToTry);
+        if (canOpen) {
+          await Linking.openURL(urlToTry);
+        } else {
+          await Linking.openURL(urls.web);
+        }
       }
     } catch (error) {
-      try {
-        await Linking.openURL(urls.web);
-      } catch (webError) {
-        Alert.alert('Error', `Could not open ${appName}`);
-      }
+      Alert.alert('Error', `Could not open ${appName}`);
     }
   };
 
@@ -202,7 +234,7 @@ export default function DashboardScreen() {
     return null;
   };
 
-  // Detail view for selected category
+  // Detail view for selected category with bulk delete
   if (selectedCategory) {
     const categoryReminders = getCategoryReminders(selectedCategory.type);
     const actionLabel = getActionLabel(selectedCategory.type);
@@ -210,12 +242,17 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.detailHeader}>
-          <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.backButton}>
+          <TouchableOpacity onPress={() => {
+            setSelectedCategory(null);
+            setBulkSelectMode(false);
+            setSelectedItems([]);
+          }} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#212529" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Ionicons name={selectedCategory.icon} size={22} color={selectedCategory.color} />
             <Text style={styles.headerTitle}>{selectedCategory.name}</Text>
+            <Text style={styles.headerCount}>({categoryReminders.length})</Text>
           </View>
           <TouchableOpacity 
             onPress={() => handleActionPress(selectedCategory.type, selectedCategory.name)}
@@ -225,6 +262,38 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Bulk Actions Bar */}
+        {categoryReminders.length > 0 && (
+          <View style={styles.bulkBar}>
+            <TouchableOpacity 
+              style={styles.bulkToggle}
+              onPress={() => {
+                setBulkSelectMode(!bulkSelectMode);
+                setSelectedItems([]);
+              }}
+            >
+              <Ionicons name={bulkSelectMode ? "checkbox" : "checkbox-outline"} size={20} color="#667eea" />
+              <Text style={styles.bulkToggleText}>{bulkSelectMode ? 'Cancel' : 'Select'}</Text>
+            </TouchableOpacity>
+            
+            {bulkSelectMode && (
+              <>
+                <TouchableOpacity style={styles.bulkAction} onPress={selectAllInCategory}>
+                  <Text style={styles.bulkActionText}>Select All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.bulkAction, styles.bulkDelete, selectedItems.length === 0 && styles.disabled]}
+                  onPress={bulkDelete}
+                  disabled={selectedItems.length === 0}
+                >
+                  <Ionicons name="trash" size={16} color="#fff" />
+                  <Text style={styles.bulkDeleteText}>Delete ({selectedItems.length})</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
+
         <ScrollView style={styles.detailContent}>
           {categoryReminders.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -233,26 +302,52 @@ export default function DashboardScreen() {
             </View>
           ) : (
             categoryReminders.map((reminder) => (
-              <View key={reminder.id} style={[styles.reminderCard, { borderLeftColor: selectedCategory.color }]}>
-                <Text style={styles.reminderTitle}>{reminder.title}</Text>
-                {reminder.contact_name && (
-                  <Text style={styles.reminderDetail}>{reminder.contact_name} • {reminder.contact_phone}</Text>
+              <TouchableOpacity 
+                key={reminder.id} 
+                style={[
+                  styles.reminderCard, 
+                  { borderLeftColor: selectedCategory.color },
+                  bulkSelectMode && selectedItems.includes(reminder.id) && styles.selectedCard
+                ]}
+                onPress={() => bulkSelectMode && toggleItemSelection(reminder.id)}
+                activeOpacity={bulkSelectMode ? 0.7 : 1}
+              >
+                {bulkSelectMode && (
+                  <View style={styles.checkbox}>
+                    <Ionicons 
+                      name={selectedItems.includes(reminder.id) ? "checkbox" : "square-outline"} 
+                      size={22} 
+                      color={selectedItems.includes(reminder.id) ? "#667eea" : "#adb5bd"} 
+                    />
+                  </View>
                 )}
-                {reminder.notes && <Text style={styles.reminderNotes}>{reminder.notes}</Text>}
-                <View style={styles.reminderActions}>
-                  {actionLabel && (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: selectedCategory.color }]}
-                      onPress={() => executeAction(reminder)}
-                    >
-                      <Text style={styles.actionBtnText}>{actionLabel}</Text>
-                    </TouchableOpacity>
+                <View style={styles.reminderContent}>
+                  <Text style={styles.reminderTitle}>{reminder.title}</Text>
+                  {reminder.contact_name && (
+                    <Text style={styles.reminderDetail}>{reminder.contact_name}</Text>
                   )}
-                  <TouchableOpacity onPress={() => deleteReminder(reminder.id)}>
-                    <Ionicons name="trash" size={18} color="#FF6B6B" />
-                  </TouchableOpacity>
+                  {reminder.contact_phone && (
+                    <Text style={styles.reminderPhone}>{reminder.contact_phone}</Text>
+                  )}
+                  {reminder.notes && <Text style={styles.reminderNotes}>{reminder.notes}</Text>}
+                  
+                  {!bulkSelectMode && (
+                    <View style={styles.reminderActions}>
+                      {actionLabel && (
+                        <TouchableOpacity
+                          style={[styles.actionBtn, { backgroundColor: selectedCategory.color }]}
+                          onPress={() => executeAction(reminder)}
+                        >
+                          <Text style={styles.actionBtnText}>{actionLabel}</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity onPress={() => deleteReminder(reminder.id)}>
+                        <Ionicons name="trash" size={18} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </ScrollView>
@@ -275,11 +370,11 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Quick Actions - Smaller Icons */}
+        {/* Quick Actions - 6 icons */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            {CATEGORIES.map((item) => (
+            {QUICK_ACTIONS.map((item) => (
               <TouchableOpacity
                 key={item.type}
                 style={styles.quickActionItem}
@@ -294,24 +389,24 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* View All Reminders - Small Scrollable Icons */}
+        {/* View All Reminders - 5 icons grid (no Notes) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>View All Reminders</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reminderScroll}>
-            {CATEGORIES.map((cat) => (
+          <View style={styles.reminderGrid}>
+            {REMINDER_CATEGORIES.map((cat) => (
               <TouchableOpacity
                 key={cat.type}
-                style={[styles.reminderCategory, { borderColor: cat.color }]}
+                style={[styles.reminderGridItem, { borderColor: cat.color }]}
                 onPress={() => setSelectedCategory(cat)}
               >
-                <View style={[styles.reminderCategoryIcon, { backgroundColor: cat.color }]}>
+                <View style={[styles.reminderGridIcon, { backgroundColor: cat.color }]}>
                   <Ionicons name={cat.icon} size={18} color="#fff" />
                 </View>
-                <Text style={styles.reminderCategoryName}>{cat.name}</Text>
-                <Text style={styles.reminderCategoryCount}>{getCategoryCount(cat.type)}</Text>
+                <Text style={styles.reminderGridName}>{cat.name}</Text>
+                <Text style={styles.reminderGridCount}>{getCategoryCount(cat.type)}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         {/* Social Media Hub - Scrollable */}
@@ -337,7 +432,7 @@ export default function DashboardScreen() {
         <View style={styles.desktopInfo}>
           <Ionicons name="desktop" size={20} color="#6c757d" />
           <Text style={styles.desktopText}>
-            Also available on desktop at this URL
+            Desktop: {Platform.OS === 'web' ? window.location.href : 'Open in browser'}
           </Text>
         </View>
 
@@ -385,62 +480,63 @@ const styles = StyleSheet.create({
     color: '#212529',
     marginBottom: 12,
   },
-  // Quick Actions - Smaller
+  // Quick Actions Grid
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
   quickActionItem: {
-    width: '30%',
+    width: '31%',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   quickActionText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#495057',
     fontWeight: '500',
   },
-  // View All Reminders - Horizontal Scroll
-  reminderScroll: {
-    marginLeft: -4,
+  // Reminder Grid - 5 icons
+  reminderGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  reminderCategory: {
+  reminderGridItem: {
+    width: '18%',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 12,
+    paddingVertical: 8,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
-    minWidth: 80,
   },
-  reminderCategoryIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  reminderGridIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  reminderCategoryName: {
-    fontSize: 12,
+  reminderGridName: {
+    fontSize: 9,
     fontWeight: '600',
     color: '#212529',
   },
-  reminderCategoryCount: {
-    fontSize: 11,
+  reminderGridCount: {
+    fontSize: 10,
     color: '#6c757d',
+    fontWeight: '700',
   },
-  // Social Media - Horizontal Scroll
+  // Social Media Scroll
   socialScroll: {
     marginLeft: -4,
   },
@@ -449,15 +545,15 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   socialIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   socialText: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#495057',
     fontWeight: '500',
   },
@@ -466,11 +562,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 8,
   },
   desktopText: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#6c757d',
   },
   // Detail View
@@ -486,12 +582,16 @@ const styles = StyleSheet.create({
   headerCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#212529',
+  },
+  headerCount: {
+    fontSize: 14,
+    color: '#6c757d',
   },
   backButton: {
     padding: 4,
@@ -503,6 +603,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Bulk Actions
+  bulkBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    gap: 12,
+  },
+  bulkToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  bulkToggleText: {
+    fontSize: 13,
+    color: '#667eea',
+    fontWeight: '500',
+  },
+  bulkAction: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+    backgroundColor: '#e9ecef',
+  },
+  bulkActionText: {
+    fontSize: 12,
+    color: '#495057',
+  },
+  bulkDelete: {
+    backgroundColor: '#FF6B6B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  bulkDeleteText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  // Detail Content
   detailContent: {
     flex: 1,
     padding: 16,
@@ -519,24 +664,41 @@ const styles = StyleSheet.create({
   reminderCard: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 14,
+    padding: 12,
     marginBottom: 10,
     borderLeftWidth: 3,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  selectedCard: {
+    backgroundColor: '#667eea10',
+  },
+  checkbox: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  reminderContent: {
+    flex: 1,
   },
   reminderTitle: {
     fontSize: 15,
     fontWeight: '600',
     color: '#212529',
-    marginBottom: 4,
   },
   reminderDetail: {
     fontSize: 13,
-    color: '#6c757d',
+    color: '#495057',
+    marginTop: 2,
+  },
+  reminderPhone: {
+    fontSize: 12,
+    color: '#667eea',
+    marginTop: 2,
   },
   reminderNotes: {
-    fontSize: 13,
-    color: '#495057',
-    marginTop: 6,
+    fontSize: 12,
+    color: '#6c757d',
+    marginTop: 4,
     fontStyle: 'italic',
   },
   reminderActions: {
@@ -544,7 +706,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 10,
-    paddingTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
