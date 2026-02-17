@@ -17,8 +17,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const CONTACTS_CACHE_KEY = 'cached_contacts';
+const CONTACTS_CACHE_TIME_KEY = 'cached_contacts_time';
 
 export default function ActionScreen() {
   const router = useRouter();
