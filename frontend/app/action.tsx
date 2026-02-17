@@ -323,19 +323,27 @@ export default function ActionScreen() {
 
         {actionType !== 'deskwork' && actionType !== 'keepnotes' && (
           <View style={styles.section}>
-            <Text style={styles.label}>Contact (Optional)</Text>
+            <View style={styles.contactLabelRow}>
+              <Text style={styles.label}>Contact (Optional)</Text>
+              {loadingContacts ? (
+                <Text style={styles.contactStatus}>Loading contacts...</Text>
+              ) : contactsCount > 0 ? (
+                <Text style={styles.contactStatus}>{contactsCount} contacts</Text>
+              ) : null}
+            </View>
             <View style={styles.contactInputWrapper}>
               <TextInput
                 style={styles.input}
-                placeholder="Type contact name to search..."
+                placeholder={loadingContacts ? "Loading contacts..." : "Type name to search..."}
                 value={contactName}
                 onChangeText={(text) => {
                   setContactName(text);
                   if (contactPhone && text !== contactName) {
-                    setContactPhone(''); // Clear phone if user changes name
+                    setContactPhone('');
                   }
                 }}
                 onFocus={() => contactSuggestions.length > 0 && setShowSuggestions(true)}
+                editable={!loadingContacts}
               />
               {loadingContacts && (
                 <ActivityIndicator size="small" color="#667eea" style={styles.contactLoader} />
