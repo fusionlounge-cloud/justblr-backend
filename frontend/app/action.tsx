@@ -46,7 +46,7 @@ export default function ActionScreen() {
   const [allContacts, setAllContacts] = useState([]);
   const [contactsCount, setContactsCount] = useState(0);
 
-  // Request permission and load ALL contacts on mount
+  // Request permission and load contacts (with caching)
   useEffect(() => {
     const loadAllContacts = async () => {
       const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
@@ -67,7 +67,22 @@ export default function ActionScreen() {
           return;
         }
         
-        // Load ALL contacts with all name fields
+        // Try to load from cache first
+        const cachedContacts = await AsyncStorage.getItem(CONTACTS_CACHE_KEY);
+        const cachedTime = await AsyncStorage.getItem(CONTACTS_CACHE_TIME_KEY);
+        
+        // Use cache if less than 1 hour old
+        const oneHour = 60 * 60 * 1000;
+        if (cachedContacts && cachedTime && (Date.now() - parseInt(cachedTime)) < oneHour) {
+          const parsed = JSON.parse(cachedContacts);
+          setAllContacts(parsed);
+          setContactsCount(parsed.length);
+          setLoadingContacts(false);
+          console.log('Loaded contacts from cache:', parsed.length);
+          return;
+        }
+        
+        // Load fresh contacts from device
         const { data } = await Contacts.getContactsAsync({
           fields: [
             Contacts.Fields.Name,
@@ -78,15 +93,13 @@ export default function ActionScreen() {
           ],
         });
         
-        // Format contacts with searchable text
+        // Format contacts - KEEP ORIGINAL PHONE NUMBER (including +)
         const formatted = [];
         data.forEach((contact, idx) => {
-          // Build display name
           const displayName = contact.name || 
             [contact.firstName, contact.middleName, contact.lastName].filter(Boolean).join(' ').trim() ||
             'Unknown';
           
-          // Build searchable text (all name parts)
           const searchText = [
             contact.name,
             contact.firstName,
@@ -97,20 +110,27 @@ export default function ActionScreen() {
           if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
             contact.phoneNumbers.forEach((phone, pIdx) => {
               if (phone.number && phone.number.trim()) {
+                // Keep original phone number format (including +)
+                const originalPhone = phone.number.trim();
                 formatted.push({
                   id: `c${idx}p${pIdx}`,
                   name: displayName,
                   searchText: searchText,
-                  phoneNumber: phone.number.trim(),
-                  phoneDigits: phone.number.replace(/\D/g, ''),
+                  phoneNumber: originalPhone, // Keep + sign
+                  phoneDigits: originalPhone.replace(/[^\d+]/g, ''), // Keep + but remove other non-digits
                 });
               }
             });
           }
         });
         
+        // Save to cache
+        await AsyncStorage.setItem(CONTACTS_CACHE_KEY, JSON.stringify(formatted));
+        await AsyncStorage.setItem(CONTACTS_CACHE_TIME_KEY, Date.now().toString());
+        
         setAllContacts(formatted);
         setContactsCount(formatted.length);
+        console.log('Loaded fresh contacts:', formatted.length);
         
       } catch (error) {
         console.error('Error loading contacts:', error);
