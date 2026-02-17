@@ -10,8 +10,6 @@ import {
   Platform,
   ActivityIndicator,
   Linking,
-  Modal,
-  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,9 +19,6 @@ import { Audio } from 'expo-av';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-
-// Separator component for FlatList
-const ContactSeparator = () => <View style={{ height: 1, backgroundColor: '#e9ecef', marginLeft: 72 }} />;
 
 export default function ActionScreen() {
   const router = useRouter();
@@ -40,11 +35,9 @@ export default function ActionScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingField, setRecordingField] = useState('title');
   
-  // Contact picker state
-  const [showContactPicker, setShowContactPicker] = useState(false);
-  const [contacts, setContacts] = useState([]);
-  const [filteredContacts, setFilteredContacts] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  // Contact autocomplete state
+  const [contactSuggestions, setContactSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [contactsPermission, setContactsPermission] = useState(false);
 
