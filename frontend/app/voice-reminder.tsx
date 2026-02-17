@@ -17,12 +17,6 @@ import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
 
-// Platform-specific notification import
-let Notifications: any = null;
-if (Platform.OS !== 'web') {
-  Notifications = require('expo-notifications');
-}
-
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function VoiceReminderScreen() {
