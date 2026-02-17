@@ -367,26 +367,32 @@ export default function ActionScreen() {
               )}
             </View>
             
-            {/* Contact Suggestions Dropdown */}
+            {/* Contact Suggestions Dropdown - Scrollable */}
             {showSuggestions && contactSuggestions.length > 0 && (
               <View style={styles.suggestionsContainer}>
-                {contactSuggestions.map((contact) => (
-                  <TouchableOpacity
-                    key={contact.id}
-                    style={styles.suggestionItem}
-                    onPress={() => selectContact(contact)}
-                  >
-                    <View style={styles.suggestionAvatar}>
-                      <Text style={styles.suggestionAvatarText}>
-                        {contact.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.suggestionInfo}>
-                      <Text style={styles.suggestionName}>{contact.name}</Text>
-                      <Text style={styles.suggestionPhone}>{contact.phoneNumber}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                <ScrollView 
+                  style={styles.suggestionsList}
+                  nestedScrollEnabled={true}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {contactSuggestions.map((contact) => (
+                    <TouchableOpacity
+                      key={contact.id}
+                      style={styles.suggestionItem}
+                      onPress={() => selectContact(contact)}
+                    >
+                      <View style={styles.suggestionAvatar}>
+                        <Text style={styles.suggestionAvatarText}>
+                          {contact.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.suggestionInfo}>
+                        <Text style={styles.suggestionName}>{contact.name}</Text>
+                        <Text style={styles.suggestionPhone}>{contact.phoneNumber}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
             
