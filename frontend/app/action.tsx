@@ -295,36 +295,54 @@ export default function ActionScreen() {
 
         {actionType !== 'deskwork' && actionType !== 'keepnotes' && (
           <View style={styles.section}>
-            <View style={styles.contactHeader}>
-              <Text style={styles.label}>Contact (Optional)</Text>
-              <TouchableOpacity
-                style={styles.pickContactButton}
-                onPress={loadContacts}
-                disabled={loadingContacts}
-              >
-                {loadingContacts ? (
-                  <ActivityIndicator size="small" color="#667eea" />
-                ) : (
-                  <>
-                    <Ionicons name="person-add" size={18} color="#667eea" />
-                    <Text style={styles.pickContactText}>Pick Contact</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+            <Text style={styles.label}>Contact (Optional)</Text>
+            <View style={styles.contactInputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Type contact name to search..."
+                value={contactName}
+                onChangeText={(text) => {
+                  setContactName(text);
+                  if (contactPhone && text !== contactName) {
+                    setContactPhone(''); // Clear phone if user changes name
+                  }
+                }}
+                onFocus={() => contactSuggestions.length > 0 && setShowSuggestions(true)}
+              />
+              {loadingContacts && (
+                <ActivityIndicator size="small" color="#667eea" style={styles.contactLoader} />
+              )}
             </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Contact name"
-              value={contactName}
-              onChangeText={setContactName}
-            />
-            <TextInput
-              style={[styles.input, {marginTop: 12}]}
-              placeholder="Phone number"
-              value={contactPhone}
-              onChangeText={setContactPhone}
-              keyboardType="phone-pad"
-            />
+            
+            {/* Contact Suggestions Dropdown */}
+            {showSuggestions && contactSuggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {contactSuggestions.map((contact) => (
+                  <TouchableOpacity
+                    key={contact.id}
+                    style={styles.suggestionItem}
+                    onPress={() => selectContact(contact)}
+                  >
+                    <View style={styles.suggestionAvatar}>
+                      <Text style={styles.suggestionAvatarText}>
+                        {contact.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.suggestionInfo}>
+                      <Text style={styles.suggestionName}>{contact.name}</Text>
+                      <Text style={styles.suggestionPhone}>{contact.phoneNumber}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            
+            {contactPhone ? (
+              <View style={styles.selectedContact}>
+                <Ionicons name="checkmark-circle" size={18} color="#43e97b" />
+                <Text style={styles.selectedContactText}>{contactPhone}</Text>
+              </View>
+            ) : null}
           </View>
         )}
 
