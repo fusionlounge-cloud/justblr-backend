@@ -46,56 +46,71 @@ export default function ActionScreen() {
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
-  const [contactsLoaded, setContactsLoaded] = useState(false);
-  const [allContactsData, setAllContactsData] = useState(null); // Store raw data for search
+  const [contactsPermission, setContactsPermission] = useState(false);
 
-  // Pre-load contacts in background when screen opens
+  // Just request permission on mount - DON'T load contacts
   useEffect(() => {
-    const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
-    if (needsContacts && !contactsLoaded) {
-      preloadContacts();
-    }
+    const checkPermission = async () => {
+      const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
+      if (needsContacts) {
+        const { status } = await Contacts.requestPermissionsAsync();
+        setContactsPermission(status === 'granted');
+      }
+    };
+    checkPermission();
   }, [actionType]);
 
-  // Load ALL contacts but only display first 50 initially for speed
-  const preloadContacts = async () => {
-    try {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please enable contacts permission in settings');
-        return;
-      }
+  // Search contacts ON DEMAND - only when user types (fast!)
+  const searchContacts = async (query) => {
+    if (!contactsPermission) {
+      Alert.alert('Permission Required', 'Please enable contacts permission in settings');
+      return;
+    }
 
-      // Load ALL contacts
+    if (query.length < 2) {
+      setFilteredContacts([]);
+      return;
+    }
+
+    setLoadingContacts(true);
+    try {
+      // Use native search - MUCH faster than loading all contacts
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        sort: Contacts.SortTypes.FirstName,
+        name: query, // Native search filter - super fast!
+        pageSize: 20,
       });
 
-      // Store raw data for searching
-      setAllContactsData(data);
-
-      // Format first 50 for initial display
-      const formattedContacts = [];
-      for (let i = 0; i < data.length && formattedContacts.length < 50; i++) {
+      const results = [];
+      for (let i = 0; i < data.length && results.length < 20; i++) {
         const contact = data[i];
         if (contact.phoneNumbers?.[0]?.number) {
-          formattedContacts.push({
-            id: `c${i}`,
+          results.push({
+            id: `q${i}-${Date.now()}`,
             name: contact.name || 'Unknown',
             phoneNumber: contact.phoneNumbers[0].number,
           });
         }
       }
-
-      setContacts(formattedContacts);
-      setFilteredContacts(formattedContacts);
-      setContactsLoaded(true);
+      setFilteredContacts(results);
     } catch (error) {
-      console.error('Error preloading contacts:', error);
-      Alert.alert('Error', 'Failed to load contacts. Please try again.');
+      console.error('Search error:', error);
+    } finally {
+      setLoadingContacts(false);
     }
   };
+
+  // Debounced search - triggers 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.length >= 2) {
+        searchContacts(searchQuery);
+      } else {
+        setFilteredContacts([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const getColor = () => {
     switch (actionType) {
