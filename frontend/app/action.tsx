@@ -47,6 +47,7 @@ export default function ActionScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [contactsLoaded, setContactsLoaded] = useState(false);
+  const [allContactsData, setAllContactsData] = useState(null); // Store raw data for search
 
   // Pre-load contacts in background when screen opens
   useEffect(() => {
@@ -56,23 +57,27 @@ export default function ActionScreen() {
     }
   }, [actionType]);
 
-  // ULTRA-FAST contact loading - only first 100 contacts, minimal processing
+  // Load ALL contacts but only display first 50 initially for speed
   const preloadContacts = async () => {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please enable contacts permission in settings');
+        return;
+      }
 
-      // Load ONLY 100 contacts for instant speed
+      // Load ALL contacts
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        pageSize: 100,
-        pageOffset: 0,
-        sort: Contacts.SortTypes.FirstName, // Let system sort
+        sort: Contacts.SortTypes.FirstName,
       });
 
-      // Simple fast processing - no deduplication, no sorting
+      // Store raw data for searching
+      setAllContactsData(data);
+
+      // Format first 50 for initial display
       const formattedContacts = [];
-      for (let i = 0; i < data.length && formattedContacts.length < 100; i++) {
+      for (let i = 0; i < data.length && formattedContacts.length < 50; i++) {
         const contact = data[i];
         if (contact.phoneNumbers?.[0]?.number) {
           formattedContacts.push({
@@ -88,6 +93,7 @@ export default function ActionScreen() {
       setContactsLoaded(true);
     } catch (error) {
       console.error('Error preloading contacts:', error);
+      Alert.alert('Error', 'Failed to load contacts. Please try again.');
     }
   };
 
