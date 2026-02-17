@@ -129,15 +129,15 @@ export default function ActionScreen() {
     }
   };
 
-  // Load device contacts - now instant since contacts are pre-loaded
+  // Load device contacts - INSTANT if pre-loaded
   const loadContacts = async () => {
-    // If contacts already loaded, just show the picker instantly
+    // If contacts already loaded, just show the picker INSTANTLY
     if (contactsLoaded && contacts.length > 0) {
       setShowContactPicker(true);
       return;
     }
     
-    // Otherwise load them now with optimizations
+    // Otherwise load them now - FAST version
     try {
       setLoadingContacts(true);
       const { status } = await Contacts.requestPermissionsAsync();
@@ -152,36 +152,26 @@ export default function ActionScreen() {
         return;
       }
 
+      // Load ONLY 100 contacts for speed
       const { data } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        pageSize: 500,
+        pageSize: 100,
         pageOffset: 0,
+        sort: Contacts.SortTypes.FirstName,
       });
 
-      // Transform contacts with unique keys and no duplicates
+      // Simple fast processing
       const formattedContacts = [];
-      const seenPhones = new Set();
-      
-      data.forEach((contact, contactIndex) => {
-        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-          contact.phoneNumbers.forEach((phone, phoneIndex) => {
-            if (phone.number) {
-              const normalizedPhone = phone.number.replace(/\D/g, '');
-              if (!seenPhones.has(normalizedPhone)) {
-                seenPhones.add(normalizedPhone);
-                formattedContacts.push({
-                  id: `load-${Date.now()}-${contactIndex}-${phoneIndex}`,
-                  name: contact.name || 'Unknown',
-                  phoneNumber: phone.number,
-                });
-              }
-            }
+      for (let i = 0; i < data.length && formattedContacts.length < 100; i++) {
+        const contact = data[i];
+        if (contact.phoneNumbers?.[0]?.number) {
+          formattedContacts.push({
+            id: `l${i}`,
+            name: contact.name || 'Unknown',
+            phoneNumber: contact.phoneNumbers[0].number,
           });
         }
-      });
-
-      // Sort by name
-      formattedContacts.sort((a, b) => a.name.localeCompare(b.name));
+      }
       
       setContacts(formattedContacts);
       setFilteredContacts(formattedContacts);
