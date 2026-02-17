@@ -471,7 +471,11 @@ export default function ActionScreen() {
             </Text>
           </View>
         )}
+        
+        {/* Extra padding for keyboard */}
+        <View style={{ height: 100 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -480,6 +484,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
