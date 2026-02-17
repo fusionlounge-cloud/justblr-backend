@@ -111,11 +111,6 @@ export default function ActionScreen() {
         
       } catch (error) {
         console.error('Error loading contacts:', error);
-        // Don't show error alert - just let them type manually
-        setLoadingContacts(false);
-      } finally {
-        setLoadingContacts(false);
-      }
       } finally {
         setLoadingContacts(false);
       }
