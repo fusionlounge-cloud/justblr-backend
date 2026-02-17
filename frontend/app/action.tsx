@@ -18,7 +18,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
-import { getContactsCache, setContactsCache, isCacheValid } from './contactsCache';
+import { getContactsCache, setContactsCache, isCacheValid } from '../utils/contactsCache';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
