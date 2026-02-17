@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Dimensions,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,8 +15,6 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CATEGORY_WIDTH = SCREEN_WIDTH * 0.85; // 85% of screen width
 
 const CATEGORIES = [
   { type: 'meet', name: 'Meet', icon: 'people', color: '#FF6B6B' },
@@ -25,48 +22,32 @@ const CATEGORIES = [
   { type: 'sms', name: 'SMS', icon: 'chatbubble', color: '#95E1D3' },
   { type: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366' },
   { type: 'deskwork', name: 'Deskwork', icon: 'laptop', color: '#A78BFA' },
-  { type: 'keepnotes', name: 'Keep Notes', icon: 'create', color: '#FFC107' },
+  { type: 'keepnotes', name: 'Notes', icon: 'create', color: '#FBBF24' },
 ];
 
 export default function AllItemsScreen() {
   const router = useRouter();
   const [reminders, setReminders] = useState([]);
-  const [notes, setNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const scrollViewRef = useRef(null);
-  const [currentScrollX, setCurrentScrollX] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
-    fetchAllItems();
+    fetchReminders();
   }, []);
 
-  const fetchAllItems = async (maintainScroll = false) => {
+  const fetchReminders = async () => {
     try {
-      setIsLoading(true);
-      const [remindersRes, notesRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/api/reminders`),
-        axios.get(`${BACKEND_URL}/api/notes`),
-      ]);
-
-      setReminders(remindersRes.data);
-      setNotes(notesRes.data);
-      
-      // Restore scroll position after data loads
-      if (maintainScroll && scrollViewRef.current) {
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({ x: currentScrollX, animated: false });
-        }, 100);
-      }
+      const response = await axios.get(`${BACKEND_URL}/api/reminders`);
+      setReminders(response.data || []);
     } catch (error) {
-      console.error('Failed to fetch items:', error);
-      Alert.alert('Error', 'Failed to load items');
+      console.error('Error fetching reminders:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const deleteReminder = async (id) => {
-    Alert.alert('Delete Reminder', 'Are you sure?', [
+    Alert.alert('Delete', 'Are you sure you want to delete this?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -74,289 +55,179 @@ export default function AllItemsScreen() {
         onPress: async () => {
           try {
             await axios.delete(`${BACKEND_URL}/api/reminders/${id}`);
-            fetchAllItems(true); // Maintain scroll position
+            fetchReminders();
           } catch (error) {
-            Alert.alert('Error', 'Failed to delete reminder');
+            Alert.alert('Error', 'Failed to delete');
           }
         },
       },
     ]);
   };
 
-  const deleteNote = async (id) => {
-    Alert.alert('Delete Note', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await axios.delete(`${BACKEND_URL}/api/notes/${id}`);
-            fetchAllItems(true); // Maintain scroll position
-          } catch (error) {
-            Alert.alert('Error', 'Failed to delete note');
-          }
-        },
-      },
-    ]);
-  };
-
-  const completeReminder = async (id) => {
-    try {
-      await axios.put(`${BACKEND_URL}/api/reminders/${id}/complete`);
-      fetchAllItems(true); // Maintain scroll position
-    } catch (error) {
-      Alert.alert('Error', 'Failed to complete reminder');
-    }
-  };
-
-  // Execute action directly (Call, SMS, WhatsApp)
   const executeAction = async (reminder) => {
-    // Keep + sign in phone number, only remove spaces and dashes
     const phone = reminder.contact_phone?.replace(/[^\d+]/g, '') || '';
-    // Only send notes as message content, NOT the title
     const message = reminder.notes || '';
-    
-    console.log('Executing action:', reminder.reminder_type, 'Phone:', phone);
     
     try {
       if (reminder.reminder_type === 'call') {
         if (phone) {
-          const url = `tel:${phone}`;
-          console.log('Opening URL:', url);
-          await Linking.openURL(url);
+          await Linking.openURL(`tel:${phone}`);
         } else {
-          Alert.alert(
-            'No Phone Number',
-            'This reminder has no phone number. Would you like to open the phone dialer?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Open Dialer', onPress: () => Linking.openURL('tel:') }
-            ]
-          );
+          Alert.alert('No Phone', 'No phone number attached');
         }
       } else if (reminder.reminder_type === 'sms') {
         const url = phone 
           ? `sms:${phone}${message ? `?body=${encodeURIComponent(message)}` : ''}`
           : `sms:${message ? `?body=${encodeURIComponent(message)}` : ''}`;
-        console.log('Opening SMS URL:', url);
         await Linking.openURL(url);
       } else if (reminder.reminder_type === 'whatsapp') {
         const url = phone 
           ? `whatsapp-business://send?phone=${phone}${message ? `&text=${encodeURIComponent(message)}` : ''}`
           : `whatsapp-business://send${message ? `?text=${encodeURIComponent(message)}` : ''}`;
-        console.log('Opening WhatsApp URL:', url);
         const canOpen = await Linking.canOpenURL(url);
         if (canOpen) {
           await Linking.openURL(url);
         } else {
-          const fallbackUrl = phone 
+          const fallback = phone 
             ? `whatsapp://send?phone=${phone}${message ? `&text=${encodeURIComponent(message)}` : ''}`
             : `whatsapp://send${message ? `?text=${encodeURIComponent(message)}` : ''}`;
-          await Linking.openURL(fallbackUrl);
+          await Linking.openURL(fallback);
         }
       }
     } catch (error) {
-      console.error('Execute action error:', error);
-      Alert.alert('Error', 'Failed to open app. Please try again.');
+      Alert.alert('Error', 'Failed to open app');
     }
   };
 
-  const getCategoryItems = (type) => {
-    const categoryReminders = reminders.filter((r) => r.reminder_type === type);
-    const categoryNotes = notes.filter((n) => n.tags.includes(type));
-    return { reminders: categoryReminders, notes: categoryNotes };
+  const getCategoryCount = (type) => {
+    return reminders.filter(r => r.reminder_type === type).length;
   };
 
-  const renderReminder = (reminder, color) => {
-    const canExecute = ['call', 'sms', 'whatsapp'].includes(reminder.reminder_type);
-    const getExecuteIcon = () => {
-      if (reminder.reminder_type === 'call') return 'call';
-      if (reminder.reminder_type === 'sms') return 'chatbubble';
-      if (reminder.reminder_type === 'whatsapp') return 'logo-whatsapp';
-      return 'play';
-    };
-    
-    const getExecuteLabel = () => {
-      if (reminder.reminder_type === 'call') return 'CALL NOW';
-      if (reminder.reminder_type === 'sms') return 'SEND SMS';
-      if (reminder.reminder_type === 'whatsapp') return 'WHATSAPP';
-      return '';
-    };
-    
+  const getCategoryReminders = (type) => {
+    return reminders.filter(r => r.reminder_type === type);
+  };
+
+  const getActionLabel = (type) => {
+    if (type === 'call') return 'CALL';
+    if (type === 'sms') return 'SMS';
+    if (type === 'whatsapp') return 'WHATSAPP';
+    return null;
+  };
+
+  // Category Grid View
+  if (!selectedCategory) {
     return (
-      <View key={reminder.id} style={[styles.itemCard, { borderLeftColor: color }]}>
-        <View style={styles.itemHeader}>
-          <Ionicons name="alarm" size={18} color={color} />
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemTitle} numberOfLines={2}>
-              {reminder.title}
-            </Text>
-            {reminder.contact_name && (
-              <Text style={styles.itemSubtext} numberOfLines={1}>
-                <Ionicons name="person" size={11} /> {reminder.contact_name}
-              </Text>
-            )}
-            {reminder.contact_phone && (
-              <Text style={styles.itemSubtext} numberOfLines={1}>
-                <Ionicons name="call" size={11} /> {reminder.contact_phone}
-              </Text>
-            )}
-            {reminder.notes && (
-              <Text style={styles.itemNotes} numberOfLines={2}>
-                {reminder.notes}
-              </Text>
-            )}
-          </View>
-        </View>
-        
-        {/* Big Execute Button for Call/SMS/WhatsApp */}
-        {canExecute && (
-          <TouchableOpacity
-            style={[styles.bigExecuteBtn, { backgroundColor: color }]}
-            onPress={() => executeAction(reminder)}
-          >
-            <Ionicons name={getExecuteIcon()} size={20} color="#fff" />
-            <Text style={styles.bigExecuteBtnText}>{getExecuteLabel()}</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#212529" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>All Reminders</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#667eea" />
+          </View>
+        ) : (
+          <View style={styles.gridContainer}>
+            {CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat.type}
+                style={[styles.categoryCard, { borderLeftColor: cat.color }]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <View style={[styles.iconCircle, { backgroundColor: cat.color + '20' }]}>
+                  <Ionicons name={cat.icon} size={28} color={cat.color} />
+                </View>
+                <Text style={styles.categoryName}>{cat.name}</Text>
+                <Text style={styles.categoryCount}>{getCategoryCount(cat.type)} items</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
-        
-        <View style={styles.itemActions}>
-          {!reminder.is_completed && (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: '#43e97b20' }]}
-              onPress={() => completeReminder(reminder.id)}
-            >
-              <Ionicons name="checkmark" size={14} color="#43e97b" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
-            onPress={() => deleteReminder(reminder.id)}
-          >
-            <Ionicons name="trash" size={14} color="#FF6B6B" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      </SafeAreaView>
     );
-  };
+  }
 
-  const renderNote = (note, color) => (
-    <View key={note.id} style={[styles.itemCard, { borderLeftColor: color }]}>
-      <View style={styles.itemHeader}>
-        <Ionicons name="document-text" size={18} color={color} />
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemTitle} numberOfLines={2}>
-            {note.title}
-          </Text>
-          <Text style={styles.itemContent} numberOfLines={2}>
-            {note.content}
-          </Text>
-          {note.tags.length > 0 && (
-            <View style={styles.tagsRow}>
-              {note.tags.slice(0, 2).map((tag, idx) => (
-                <Text key={idx} style={styles.tag}>
-                  #{tag}
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
-      <View style={styles.itemActions}>
-        <TouchableOpacity
-          style={[styles.actionBtn, { backgroundColor: '#FF6B6B20' }]}
-          onPress={() => deleteNote(note.id)}
-        >
-          <Ionicons name="trash" size={14} color="#FF6B6B" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderCategory = (category) => {
-    const { reminders: categoryReminders, notes: categoryNotes } = getCategoryItems(category.type);
-    const totalItems = categoryReminders.length + categoryNotes.length;
-
-    return (
-      <View key={category.type} style={styles.categoryColumn}>
-        {/* Category Header */}
-        <View style={[styles.categoryHeader, { backgroundColor: category.color }]}>
-          <Ionicons name={category.icon} size={28} color="#fff" />
-          <Text style={styles.categoryTitle}>{category.name}</Text>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryCount}>{totalItems}</Text>
-          </View>
-        </View>
-
-        {/* Items List */}
-        <ScrollView
-          style={styles.itemsList}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.itemsContent}
-        >
-          {totalItems === 0 ? (
-            <View style={styles.emptyCategory}>
-              <Ionicons name="folder-open-outline" size={40} color="#adb5bd" />
-              <Text style={styles.emptyText}>No items</Text>
-            </View>
-          ) : (
-            <>
-              {categoryReminders.map((reminder) => renderReminder(reminder, category.color))}
-              {categoryNotes.map((note) => renderNote(note, category.color))}
-            </>
-          )}
-        </ScrollView>
-      </View>
-    );
-  };
+  // Category Detail View
+  const categoryReminders = getCategoryReminders(selectedCategory.type);
+  const actionLabel = getActionLabel(selectedCategory.type);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#212529" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>All Items</Text>
-        <TouchableOpacity onPress={fetchAllItems} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={24} color="#667eea" />
-        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Ionicons name={selectedCategory.icon} size={24} color={selectedCategory.color} />
+          <Text style={styles.headerTitle}>{selectedCategory.name}</Text>
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* Instruction */}
-      <View style={styles.instructionBar}>
-        <Ionicons name="arrow-forward" size={16} color="#6c757d" />
-        <Text style={styles.instructionText}>Swipe left/right to see all categories</Text>
-      </View>
-
-      {/* Content */}
-      {isLoading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#667eea" />
-        </View>
-      ) : reminders.length === 0 && notes.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Ionicons name="folder-open-outline" size={64} color="#adb5bd" />
-          <Text style={styles.emptyMainText}>No items yet</Text>
-          <Text style={styles.emptySubtext}>Create reminders or notes to see them here</Text>
-        </View>
-      ) : (
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          showsHorizontalScrollIndicator={true}
-          style={styles.horizontalScroll}
-          contentContainerStyle={styles.scrollContent}
-          decelerationRate="fast"
-          onScroll={(event) => {
-            setCurrentScrollX(event.nativeEvent.contentOffset.x);
-          }}
-          scrollEventThrottle={16}
-        >
-          {CATEGORIES.map(renderCategory)}
-        </ScrollView>
-      )}
+      <ScrollView style={styles.content}>
+        {categoryReminders.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name={selectedCategory.icon} size={64} color="#adb5bd" />
+            <Text style={styles.emptyText}>No {selectedCategory.name} reminders</Text>
+            <TouchableOpacity 
+              style={[styles.addButton, { backgroundColor: selectedCategory.color }]}
+              onPress={() => router.push(`/action?type=${selectedCategory.type}&name=${selectedCategory.name}`)}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.addButtonText}>Add New</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          categoryReminders.map((reminder) => (
+            <View key={reminder.id} style={[styles.reminderCard, { borderLeftColor: selectedCategory.color }]}>
+              <View style={styles.reminderHeader}>
+                <Text style={styles.reminderTitle}>{reminder.title}</Text>
+              </View>
+              
+              {reminder.contact_name && (
+                <View style={styles.reminderDetail}>
+                  <Ionicons name="person" size={14} color="#6c757d" />
+                  <Text style={styles.detailText}>{reminder.contact_name}</Text>
+                </View>
+              )}
+              
+              {reminder.contact_phone && (
+                <View style={styles.reminderDetail}>
+                  <Ionicons name="call" size={14} color="#6c757d" />
+                  <Text style={styles.detailText}>{reminder.contact_phone}</Text>
+                </View>
+              )}
+              
+              {reminder.notes && (
+                <Text style={styles.reminderNotes}>{reminder.notes}</Text>
+              )}
+              
+              <View style={styles.reminderActions}>
+                {actionLabel && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: selectedCategory.color }]}
+                    onPress={() => executeAction(reminder)}
+                  >
+                    <Ionicons name={selectedCategory.icon} size={16} color="#fff" />
+                    <Text style={styles.actionButtonText}>{actionLabel}</Text>
+                  </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => deleteReminder(reminder.id)}
+                >
+                  <Ionicons name="trash" size={16} color="#FF6B6B" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -375,10 +246,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
   },
-  backButton: {
-    padding: 8,
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  refreshButton: {
+  backButton: {
     padding: 8,
   },
   headerTitle: {
@@ -386,180 +259,128 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#212529',
   },
-  instructionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    gap: 8,
-  },
-  instructionText: {
-    fontSize: 13,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  horizontalScroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexDirection: 'row',
-  },
-  categoryColumn: {
-    width: CATEGORY_WIDTH,
-    marginHorizontal: (SCREEN_WIDTH - CATEGORY_WIDTH) / 2,
-  },
-  categoryHeader: {
-    padding: 20,
     alignItems: 'center',
-    borderRadius: 16,
-    margin: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
   },
-  categoryTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 8,
-  },
-  categoryBadge: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  categoryCount: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  itemsList: {
-    flex: 1,
-  },
-  itemsContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  itemCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  itemInfo: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#212529',
-    marginBottom: 3,
-  },
-  itemSubtext: {
-    fontSize: 13,
-    color: '#6c757d',
-    marginBottom: 3,
-  },
-  itemNotes: {
-    fontSize: 13,
-    color: '#495057',
-    marginTop: 3,
-  },
-  itemContent: {
-    fontSize: 13,
-    color: '#495057',
-    marginTop: 3,
-  },
-  tagsRow: {
+  gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 6,
-    gap: 5,
+    padding: 16,
+    gap: 16,
   },
-  tag: {
-    fontSize: 11,
-    color: '#667eea',
+  categoryCard: {
+    width: '47%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    borderLeftWidth: 4,
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  categoryName: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#212529',
+    marginBottom: 4,
   },
-  itemActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 6,
-    marginTop: 8,
+  categoryCount: {
+    fontSize: 13,
+    color: '#6c757d',
   },
-  actionBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+  content: {
+    flex: 1,
+    padding: 16,
   },
-  executeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  bigExecuteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 10,
-    gap: 8,
-  },
-  bigExecuteBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  emptyCategory: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingTop: 80,
   },
   emptyText: {
     fontSize: 16,
     color: '#6c757d',
-    marginTop: 12,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyMainText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6c757d',
     marginTop: 16,
+    marginBottom: 24,
   },
-  emptySubtext: {
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  reminderCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+  },
+  reminderHeader: {
+    marginBottom: 8,
+  },
+  reminderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#212529',
+  },
+  reminderDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  detailText: {
     fontSize: 14,
-    color: '#adb5bd',
+    color: '#6c757d',
+  },
+  reminderNotes: {
+    fontSize: 14,
+    color: '#495057',
     marginTop: 8,
-    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  reminderActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 6,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  deleteButton: {
+    padding: 8,
+    backgroundColor: '#FF6B6B15',
+    borderRadius: 6,
   },
 });
