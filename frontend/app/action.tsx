@@ -38,63 +38,93 @@ export default function ActionScreen() {
   // Contact autocomplete state
   const [contactSuggestions, setContactSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [loadingContacts, setLoadingContacts] = useState(true);
   const [contactsPermission, setContactsPermission] = useState(false);
-  const [allContacts, setAllContacts] = useState([]); // Store all contacts for filtering
+  const [allContacts, setAllContacts] = useState([]);
+  const [contactsCount, setContactsCount] = useState(0);
 
   // Request permission and load ALL contacts on mount
   useEffect(() => {
     const loadAllContacts = async () => {
       const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
-      if (!needsContacts) return;
+      if (!needsContacts) {
+        setLoadingContacts(false);
+        return;
+      }
       
-      const { status } = await Contacts.requestPermissionsAsync();
-      setContactsPermission(status === 'granted');
+      setLoadingContacts(true);
       
-      if (status === 'granted') {
-        try {
-          // Load ALL contacts once
-          const { data } = await Contacts.getContactsAsync({
-            fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-          });
-          
-          // Format and store all contacts
-          const formatted = [];
-          data.forEach((contact, idx) => {
-            if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-              contact.phoneNumbers.forEach((phone, pIdx) => {
-                if (phone.number) {
-                  formatted.push({
-                    id: `${idx}-${pIdx}`,
-                    name: contact.name || 'Unknown',
-                    phoneNumber: phone.number,
-                  });
-                }
-              });
-            }
-          });
-          setAllContacts(formatted);
-        } catch (error) {
-          console.error('Error loading contacts:', error);
+      try {
+        const { status } = await Contacts.requestPermissionsAsync();
+        setContactsPermission(status === 'granted');
+        
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Contact permission is required to pick contacts');
+          setLoadingContacts(false);
+          return;
         }
+        
+        // Load ALL contacts - no filters, no limits
+        const { data } = await Contacts.getContactsAsync({
+          fields: [
+            Contacts.Fields.Name,
+            Contacts.Fields.FirstName,
+            Contacts.Fields.LastName,
+            Contacts.Fields.PhoneNumbers,
+          ],
+        });
+        
+        console.log('Total contacts from device:', data.length);
+        
+        // Format and store all contacts with ALL phone numbers
+        const formatted = [];
+        data.forEach((contact, idx) => {
+          const name = contact.name || 
+                       `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 
+                       'Unknown';
+          
+          if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+            contact.phoneNumbers.forEach((phone, pIdx) => {
+              if (phone.number && phone.number.trim()) {
+                formatted.push({
+                  id: `c${idx}p${pIdx}`,
+                  name: name,
+                  phoneNumber: phone.number.trim(),
+                });
+              }
+            });
+          }
+        });
+        
+        console.log('Formatted contacts with phones:', formatted.length);
+        setAllContacts(formatted);
+        setContactsCount(formatted.length);
+        
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+        Alert.alert('Error', 'Failed to load contacts: ' + error.message);
+      } finally {
+        setLoadingContacts(false);
       }
     };
+    
     loadAllContacts();
   }, [actionType]);
 
-  // Filter contacts locally when user types (instant!)
+  // Filter contacts locally when user types
   useEffect(() => {
-    if (contactName.length < 2 || contactPhone) {
+    if (contactName.length < 1 || contactPhone) {
       setContactSuggestions([]);
       setShowSuggestions(false);
       return;
     }
     
-    const query = contactName.toLowerCase();
-    const filtered = allContacts.filter(c => 
-      c.name.toLowerCase().includes(query) || 
-      c.phoneNumber.includes(contactName)
-    ).slice(0, 10);
+    const query = contactName.toLowerCase().trim();
+    const filtered = allContacts.filter(c => {
+      const nameMatch = c.name.toLowerCase().includes(query);
+      const phoneMatch = c.phoneNumber.replace(/\D/g, '').includes(query.replace(/\D/g, ''));
+      return nameMatch || phoneMatch;
+    }).slice(0, 15); // Show more results
     
     setContactSuggestions(filtered);
     setShowSuggestions(filtered.length > 0);
