@@ -283,7 +283,16 @@ export default function ActionScreen() {
     try {
       const scheduledTime = new Date(Date.now() + 3600000);
 
-      await axios.post(`${BACKEND_URL}/api/reminders`, {
+      console.log('Saving reminder:', {
+        title: reminderTitle,
+        contact_name: contactName,
+        contact_phone: contactPhone,
+        reminder_type: actionType,
+        scheduled_time: scheduledTime.toISOString(),
+        notes: content,
+      });
+
+      const response = await axios.post(`${BACKEND_URL}/api/reminders`, {
         title: reminderTitle,
         contact_name: contactName || undefined,
         contact_phone: contactPhone || undefined,
@@ -292,13 +301,16 @@ export default function ActionScreen() {
         notes: content || undefined,
       });
 
+      console.log('Save response:', response.data);
+
       // Just save and go back - no prompts
       Alert.alert('Saved!', `${actionName} reminder created.`, [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error) {
       console.error('Failed to create reminder:', error);
-      Alert.alert('Error', 'Failed to create reminder');
+      console.error('Error details:', error?.response?.data);
+      Alert.alert('Error', 'Failed to create reminder. Please try again.');
     }
   };
 
