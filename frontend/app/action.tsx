@@ -40,67 +40,65 @@ export default function ActionScreen() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [contactsPermission, setContactsPermission] = useState(false);
+  const [allContacts, setAllContacts] = useState([]); // Store all contacts for filtering
 
-  // Request permission on mount
+  // Request permission and load ALL contacts on mount
   useEffect(() => {
-    const checkPermission = async () => {
+    const loadAllContacts = async () => {
       const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
-      if (needsContacts) {
-        const { status } = await Contacts.requestPermissionsAsync();
-        setContactsPermission(status === 'granted');
+      if (!needsContacts) return;
+      
+      const { status } = await Contacts.requestPermissionsAsync();
+      setContactsPermission(status === 'granted');
+      
+      if (status === 'granted') {
+        try {
+          // Load ALL contacts once
+          const { data } = await Contacts.getContactsAsync({
+            fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
+          });
+          
+          // Format and store all contacts
+          const formatted = [];
+          data.forEach((contact, idx) => {
+            if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+              contact.phoneNumbers.forEach((phone, pIdx) => {
+                if (phone.number) {
+                  formatted.push({
+                    id: `${idx}-${pIdx}`,
+                    name: contact.name || 'Unknown',
+                    phoneNumber: phone.number,
+                  });
+                }
+              });
+            }
+          });
+          setAllContacts(formatted);
+        } catch (error) {
+          console.error('Error loading contacts:', error);
+        }
       }
     };
-    checkPermission();
+    loadAllContacts();
   }, [actionType]);
 
-  // Search contacts when user types in contact name field
-  const searchContacts = async (query) => {
-    if (!contactsPermission || query.length < 2) {
+  // Filter contacts locally when user types (instant!)
+  useEffect(() => {
+    if (contactName.length < 2 || contactPhone) {
       setContactSuggestions([]);
       setShowSuggestions(false);
       return;
     }
-
-    setLoadingContacts(true);
-    try {
-      const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        name: query,
-        pageSize: 10,
-      });
-
-      const results = [];
-      for (let i = 0; i < data.length && results.length < 10; i++) {
-        const contact = data[i];
-        if (contact.phoneNumbers?.[0]?.number) {
-          results.push({
-            id: `c${i}`,
-            name: contact.name || 'Unknown',
-            phoneNumber: contact.phoneNumbers[0].number,
-          });
-        }
-      }
-      setContactSuggestions(results);
-      setShowSuggestions(results.length > 0);
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setLoadingContacts(false);
-    }
-  };
-
-  // Debounced search when contactName changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (contactName.length >= 2 && !contactPhone) {
-        searchContacts(contactName);
-      } else {
-        setContactSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [contactName]);
+    
+    const query = contactName.toLowerCase();
+    const filtered = allContacts.filter(c => 
+      c.name.toLowerCase().includes(query) || 
+      c.phoneNumber.includes(contactName)
+    ).slice(0, 10);
+    
+    setContactSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }, [contactName, allContacts, contactPhone]);
 
   // Select a contact from suggestions
   const selectContact = (contact) => {
