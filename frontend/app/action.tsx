@@ -64,39 +64,48 @@ export default function ActionScreen() {
           return;
         }
         
-        // Load ALL contacts - no filters, no limits
+        // Load ALL contacts with all name fields
         const { data } = await Contacts.getContactsAsync({
           fields: [
             Contacts.Fields.Name,
             Contacts.Fields.FirstName,
             Contacts.Fields.LastName,
+            Contacts.Fields.MiddleName,
             Contacts.Fields.PhoneNumbers,
           ],
         });
         
-        console.log('Total contacts from device:', data.length);
-        
-        // Format and store all contacts with ALL phone numbers
+        // Format contacts with searchable text
         const formatted = [];
         data.forEach((contact, idx) => {
-          const name = contact.name || 
-                       `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 
-                       'Unknown';
+          // Build display name
+          const displayName = contact.name || 
+            [contact.firstName, contact.middleName, contact.lastName].filter(Boolean).join(' ').trim() ||
+            'Unknown';
+          
+          // Build searchable text (all name parts)
+          const searchText = [
+            contact.name,
+            contact.firstName,
+            contact.lastName,
+            contact.middleName,
+          ].filter(Boolean).join(' ').toLowerCase();
           
           if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
             contact.phoneNumbers.forEach((phone, pIdx) => {
               if (phone.number && phone.number.trim()) {
                 formatted.push({
                   id: `c${idx}p${pIdx}`,
-                  name: name,
+                  name: displayName,
+                  searchText: searchText,
                   phoneNumber: phone.number.trim(),
+                  phoneDigits: phone.number.replace(/\D/g, ''),
                 });
               }
             });
           }
         });
         
-        console.log('Formatted contacts with phones:', formatted.length);
         setAllContacts(formatted);
         setContactsCount(formatted.length);
         
@@ -111,7 +120,7 @@ export default function ActionScreen() {
     loadAllContacts();
   }, [actionType]);
 
-  // Filter contacts locally when user types
+  // Filter contacts - improved search
   useEffect(() => {
     if (contactName.length < 1 || contactPhone) {
       setContactSuggestions([]);
@@ -120,11 +129,19 @@ export default function ActionScreen() {
     }
     
     const query = contactName.toLowerCase().trim();
+    const queryDigits = query.replace(/\D/g, '');
+    
+    // Search in name and phone
     const filtered = allContacts.filter(c => {
-      const nameMatch = c.name.toLowerCase().includes(query);
-      const phoneMatch = c.phoneNumber.replace(/\D/g, '').includes(query.replace(/\D/g, ''));
-      return nameMatch || phoneMatch;
-    }).slice(0, 15); // Show more results
+      // Check if name contains query
+      if (c.searchText && c.searchText.includes(query)) return true;
+      if (c.name.toLowerCase().includes(query)) return true;
+      
+      // Check if phone contains query (digits only)
+      if (queryDigits && c.phoneDigits && c.phoneDigits.includes(queryDigits)) return true;
+      
+      return false;
+    }).slice(0, 20);
     
     setContactSuggestions(filtered);
     setShowSuggestions(filtered.length > 0);
