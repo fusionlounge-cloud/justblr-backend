@@ -45,12 +45,23 @@ export default function ActionScreen() {
   const [allContacts, setAllContacts] = useState([]);
   const [contactsCount, setContactsCount] = useState(0);
 
-  // Request permission and load contacts (NO caching - too big)
+  // Request permission and load contacts (with in-memory caching)
   useEffect(() => {
     const loadAllContacts = async () => {
       const needsContacts = ['call', 'sms', 'whatsapp', 'meet'].includes(actionType);
       if (!needsContacts) {
         setLoadingContacts(false);
+        return;
+      }
+      
+      // Check if contacts are already cached in memory
+      if (isCacheValid()) {
+        const cached = getContactsCache();
+        setAllContacts(cached);
+        setContactsCount(cached.length);
+        setContactsPermission(true);
+        setLoadingContacts(false);
+        console.log('Loaded contacts from memory cache:', cached.length);
         return;
       }
       
@@ -66,7 +77,7 @@ export default function ActionScreen() {
           return;
         }
         
-        // Load contacts from device (no caching to avoid SQLITE_FULL error)
+        // Load contacts from device
         const { data } = await Contacts.getContactsAsync({
           fields: [
             Contacts.Fields.Name,
@@ -107,8 +118,12 @@ export default function ActionScreen() {
           }
         });
         
+        // Save to memory cache
+        setContactsCache(formatted);
+        
         setAllContacts(formatted);
         setContactsCount(formatted.length);
+        console.log('Loaded fresh contacts and cached:', formatted.length);
         
       } catch (error) {
         console.error('Error loading contacts:', error);
