@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://productivity-voice-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://remind-vocal.preview.emergentagent.com/api"
 
 class VoiceAssistantTester:
     def __init__(self):
