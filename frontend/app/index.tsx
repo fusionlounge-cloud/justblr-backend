@@ -305,9 +305,28 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Use universal WhatsApp link that works on all devices
-        // This opens WhatsApp/WhatsApp Business app directly
-        await Linking.openURL('https://wa.me/');
+        if (Platform.OS === 'web') {
+          await Linking.openURL('https://web.whatsapp.com');
+        } else if (Platform.OS === 'android') {
+          // Android: Open WhatsApp Business directly using package intent
+          try {
+            await Linking.sendIntent('android.intent.action.MAIN', [
+              { key: 'package', value: 'com.whatsapp.w4b' }
+            ]);
+          } catch (e) {
+            // Fallback: try regular whatsapp
+            try {
+              await Linking.sendIntent('android.intent.action.MAIN', [
+                { key: 'package', value: 'com.whatsapp' }
+              ]);
+            } catch (e2) {
+              await Linking.openURL('https://wa.me/');
+            }
+          }
+        } else {
+          // iOS
+          await Linking.openURL('whatsapp://');
+        }
         return;
       }
 
