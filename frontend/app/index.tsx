@@ -1012,6 +1012,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  compactEditBtn: {
+    padding: 4,
+  },
   compactDeleteBtn: {
     padding: 4,
   },
