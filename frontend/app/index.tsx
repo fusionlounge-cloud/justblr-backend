@@ -505,14 +505,63 @@ export default function DashboardScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Voice Assistant</Text>
-            <Text style={styles.subtitle}>Your Personal Helper</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>Justblr Matrix</Text>
+            <Text style={styles.subtitle}>Assistant</Text>
           </View>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={24} color="#fff" />
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.voiceCommandBtn}
+              onPress={startVoiceCommand}
+            >
+              <Ionicons name="mic" size={22} color="#fff" />
+            </TouchableOpacity>
+            <Image 
+              source={{ uri: JUSTBLR_LOGO }} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
         </View>
+
+        {/* Voice Command Modal */}
+        <Modal visible={showVoiceModal} transparent animationType="fade">
+          <View style={styles.voiceModalOverlay}>
+            <View style={styles.voiceModalContent}>
+              <TouchableOpacity style={styles.voiceModalClose} onPress={closeVoiceModal}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+              
+              <Image source={{ uri: JUSTBLR_LOGO }} style={styles.voiceModalLogo} resizeMode="contain" />
+              <Text style={styles.voiceModalTitle}>Voice Command</Text>
+              <Text style={styles.voiceModalStatus}>{voiceStatus}</Text>
+              
+              {voiceProcessing ? (
+                <ActivityIndicator size="large" color="#667eea" style={{ marginVertical: 20 }} />
+              ) : (
+                <TouchableOpacity 
+                  style={[styles.voiceModalBtn, isVoiceListening && styles.voiceModalBtnActive]}
+                  onPress={isVoiceListening ? stopVoiceCommand : startVoiceCommand}
+                >
+                  <Ionicons name={isVoiceListening ? "stop" : "mic"} size={40} color="#fff" />
+                </TouchableOpacity>
+              )}
+              
+              <Text style={styles.voiceModalHint}>
+                {isVoiceListening ? 'Tap to stop' : 'Tap to speak'}
+              </Text>
+              
+              <View style={styles.voiceModalActions}>
+                {QUICK_ACTIONS.map((action) => (
+                  <View key={action.type} style={styles.voiceModalActionItem}>
+                    <Ionicons name={action.icon} size={16} color={action.color} />
+                    <Text style={styles.voiceModalActionText}>{action.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {/* Quick Actions - 6 icons */}
         <View style={styles.section}>
