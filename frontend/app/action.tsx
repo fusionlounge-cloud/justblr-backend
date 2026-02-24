@@ -562,8 +562,8 @@ export default function ActionScreen() {
             <Ionicons name="arrow-back" size={24} color="#212529" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Ionicons name={getIcon()} size={24} color={getColor()} />
-            <Text style={styles.headerTitle}>{actionName}</Text>
+            <Ionicons name={isEditMode ? "create" : getIcon()} size={24} color={getColor()} />
+            <Text style={styles.headerTitle}>{isEditMode ? `Edit ${actionName}` : actionName}</Text>
           </View>
           <TouchableOpacity onPress={saveReminder} style={[styles.saveButton, { backgroundColor: getColor() }]}>
             <Text style={styles.saveText}>Save</Text>
