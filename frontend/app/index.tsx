@@ -472,7 +472,7 @@ export default function DashboardScreen() {
                   {/* Contact name only */}
                   <Text style={styles.compactName} numberOfLines={1}>{displayName}</Text>
                   
-                  {/* Action buttons on the right */}
+                  {/* Action buttons on the right: Action > Edit > Delete */}
                   {!bulkSelectMode && (
                     <View style={styles.compactActions}>
                       {actionLabel && (
@@ -487,6 +487,14 @@ export default function DashboardScreen() {
                           />
                         </TouchableOpacity>
                       )}
+                      {/* Edit button */}
+                      <TouchableOpacity 
+                        style={styles.compactEditBtn}
+                        onPress={() => router.push(`/action?type=${reminder.reminder_type}&name=${selectedCategory.name}&edit=true&id=${reminder.id}&title=${encodeURIComponent(reminder.title || '')}&contact_name=${encodeURIComponent(reminder.contact_name || '')}&contact_phone=${encodeURIComponent(reminder.contact_phone || '')}&notes=${encodeURIComponent(reminder.notes || '')}`)}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#667eea" />
+                      </TouchableOpacity>
+                      {/* Delete button */}
                       <TouchableOpacity 
                         style={styles.compactDeleteBtn}
                         onPress={() => deleteReminder(reminder.id)}
