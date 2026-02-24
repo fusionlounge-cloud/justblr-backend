@@ -8,8 +8,11 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,12 +31,91 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Initialize scheduler for auto-execution
+scheduler = AsyncIOScheduler()
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ===== AUTO-EXECUTION FUNCTIONS =====
+
+async def execute_reminder_action(reminder_id: str):
+    """Execute a reminder action automatically at scheduled time"""
+    try:
+        reminder = await db.reminders.find_one({"id": reminder_id})
+        if not reminder:
+            logger.warning(f"Reminder {reminder_id} not found for auto-execution")
+            return
+        
+        if reminder.get('is_completed'):
+            logger.info(f"Reminder {reminder_id} already completed, skipping")
+            return
+        
+        reminder_type = reminder.get('reminder_type')
+        contact_phone = reminder.get('contact_phone', '')
+        notes = reminder.get('notes', '')
+        title = reminder.get('title', '')
+        
+        # Log the execution
+        execution_log = {
+            "reminder_id": reminder_id,
+            "reminder_type": reminder_type,
+            "contact_phone": contact_phone,
+            "executed_at": datetime.now(timezone.utc),
+            "status": "triggered"
+        }
+        
+        # For mobile apps, we can't directly make calls/SMS from server
+        # Instead, we mark it as "ready to execute" and send push notification
+        # The mobile app will handle the actual execution
+        
+        await db.reminders.update_one(
+            {"id": reminder_id},
+            {"$set": {
+                "auto_execute_triggered": True,
+                "triggered_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        await db.execution_logs.insert_one(execution_log)
+        logger.info(f"Auto-execution triggered for reminder {reminder_id} ({reminder_type})")
+        
+    except Exception as e:
+        logger.error(f"Error executing reminder {reminder_id}: {str(e)}")
+
+def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto_execute: bool):
+    """Schedule a reminder for auto-execution"""
+    if not auto_execute:
+        return
+    
+    try:
+        # Ensure scheduled_time is timezone-aware
+        if scheduled_time.tzinfo is None:
+            scheduled_time = scheduled_time.replace(tzinfo=timezone.utc)
+        
+        # Only schedule if it's in the future
+        now = datetime.now(timezone.utc)
+        if scheduled_time > now:
+            job_id = f"reminder_{reminder_id}"
+            
+            # Remove existing job if any
+            if scheduler.get_job(job_id):
+                scheduler.remove_job(job_id)
+            
+            scheduler.add_job(
+                execute_reminder_action,
+                trigger=DateTrigger(run_date=scheduled_time),
+                args=[reminder_id],
+                id=job_id,
+                replace_existing=True
+            )
+            logger.info(f"Scheduled auto-execution for reminder {reminder_id} at {scheduled_time}")
+    except Exception as e:
+        logger.error(f"Failed to schedule reminder {reminder_id}: {str(e)}")
 
 # ===== MODELS =====
 
