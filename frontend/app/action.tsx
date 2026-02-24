@@ -360,29 +360,50 @@ export default function ActionScreen() {
     const reminderTitle = title.trim() || `${actionName} Reminder`;
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/reminders`, {
-        title: reminderTitle,
-        contact_name: contactName || undefined,
-        contact_phone: contactPhone || undefined,
-        reminder_type: actionType,
-        scheduled_time: scheduledTime.toISOString(),
-        notes: content || undefined,
-        auto_execute: autoExecute,
-      });
+      let response;
+      
+      if (isEditMode && editId) {
+        // Update existing reminder
+        response = await axios.put(`${BACKEND_URL}/api/reminders/${editId}`, {
+          title: reminderTitle,
+          contact_name: contactName || undefined,
+          contact_phone: contactPhone || undefined,
+          scheduled_time: scheduledTime.toISOString(),
+          notes: content || undefined,
+          auto_execute: autoExecute,
+        });
+        
+        console.log('Update response:', response.data);
+        
+        Alert.alert('Updated!', `${actionName} reminder updated`, [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } else {
+        // Create new reminder
+        response = await axios.post(`${BACKEND_URL}/api/reminders`, {
+          title: reminderTitle,
+          contact_name: contactName || undefined,
+          contact_phone: contactPhone || undefined,
+          reminder_type: actionType,
+          scheduled_time: scheduledTime.toISOString(),
+          notes: content || undefined,
+          auto_execute: autoExecute,
+        });
 
-      console.log('Save response:', response.data);
+        console.log('Save response:', response.data);
 
-      // Schedule local notification
-      if (notifyMe) {
-        await scheduleNotification(reminderTitle, scheduledTime);
+        // Schedule local notification
+        if (notifyMe) {
+          await scheduleNotification(reminderTitle, scheduledTime);
+        }
+
+        Alert.alert('Saved!', `${actionName} reminder created for ${formatDateTime(scheduledTime)}`, [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       }
-
-      Alert.alert('Saved!', `${actionName} reminder created for ${formatDateTime(scheduledTime)}`, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
     } catch (error) {
-      console.error('Failed to create reminder:', error);
-      Alert.alert('Error', 'Failed to create reminder. Please try again.');
+      console.error('Failed to save reminder:', error);
+      Alert.alert('Error', 'Failed to save reminder. Please try again.');
     }
   };
 
