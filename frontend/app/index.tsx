@@ -305,25 +305,36 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Use the same URL scheme that works in reminders
+        // Use whatsapp-business://send which opens WhatsApp Business chats
         if (Platform.OS === 'web') {
-          await Linking.openURL('https://business.whatsapp.com');
+          await Linking.openURL('https://web.whatsapp.com');
         } else {
-          // Try WhatsApp Business first (same as reminders)
-          const waBusinessUrl = 'whatsapp-business://';
-          const canOpenBusiness = await Linking.canOpenURL(waBusinessUrl);
-          if (canOpenBusiness) {
-            await Linking.openURL(waBusinessUrl);
-          } else {
-            // Fall back to regular WhatsApp
-            const waUrl = 'whatsapp://';
+          // Try WhatsApp Business with send scheme (same pattern as reminders)
+          const waBusinessUrl = 'whatsapp-business://send';
+          try {
+            const canOpenBusiness = await Linking.canOpenURL(waBusinessUrl);
+            if (canOpenBusiness) {
+              await Linking.openURL(waBusinessUrl);
+              return;
+            }
+          } catch (e) {
+            console.log('WhatsApp Business not available');
+          }
+          
+          // Try regular WhatsApp
+          const waUrl = 'whatsapp://send';
+          try {
             const canOpenWa = await Linking.canOpenURL(waUrl);
             if (canOpenWa) {
               await Linking.openURL(waUrl);
-            } else {
-              await Linking.openURL('https://business.whatsapp.com');
+              return;
             }
+          } catch (e) {
+            console.log('WhatsApp not available');
           }
+          
+          // Fall back to web
+          await Linking.openURL('https://web.whatsapp.com');
         }
         return;
       }
