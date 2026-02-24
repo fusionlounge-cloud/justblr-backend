@@ -247,12 +247,6 @@ export default function DashboardScreen() {
       Alert.alert('Error', `Could not open ${appName}`);
     }
   };
-        }
-      }
-    } catch (error) {
-      Alert.alert('Error', `Could not open ${appName}`);
-    }
-  };
 
   const socialApps = [
     { name: 'Instagram', icon: 'logo-instagram', color: '#E4405F', key: 'instagram' },
