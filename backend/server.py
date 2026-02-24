@@ -131,6 +131,7 @@ class ReminderCreate(BaseModel):
     reminder_type: Literal["meet", "call", "sms", "whatsapp", "deskwork", "keepnotes"]
     scheduled_time: datetime
     notes: Optional[str] = None
+    auto_execute: bool = False  # If true, auto-trigger at scheduled time
 
 class Reminder(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -140,8 +141,11 @@ class Reminder(BaseModel):
     reminder_type: str
     scheduled_time: datetime
     notes: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_completed: bool = False
+    auto_execute: bool = False
+    auto_execute_triggered: bool = False
+    triggered_at: Optional[datetime] = None
 
 class VoiceCommandRequest(BaseModel):
     command: str
