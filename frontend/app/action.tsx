@@ -412,33 +412,21 @@ export default function ActionScreen() {
   ];
 
   // Custom date/time picker for web
-  const WebDateTimePicker = () => {
-    const formatDateForInput = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    };
-    
-    const [dateStr, setDateStr] = useState(formatDateForInput(scheduledTime).split('T')[0]);
-    const [timeStr, setTimeStr] = useState(formatDateForInput(scheduledTime).split('T')[1]);
-    
-    const applyDateTime = () => {
-      try {
-        const newDate = new Date(`${dateStr}T${timeStr}`);
-        if (!isNaN(newDate.getTime())) {
-          setScheduledTime(newDate);
-          setShowDatePicker(false);
-        } else {
-          Alert.alert('Invalid Date', 'Please enter a valid date and time');
-        }
-      } catch (e) {
+  const applyDateTime = () => {
+    try {
+      const newDate = new Date(`${pickerDateStr}T${pickerTimeStr}`);
+      if (!isNaN(newDate.getTime())) {
+        setScheduledTime(newDate);
+        setShowDatePicker(false);
+      } else {
         Alert.alert('Invalid Date', 'Please enter a valid date and time');
       }
-    };
-    
+    } catch (e) {
+      Alert.alert('Invalid Date', 'Please enter a valid date and time');
+    }
+  };
+  
+  const WebDateTimePicker = () => {
     return (
       <Modal visible={showDatePicker} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -448,8 +436,8 @@ export default function ActionScreen() {
             <Text style={styles.inputLabel}>Date (YYYY-MM-DD)</Text>
             <TextInput
               style={styles.dateTimeInput}
-              value={dateStr}
-              onChangeText={setDateStr}
+              value={pickerDateStr}
+              onChangeText={setPickerDateStr}
               placeholder="2026-02-25"
               keyboardType="default"
             />
@@ -457,8 +445,8 @@ export default function ActionScreen() {
             <Text style={styles.inputLabel}>Time (HH:MM)</Text>
             <TextInput
               style={styles.dateTimeInput}
-              value={timeStr}
-              onChangeText={setTimeStr}
+              value={pickerTimeStr}
+              onChangeText={setPickerTimeStr}
               placeholder="16:30"
               keyboardType="default"
             />
