@@ -773,8 +773,8 @@ export default function ActionScreen() {
           <View style={{ height: 100 }} />
         </ScrollView>
 
-        {/* Date/Time Picker Modal */}
-        {Platform.OS === 'web' && <WebDateTimePicker />}
+        {/* Date/Time Picker - Native on mobile, Modal on web */}
+        <DateTimePickerComponent />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
