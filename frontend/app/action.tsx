@@ -491,33 +491,35 @@ export default function ActionScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Title Input */}
-          <View style={styles.section}>
-            <Text style={styles.label}>What to remind? (Optional)</Text>
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
-                placeholder={`E.g., ${actionName} with John`}
-                value={title}
-                onChangeText={setTitle}
-                multiline
-              />
-              <TouchableOpacity
-                style={[
-                  styles.voiceButton,
-                  isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
-                ]}
-                onPress={isRecording && recordingField === 'title' ? stopVoiceInput : () => startVoiceInput('title')}
-                disabled={isProcessing || (isRecording && recordingField !== 'title')}
-              >
-                {isProcessing && recordingField === 'title' ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Ionicons name={isRecording && recordingField === 'title' ? 'stop' : 'mic'} size={24} color="#fff" />
-                )}
-              </TouchableOpacity>
+          {/* Title Input - Only show for non-call/sms/whatsapp actions */}
+          {!['call', 'sms', 'whatsapp'].includes(actionType) && (
+            <View style={styles.section}>
+              <Text style={styles.label}>What to remind? (Optional)</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  placeholder={`E.g., ${actionName} with John`}
+                  value={title}
+                  onChangeText={setTitle}
+                  multiline
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.voiceButton,
+                    isRecording && recordingField === 'title' && { backgroundColor: '#FF6B6B' },
+                  ]}
+                  onPress={isRecording && recordingField === 'title' ? stopVoiceInput : () => startVoiceInput('title')}
+                  disabled={isProcessing || (isRecording && recordingField !== 'title')}
+                >
+                  {isProcessing && recordingField === 'title' ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name={isRecording && recordingField === 'title' ? 'stop' : 'mic'} size={24} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Contact Input */}
           {actionType !== 'deskwork' && actionType !== 'keepnotes' && (
