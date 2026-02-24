@@ -19,7 +19,7 @@ import axios from 'axios';
 import { Audio } from 'expo-av';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-const JUSTBLR_LOGO = 'https://static.prod-images.emergentagent.com/jobs/4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/images/789c5274ebf6b7813a10d0e107288f0266dcb1e344fe23eb9d1fa49575b9d93f.png';
+const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
 // Quick Actions - all 6
 const QUICK_ACTIONS = [
