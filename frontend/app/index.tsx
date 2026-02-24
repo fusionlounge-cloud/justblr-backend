@@ -308,19 +308,18 @@ export default function DashboardScreen() {
         if (Platform.OS === 'web') {
           await Linking.openURL('https://web.whatsapp.com');
         } else {
-          // Direct WhatsApp Business URL - opens the app directly
-          // Using the same scheme that works in reminders
-          const waBusinessUrl = 'whatsapp-business://';
-          try {
+          // Use exact same pattern as reminders - whatsapp-business://send
+          const waBusinessUrl = 'whatsapp-business://send';
+          const canOpen = await Linking.canOpenURL(waBusinessUrl);
+          if (canOpen) {
             await Linking.openURL(waBusinessUrl);
-            return;
-          } catch (e) {
-            // If WhatsApp Business fails, try regular WhatsApp
-            try {
-              await Linking.openURL('whatsapp://');
-              return;
-            } catch (e2) {
-              // Only as last resort, open web
+          } else {
+            // Fallback to regular WhatsApp
+            const waUrl = 'whatsapp://send';
+            const canOpenWa = await Linking.canOpenURL(waUrl);
+            if (canOpenWa) {
+              await Linking.openURL(waUrl);
+            } else {
               await Linking.openURL('https://web.whatsapp.com');
             }
           }
