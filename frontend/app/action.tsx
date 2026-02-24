@@ -416,7 +416,38 @@ export default function ActionScreen() {
     }},
   ];
 
-  // Custom date/time picker for web
+  // Handle native date picker change
+  const onNativeDateChange = (event: any, selectedDate?: Date) => {
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    
+    if (selectedDate) {
+      if (pickerMode === 'date') {
+        // Date selected, now show time picker
+        const newDate = new Date(scheduledTime);
+        newDate.setFullYear(selectedDate.getFullYear());
+        newDate.setMonth(selectedDate.getMonth());
+        newDate.setDate(selectedDate.getDate());
+        setScheduledTime(newDate);
+        
+        if (Platform.OS === 'android') {
+          // On Android, need to show time picker separately
+          setPickerMode('time');
+        }
+      } else {
+        // Time selected
+        const newDate = new Date(scheduledTime);
+        newDate.setHours(selectedDate.getHours());
+        newDate.setMinutes(selectedDate.getMinutes());
+        setScheduledTime(newDate);
+        setShowDatePicker(false);
+      }
+    }
+  };
+
+  // Custom date/time picker - Web uses text inputs, Mobile uses native picker
   const applyDateTime = () => {
     try {
       const newDate = new Date(`${pickerDateStr}T${pickerTimeStr}`);
@@ -431,43 +462,58 @@ export default function ActionScreen() {
     }
   };
   
-  const WebDateTimePicker = () => {
-    return (
-      <Modal visible={showDatePicker} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Date & Time</Text>
-            
-            <Text style={styles.inputLabel}>Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.dateTimeInput}
-              value={pickerDateStr}
-              onChangeText={setPickerDateStr}
-              placeholder="2026-02-25"
-              keyboardType="default"
-            />
-            
-            <Text style={styles.inputLabel}>Time (HH:MM)</Text>
-            <TextInput
-              style={styles.dateTimeInput}
-              value={pickerTimeStr}
-              onChangeText={setPickerTimeStr}
-              placeholder="16:30"
-              keyboardType="default"
-            />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowDatePicker(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.confirmButton, { backgroundColor: getColor() }]}
-                onPress={applyDateTime}
-              >
-                <Text style={styles.confirmButtonText}>Confirm</Text>
+  const DateTimePickerComponent = () => {
+    // Use native picker on mobile
+    if (Platform.OS !== 'web' && showDatePicker) {
+      return (
+        <DateTimePicker
+          value={scheduledTime}
+          mode={pickerMode}
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={onNativeDateChange}
+          minimumDate={new Date()}
+        />
+      );
+    }
+    
+    // Web modal with text inputs
+    if (Platform.OS === 'web') {
+      return (
+        <Modal visible={showDatePicker} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Date & Time</Text>
+              
+              <Text style={styles.inputLabel}>Date (YYYY-MM-DD)</Text>
+              <TextInput
+                style={styles.dateTimeInput}
+                value={pickerDateStr}
+                onChangeText={setPickerDateStr}
+                placeholder="2026-02-25"
+                keyboardType="default"
+              />
+              
+              <Text style={styles.inputLabel}>Time (HH:MM)</Text>
+              <TextInput
+                style={styles.dateTimeInput}
+                value={pickerTimeStr}
+                onChangeText={setPickerTimeStr}
+                placeholder="16:30"
+                keyboardType="default"
+              />
+              
+              <View style={styles.modalButtons}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.confirmButton, { backgroundColor: getColor() }]}
+                  onPress={applyDateTime}
+                >
+                  <Text style={styles.confirmButtonText}>Confirm</Text>
               </TouchableOpacity>
             </View>
           </View>
