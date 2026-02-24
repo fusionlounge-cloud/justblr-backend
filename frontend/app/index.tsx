@@ -189,23 +189,45 @@ export default function DashboardScreen() {
   };
 
   const openSocialApp = async (appName) => {
-    const appUrls = {
-      instagram: { ios: 'instagram://', android: 'com.instagram.android', web: 'https://instagram.com' },
-      facebook: { ios: 'fb://', android: 'com.facebook.katana', web: 'https://facebook.com' },
-      linkedin: { ios: 'linkedin://', android: 'com.linkedin.android', web: 'https://linkedin.com' },
-      whatsapp: { ios: 'whatsapp://', android: 'com.whatsapp.w4b', web: 'https://business.whatsapp.com' },
-      wechat: { ios: 'weixin://', android: 'com.tencent.mm', web: 'https://wechat.com' },
-      alibaba: { ios: 'alibabaapp://', android: 'com.alibaba.intl.android.apps.poseidon', web: 'https://alibaba.com' },
-    };
-
-    const urls = appUrls[appName];
-    if (!urls) return;
-
     try {
+      if (appName === 'whatsapp') {
+        // Use the same URL scheme that works in reminders
+        if (Platform.OS === 'web') {
+          await Linking.openURL('https://business.whatsapp.com');
+        } else {
+          // Try WhatsApp Business first (same as reminders)
+          const waBusinessUrl = 'whatsapp-business://';
+          const canOpenBusiness = await Linking.canOpenURL(waBusinessUrl);
+          if (canOpenBusiness) {
+            await Linking.openURL(waBusinessUrl);
+          } else {
+            // Fall back to regular WhatsApp
+            const waUrl = 'whatsapp://';
+            const canOpenWa = await Linking.canOpenURL(waUrl);
+            if (canOpenWa) {
+              await Linking.openURL(waUrl);
+            } else {
+              await Linking.openURL('https://business.whatsapp.com');
+            }
+          }
+        }
+        return;
+      }
+
+      const appUrls = {
+        instagram: { ios: 'instagram://', android: 'com.instagram.android', web: 'https://instagram.com' },
+        facebook: { ios: 'fb://', android: 'com.facebook.katana', web: 'https://facebook.com' },
+        linkedin: { ios: 'linkedin://', android: 'com.linkedin.android', web: 'https://linkedin.com' },
+        wechat: { ios: 'weixin://', android: 'com.tencent.mm', web: 'https://wechat.com' },
+        alibaba: { ios: 'alibabaapp://', android: 'com.alibaba.intl.android.apps.poseidon', web: 'https://alibaba.com' },
+      };
+
+      const urls = appUrls[appName];
+      if (!urls) return;
+
       if (Platform.OS === 'web') {
         await Linking.openURL(urls.web);
       } else if (Platform.OS === 'ios') {
-        // For iOS, try the app URL scheme first
         const canOpen = await Linking.canOpenURL(urls.ios);
         if (canOpen) {
           await Linking.openURL(urls.ios);
@@ -213,41 +235,18 @@ export default function DashboardScreen() {
           await Linking.openURL(urls.web);
         }
       } else {
-        // For Android, use intent to open the specific app
-        // Try WhatsApp Business first, then fall back to regular WhatsApp
-        if (appName === 'whatsapp') {
-          try {
-            // Try WhatsApp Business
-            const waBusinessIntent = `intent://#Intent;package=com.whatsapp.w4b;end`;
-            const canOpenBusiness = await Linking.canOpenURL(waBusinessIntent);
-            if (canOpenBusiness) {
-              await Linking.openURL(waBusinessIntent);
-              return;
-            }
-          } catch (e) {
-            // Fall through to regular WhatsApp
-          }
-          try {
-            // Try regular WhatsApp
-            const waIntent = `intent://#Intent;package=com.whatsapp;end`;
-            const canOpenRegular = await Linking.canOpenURL(waIntent);
-            if (canOpenRegular) {
-              await Linking.openURL(waIntent);
-              return;
-            }
-          } catch (e) {
-            // Fall through to web
-          }
-          // Fall back to web
-          await Linking.openURL(urls.web);
+        const urlToTry = `intent://#Intent;package=${urls.android};end`;
+        const canOpen = await Linking.canOpenURL(urlToTry);
+        if (canOpen) {
+          await Linking.openURL(urlToTry);
         } else {
-          const urlToTry = `intent://#Intent;package=${urls.android};end`;
-          const canOpen = await Linking.canOpenURL(urlToTry);
-          if (canOpen) {
-            await Linking.openURL(urlToTry);
-          } else {
-            await Linking.openURL(urls.web);
-          }
+          await Linking.openURL(urls.web);
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', `Could not open ${appName}`);
+    }
+  };
         }
       }
     } catch (error) {
