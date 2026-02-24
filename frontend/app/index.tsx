@@ -307,25 +307,22 @@ export default function DashboardScreen() {
       if (appName === 'whatsapp') {
         if (Platform.OS === 'web') {
           await Linking.openURL('https://web.whatsapp.com');
-        } else if (Platform.OS === 'android') {
-          // Android: Open WhatsApp Business directly using package intent
+        } else {
+          // Use intent URL to open WhatsApp Business app directly on Android
+          // This is the most reliable way to open a specific app
+          const intentUrl = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end';
           try {
-            await Linking.sendIntent('android.intent.action.MAIN', [
-              { key: 'package', value: 'com.whatsapp.w4b' }
-            ]);
+            await Linking.openURL(intentUrl);
           } catch (e) {
-            // Fallback: try regular whatsapp
+            // Fallback to regular WhatsApp
             try {
-              await Linking.sendIntent('android.intent.action.MAIN', [
-                { key: 'package', value: 'com.whatsapp' }
-              ]);
+              const waIntent = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp;end';
+              await Linking.openURL(waIntent);
             } catch (e2) {
-              await Linking.openURL('https://wa.me/');
+              // Final fallback
+              await Linking.openURL('whatsapp://send');
             }
           }
-        } else {
-          // iOS
-          await Linking.openURL('whatsapp://');
         }
         return;
       }
