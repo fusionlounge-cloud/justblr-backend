@@ -56,10 +56,16 @@ export default function ActionScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingField, setRecordingField] = useState('title');
   
-  // Scheduling state
-  const [scheduledTime, setScheduledTime] = useState(new Date(Date.now() + 3600000)); // Default 1 hour
+  // Scheduling state - Default to tomorrow 4:30 PM
+  const getDefaultScheduleTime = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(16, 30, 0, 0); // 4:30 PM
+    return tomorrow;
+  };
+  const [scheduledTime, setScheduledTime] = useState(getDefaultScheduleTime());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [autoExecute, setAutoExecute] = useState(false);
+  const [autoExecute, setAutoExecute] = useState(true); // ON by default
   const [notifyMe, setNotifyMe] = useState(true);
   
   // Contact autocomplete state
