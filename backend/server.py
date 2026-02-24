@@ -335,6 +335,8 @@ async def delete_reminder(reminder_id: str):
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Reminder not found")
         return {"message": "Reminder deleted"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Delete reminder error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
