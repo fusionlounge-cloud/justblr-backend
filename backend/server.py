@@ -279,11 +279,20 @@ async def process_voice_command(request: VoiceCommandRequest):
 
 @api_router.post("/reminders", response_model=Reminder)
 async def create_reminder(reminder: ReminderCreate):
-    """Create a new reminder"""
+    """Create a new reminder with optional auto-execution scheduling"""
     try:
         reminder_obj = Reminder(**reminder.dict())
         await db.reminders.insert_one(reminder_obj.dict())
-        logger.info(f"Created reminder: {reminder_obj.title}")
+        
+        # Schedule auto-execution if enabled
+        if reminder.auto_execute:
+            schedule_reminder_execution(
+                reminder_obj.id, 
+                reminder.scheduled_time,
+                reminder.auto_execute
+            )
+        
+        logger.info(f"Created reminder: {reminder_obj.title} (auto_execute={reminder.auto_execute})")
         return reminder_obj
     except Exception as e:
         logger.error(f"Reminder creation error: {str(e)}")
