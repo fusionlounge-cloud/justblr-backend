@@ -566,7 +566,7 @@ export default function ActionScreen() {
             <Text style={styles.headerTitle}>{isEditMode ? `Edit ${actionName}` : actionName}</Text>
           </View>
           <TouchableOpacity onPress={saveReminder} style={[styles.saveButton, { backgroundColor: getColor() }]}>
-            <Text style={styles.saveText}>Save</Text>
+            <Text style={styles.saveText}>{isEditMode ? 'Update' : 'Save'}</Text>
           </TouchableOpacity>
         </View>
 
