@@ -133,6 +133,14 @@ class ReminderCreate(BaseModel):
     notes: Optional[str] = None
     auto_execute: bool = False  # If true, auto-trigger at scheduled time
 
+class ReminderUpdate(BaseModel):
+    title: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    scheduled_time: Optional[datetime] = None
+    notes: Optional[str] = None
+    auto_execute: Optional[bool] = None
+
 class Reminder(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
