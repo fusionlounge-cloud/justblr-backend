@@ -68,6 +68,10 @@ export default function ActionScreen() {
   const [autoExecute, setAutoExecute] = useState(true); // ON by default
   const [notifyMe, setNotifyMe] = useState(true);
   
+  // Date picker input states
+  const [pickerDateStr, setPickerDateStr] = useState('');
+  const [pickerTimeStr, setPickerTimeStr] = useState('');
+  
   // Contact autocomplete state
   const [contactSuggestions, setContactSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -75,6 +79,19 @@ export default function ActionScreen() {
   const [contactsPermission, setContactsPermission] = useState(false);
   const [allContacts, setAllContacts] = useState([]);
   const [contactsCount, setContactsCount] = useState(0);
+
+  // Initialize picker values when modal opens
+  useEffect(() => {
+    if (showDatePicker) {
+      const year = scheduledTime.getFullYear();
+      const month = String(scheduledTime.getMonth() + 1).padStart(2, '0');
+      const day = String(scheduledTime.getDate()).padStart(2, '0');
+      const hours = String(scheduledTime.getHours()).padStart(2, '0');
+      const minutes = String(scheduledTime.getMinutes()).padStart(2, '0');
+      setPickerDateStr(`${year}-${month}-${day}`);
+      setPickerTimeStr(`${hours}:${minutes}`);
+    }
+  }, [showDatePicker]);
 
   // Request notification permissions
   useEffect(() => {
