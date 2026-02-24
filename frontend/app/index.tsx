@@ -305,36 +305,33 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Use whatsapp-business://send which opens WhatsApp Business chats
         if (Platform.OS === 'web') {
           await Linking.openURL('https://web.whatsapp.com');
+        } else if (Platform.OS === 'android') {
+          // On Android, use the package name directly to open WhatsApp Business
+          try {
+            await Linking.openURL('whatsapp://app');
+          } catch (e) {
+            // If that fails, try opening via market/play store intent
+            try {
+              await Linking.openURL('market://details?id=com.whatsapp.w4b');
+            } catch (e2) {
+              await Linking.openURL('https://web.whatsapp.com');
+            }
+          }
         } else {
-          // Try WhatsApp Business with send scheme (same pattern as reminders)
-          const waBusinessUrl = 'whatsapp-business://send';
+          // iOS
+          const waBusinessUrl = 'whatsapp://app';
           try {
-            const canOpenBusiness = await Linking.canOpenURL(waBusinessUrl);
-            if (canOpenBusiness) {
+            const canOpen = await Linking.canOpenURL(waBusinessUrl);
+            if (canOpen) {
               await Linking.openURL(waBusinessUrl);
-              return;
+            } else {
+              await Linking.openURL('https://web.whatsapp.com');
             }
           } catch (e) {
-            console.log('WhatsApp Business not available');
+            await Linking.openURL('https://web.whatsapp.com');
           }
-          
-          // Try regular WhatsApp
-          const waUrl = 'whatsapp://send';
-          try {
-            const canOpenWa = await Linking.canOpenURL(waUrl);
-            if (canOpenWa) {
-              await Linking.openURL(waUrl);
-              return;
-            }
-          } catch (e) {
-            console.log('WhatsApp not available');
-          }
-          
-          // Fall back to web
-          await Linking.openURL('https://web.whatsapp.com');
         }
         return;
       }
