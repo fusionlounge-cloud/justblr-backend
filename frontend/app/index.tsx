@@ -47,6 +47,13 @@ export default function DashboardScreen() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedItems, setSelectedItems] = useState([]);
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  
+  // Voice command states
+  const [isVoiceListening, setIsVoiceListening] = useState(false);
+  const [voiceRecording, setVoiceRecording] = useState(null);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [voiceProcessing, setVoiceProcessing] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('');
 
   // Refresh reminders when screen is focused
   useFocusEffect(
