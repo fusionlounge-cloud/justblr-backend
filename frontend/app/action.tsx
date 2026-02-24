@@ -514,12 +514,15 @@ export default function ActionScreen() {
                   onPress={applyDateTime}
                 >
                   <Text style={styles.confirmButtonText}>Confirm</Text>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    );
+        </Modal>
+      );
+    }
+    
+    return null;
   };
 
   return (
