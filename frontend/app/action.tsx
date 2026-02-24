@@ -73,11 +73,15 @@ export default function ActionScreen() {
   // Request notification permissions
   useEffect(() => {
     const requestNotificationPermissions = async () => {
-      if (Platform.OS === 'web') return;
+      if (Platform.OS === 'web' || !Notifications) return;
       
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Notification permission not granted');
+      try {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Notification permission not granted');
+        }
+      } catch (error) {
+        console.log('Notification permissions not available');
       }
     };
     requestNotificationPermissions();
