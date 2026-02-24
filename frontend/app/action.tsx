@@ -18,22 +18,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Contacts from 'expo-contacts';
-import * as Notifications from 'expo-notifications';
 import { Audio } from 'expo-av';
 import axios from 'axios';
 import { getContactsCache, setContactsCache, isCacheValid } from '../utils/contactsCache';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-// Configure notifications
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
+// Conditional notification import to avoid Expo Go errors
+let Notifications: typeof import('expo-notifications') | null = null;
+try {
+  if (Platform.OS !== 'web') {
+    Notifications = require('expo-notifications');
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  }
+} catch (e) {
+  console.log('Notifications not available');
 }
 
 export default function ActionScreen() {
