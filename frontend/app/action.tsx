@@ -47,11 +47,15 @@ export default function ActionScreen() {
   const params = useLocalSearchParams();
   const actionType = String(params.type || '');
   const actionName = String(params.name || '');
+  
+  // Edit mode params
+  const isEditMode = params.edit === 'true';
+  const editId = String(params.id || '');
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [contactPhone, setContactPhone] = useState('');
+  const [title, setTitle] = useState(String(params.title || ''));
+  const [content, setContent] = useState(String(params.notes || ''));
+  const [contactName, setContactName] = useState(String(params.contact_name || ''));
+  const [contactPhone, setContactPhone] = useState(String(params.contact_phone || ''));
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
