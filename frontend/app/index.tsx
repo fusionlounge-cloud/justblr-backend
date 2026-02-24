@@ -305,25 +305,9 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        if (Platform.OS === 'web') {
-          await Linking.openURL('https://web.whatsapp.com');
-        } else {
-          // Use exact same pattern as reminders - whatsapp-business://send
-          const waBusinessUrl = 'whatsapp-business://send';
-          const canOpen = await Linking.canOpenURL(waBusinessUrl);
-          if (canOpen) {
-            await Linking.openURL(waBusinessUrl);
-          } else {
-            // Fallback to regular WhatsApp
-            const waUrl = 'whatsapp://send';
-            const canOpenWa = await Linking.canOpenURL(waUrl);
-            if (canOpenWa) {
-              await Linking.openURL(waUrl);
-            } else {
-              await Linking.openURL('https://web.whatsapp.com');
-            }
-          }
-        }
+        // Use universal WhatsApp link that works on all devices
+        // This opens WhatsApp/WhatsApp Business app directly
+        await Linking.openURL('https://wa.me/');
         return;
       }
 
