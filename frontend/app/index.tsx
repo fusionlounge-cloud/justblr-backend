@@ -975,6 +975,39 @@ const styles = StyleSheet.create({
     marginRight: 10,
     marginTop: 2,
   },
+  // Compact reminder card for Call/SMS/WhatsApp
+  compactReminderCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    borderLeftWidth: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  compactName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#212529',
+    marginLeft: 4,
+  },
+  compactActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  compactActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compactDeleteBtn: {
+    padding: 4,
+  },
   reminderContent: {
     flex: 1,
   },
