@@ -396,7 +396,31 @@ export default function ActionScreen() {
 
   // Custom date/time picker for web
   const WebDateTimePicker = () => {
-    const [tempDate, setTempDate] = useState(scheduledTime.toISOString().slice(0, 16));
+    const formatDateForInput = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    const [dateStr, setDateStr] = useState(formatDateForInput(scheduledTime).split('T')[0]);
+    const [timeStr, setTimeStr] = useState(formatDateForInput(scheduledTime).split('T')[1]);
+    
+    const applyDateTime = () => {
+      try {
+        const newDate = new Date(`${dateStr}T${timeStr}`);
+        if (!isNaN(newDate.getTime())) {
+          setScheduledTime(newDate);
+          setShowDatePicker(false);
+        } else {
+          Alert.alert('Invalid Date', 'Please enter a valid date and time');
+        }
+      } catch (e) {
+        Alert.alert('Invalid Date', 'Please enter a valid date and time');
+      }
+    };
     
     return (
       <Modal visible={showDatePicker} transparent animationType="fade">
@@ -404,18 +428,22 @@ export default function ActionScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Date & Time</Text>
             
-            <input
-              type="datetime-local"
-              value={tempDate}
-              onChange={(e) => setTempDate(e.target.value)}
-              style={{
-                fontSize: 16,
-                padding: 12,
-                borderRadius: 8,
-                border: '1px solid #e9ecef',
-                marginBottom: 16,
-                width: '100%',
-              }}
+            <Text style={styles.inputLabel}>Date (YYYY-MM-DD)</Text>
+            <TextInput
+              style={styles.dateTimeInput}
+              value={dateStr}
+              onChangeText={setDateStr}
+              placeholder="2026-02-25"
+              keyboardType="default"
+            />
+            
+            <Text style={styles.inputLabel}>Time (HH:MM)</Text>
+            <TextInput
+              style={styles.dateTimeInput}
+              value={timeStr}
+              onChangeText={setTimeStr}
+              placeholder="16:30"
+              keyboardType="default"
             />
             
             <View style={styles.modalButtons}>
@@ -427,10 +455,7 @@ export default function ActionScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.confirmButton, { backgroundColor: getColor() }]}
-                onPress={() => {
-                  setScheduledTime(new Date(tempDate));
-                  setShowDatePicker(false);
-                }}
+                onPress={applyDateTime}
               >
                 <Text style={styles.confirmButtonText}>Confirm</Text>
               </TouchableOpacity>
