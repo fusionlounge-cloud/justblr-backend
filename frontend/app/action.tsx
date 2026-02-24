@@ -80,6 +80,9 @@ export default function ActionScreen() {
   const [contactsPermission, setContactsPermission] = useState(false);
   const [allContacts, setAllContacts] = useState([]);
   const [contactsCount, setContactsCount] = useState(0);
+  
+  // Native picker mode (for Android - shows date first, then time)
+  const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
 
   // Initialize picker values when modal opens
   useEffect(() => {
@@ -91,6 +94,7 @@ export default function ActionScreen() {
       const minutes = String(scheduledTime.getMinutes()).padStart(2, '0');
       setPickerDateStr(`${year}-${month}-${day}`);
       setPickerTimeStr(`${hours}:${minutes}`);
+      setPickerMode('date'); // Start with date picker on mobile
     }
   }, [showDatePicker]);
 
