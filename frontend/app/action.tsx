@@ -297,7 +297,7 @@ export default function ActionScreen() {
 
   // Schedule local notification
   const scheduleNotification = async (reminderTitle: string, reminderTime: Date) => {
-    if (Platform.OS === 'web' || !notifyMe) return;
+    if (Platform.OS === 'web' || !notifyMe || !Notifications) return;
     
     try {
       const trigger = new Date(reminderTime);
@@ -316,7 +316,7 @@ export default function ActionScreen() {
         console.log('Notification scheduled for:', trigger);
       }
     } catch (error) {
-      console.error('Failed to schedule notification:', error);
+      console.log('Notification scheduling not available:', error);
     }
   };
 
