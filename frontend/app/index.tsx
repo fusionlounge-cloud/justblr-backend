@@ -73,6 +73,109 @@ export default function DashboardScreen() {
     }
   };
 
+  // Voice Command Functions
+  const startVoiceCommand = async () => {
+    setShowVoiceModal(true);
+    setVoiceStatus('Listening... Say a task like "Call", "SMS", "WhatsApp", "Meet", "Deskwork", or "Notes"');
+    
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setVoiceRecording(recording);
+      setIsVoiceListening(true);
+    } catch (error) {
+      console.error('Failed to start voice recording:', error);
+      setVoiceStatus('Failed to start voice recording');
+      setIsVoiceListening(false);
+    }
+  };
+
+  const stopVoiceCommand = async () => {
+    if (!voiceRecording) {
+      setIsVoiceListening(false);
+      return;
+    }
+
+    try {
+      setIsVoiceListening(false);
+      setVoiceProcessing(true);
+      setVoiceStatus('Processing your voice command...');
+      
+      await voiceRecording.stopAndUnloadAsync();
+      const uri = voiceRecording.getURI();
+
+      if (uri) {
+        const formData = new FormData();
+        formData.append('audio_file', {
+          uri: uri,
+          type: 'audio/m4a',
+          name: 'voice.m4a',
+        } as any);
+
+        const response = await axios.post(`${BACKEND_URL}/api/voice/stt`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 30000,
+        });
+
+        const transcribedText = response.data.transcribed_text.toLowerCase();
+        setVoiceStatus(`Heard: "${transcribedText}"`);
+        
+        // Parse the command and navigate to the appropriate task
+        let matchedAction = null;
+        
+        if (transcribedText.includes('call') || transcribedText.includes('phone')) {
+          matchedAction = { type: 'call', name: 'Call' };
+        } else if (transcribedText.includes('sms') || transcribedText.includes('message') || transcribedText.includes('text')) {
+          matchedAction = { type: 'sms', name: 'SMS' };
+        } else if (transcribedText.includes('whatsapp') || transcribedText.includes('whats app') || transcribedText.includes('wa')) {
+          matchedAction = { type: 'whatsapp', name: 'WhatsApp' };
+        } else if (transcribedText.includes('meet') || transcribedText.includes('meeting')) {
+          matchedAction = { type: 'meet', name: 'Meet' };
+        } else if (transcribedText.includes('desk') || transcribedText.includes('work') || transcribedText.includes('task')) {
+          matchedAction = { type: 'deskwork', name: 'Deskwork' };
+        } else if (transcribedText.includes('note') || transcribedText.includes('keep')) {
+          matchedAction = { type: 'keepnotes', name: 'Notes' };
+        }
+
+        if (matchedAction) {
+          setVoiceStatus(`Opening ${matchedAction.name}...`);
+          setTimeout(() => {
+            setShowVoiceModal(false);
+            setVoiceProcessing(false);
+            handleActionPress(matchedAction.type, matchedAction.name);
+          }, 1000);
+        } else {
+          setVoiceStatus(`Didn't understand. Try saying "Call", "SMS", "WhatsApp", "Meet", "Deskwork", or "Notes"`);
+          setVoiceProcessing(false);
+        }
+      }
+
+      setVoiceRecording(null);
+    } catch (error) {
+      console.error('Failed to process voice:', error);
+      setVoiceStatus('Failed to process voice command. Try again.');
+      setVoiceProcessing(false);
+    }
+  };
+
+  const closeVoiceModal = () => {
+    if (voiceRecording) {
+      voiceRecording.stopAndUnloadAsync();
+    }
+    setShowVoiceModal(false);
+    setIsVoiceListening(false);
+    setVoiceProcessing(false);
+    setVoiceRecording(null);
+    setVoiceStatus('');
+  };
+
   const openGoogleKeep = async () => {
     const keepUrls = {
       ios: 'comgooglekeep://',
