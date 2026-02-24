@@ -436,6 +436,8 @@ async def mark_reminder_executed(reminder_id: str):
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Reminder not found")
         return {"message": "Reminder marked as executed"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Mark executed error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
