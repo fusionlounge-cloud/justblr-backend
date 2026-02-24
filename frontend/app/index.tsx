@@ -445,54 +445,60 @@ export default function DashboardScreen() {
               <Text style={styles.emptyText}>No {selectedCategory.name} reminders</Text>
             </View>
           ) : (
-            categoryReminders.map((reminder) => (
-              <TouchableOpacity 
-                key={reminder.id} 
-                style={[
-                  styles.reminderCard, 
-                  { borderLeftColor: selectedCategory.color },
-                  bulkSelectMode && selectedItems.includes(reminder.id) && styles.selectedCard
-                ]}
-                onPress={() => bulkSelectMode && toggleItemSelection(reminder.id)}
-                activeOpacity={bulkSelectMode ? 0.7 : 1}
-              >
-                {bulkSelectMode && (
-                  <View style={styles.checkbox}>
-                    <Ionicons 
-                      name={selectedItems.includes(reminder.id) ? "checkbox" : "square-outline"} 
-                      size={22} 
-                      color={selectedItems.includes(reminder.id) ? "#667eea" : "#adb5bd"} 
-                    />
-                  </View>
-                )}
-                <View style={styles.reminderContent}>
-                  <Text style={styles.reminderTitle}>{reminder.title}</Text>
-                  {reminder.contact_name && (
-                    <Text style={styles.reminderDetail}>{reminder.contact_name}</Text>
+            categoryReminders.map((reminder) => {
+              // Display name: use contact_name if available, otherwise use title
+              const displayName = reminder.contact_name || reminder.title || `${selectedCategory.name} Reminder`;
+              
+              return (
+                <TouchableOpacity 
+                  key={reminder.id} 
+                  style={[
+                    styles.compactReminderCard, 
+                    { borderLeftColor: selectedCategory.color },
+                    bulkSelectMode && selectedItems.includes(reminder.id) && styles.selectedCard
+                  ]}
+                  onPress={() => bulkSelectMode && toggleItemSelection(reminder.id)}
+                  activeOpacity={bulkSelectMode ? 0.7 : 1}
+                >
+                  {bulkSelectMode && (
+                    <View style={styles.checkbox}>
+                      <Ionicons 
+                        name={selectedItems.includes(reminder.id) ? "checkbox" : "square-outline"} 
+                        size={20} 
+                        color={selectedItems.includes(reminder.id) ? "#667eea" : "#adb5bd"} 
+                      />
+                    </View>
                   )}
-                  {reminder.contact_phone && (
-                    <Text style={styles.reminderPhone}>{reminder.contact_phone}</Text>
-                  )}
-                  {reminder.notes && <Text style={styles.reminderNotes}>{reminder.notes}</Text>}
                   
+                  {/* Contact name only */}
+                  <Text style={styles.compactName} numberOfLines={1}>{displayName}</Text>
+                  
+                  {/* Action buttons on the right */}
                   {!bulkSelectMode && (
-                    <View style={styles.reminderActions}>
+                    <View style={styles.compactActions}>
                       {actionLabel && (
                         <TouchableOpacity
-                          style={[styles.actionBtn, { backgroundColor: selectedCategory.color }]}
+                          style={[styles.compactActionBtn, { backgroundColor: selectedCategory.color }]}
                           onPress={() => executeAction(reminder)}
                         >
-                          <Text style={styles.actionBtnText}>{actionLabel}</Text>
+                          <Ionicons 
+                            name={selectedCategory.type === 'call' ? 'call' : selectedCategory.type === 'sms' ? 'chatbubble' : 'logo-whatsapp'} 
+                            size={16} 
+                            color="#fff" 
+                          />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity onPress={() => deleteReminder(reminder.id)}>
-                        <Ionicons name="trash" size={18} color="#FF6B6B" />
+                      <TouchableOpacity 
+                        style={styles.compactDeleteBtn}
+                        onPress={() => deleteReminder(reminder.id)}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
                       </TouchableOpacity>
                     </View>
                   )}
-                </View>
-              </TouchableOpacity>
-            ))
+                </TouchableOpacity>
+              );
+            })
           )}
         </ScrollView>
       </SafeAreaView>
