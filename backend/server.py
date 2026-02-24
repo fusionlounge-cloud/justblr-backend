@@ -409,18 +409,50 @@ async def get_google_contacts():
         logger.error(f"Google Contacts error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===== TRIGGERED REMINDERS ENDPOINT =====
+
+@api_router.get("/reminders/triggered")
+async def get_triggered_reminders():
+    """Get reminders that have been auto-triggered and need execution on device"""
+    try:
+        triggered = await db.reminders.find({
+            "auto_execute_triggered": True,
+            "is_completed": False
+        }).to_list(100)
+        
+        return [Reminder(**r) for r in triggered]
+    except Exception as e:
+        logger.error(f"Get triggered reminders error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/reminders/{reminder_id}/executed")
+async def mark_reminder_executed(reminder_id: str):
+    """Mark a reminder as executed (called after device performs the action)"""
+    try:
+        result = await db.reminders.update_one(
+            {"id": reminder_id},
+            {"$set": {"is_completed": True, "executed_at": datetime.now(timezone.utc)}}
+        )
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Reminder not found")
+        return {"message": "Reminder marked as executed"}
+    except Exception as e:
+        logger.error(f"Mark executed error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ===== HEALTH CHECK =====
 
 @api_router.get("/")
 async def root():
-    return {"message": "Voice Assistant API is running", "version": "2.0.0"}
+    return {"message": "Voice Assistant API is running", "version": "2.1.0", "scheduler": "enabled"}
 
 @api_router.get("/health")
 async def health_check():
     try:
         # Check MongoDB connection
         await db.command("ping")
-        return {"status": "healthy", "database": "connected", "voice": "deepgram"}
+        scheduler_status = "running" if scheduler.running else "stopped"
+        return {"status": "healthy", "database": "connected", "voice": "deepgram", "scheduler": scheduler_status}
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"Service unhealthy: {str(e)}")
 
@@ -435,6 +467,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Start the scheduler on app startup"""
+    scheduler.start()
+    logger.info("Scheduler started")
+    
+    # Reschedule any pending auto-execute reminders from database
+    try:
+        pending = await db.reminders.find({
+            "auto_execute": True,
+            "is_completed": False,
+            "auto_execute_triggered": {"$ne": True}
+        }).to_list(1000)
+        
+        for reminder in pending:
+            scheduled_time = reminder.get("scheduled_time")
+            if scheduled_time:
+                schedule_reminder_execution(reminder["id"], scheduled_time, True)
+        
+        logger.info(f"Rescheduled {len(pending)} pending reminders")
+    except Exception as e:
+        logger.error(f"Failed to reschedule reminders: {str(e)}")
+
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_event():
+    """Shutdown scheduler and close database"""
+    scheduler.shutdown()
+    logger.info("Scheduler stopped")
     client.close()
