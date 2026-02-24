@@ -307,30 +307,22 @@ export default function DashboardScreen() {
       if (appName === 'whatsapp') {
         if (Platform.OS === 'web') {
           await Linking.openURL('https://web.whatsapp.com');
-        } else if (Platform.OS === 'android') {
-          // On Android, use the package name directly to open WhatsApp Business
-          try {
-            await Linking.openURL('whatsapp://app');
-          } catch (e) {
-            // If that fails, try opening via market/play store intent
-            try {
-              await Linking.openURL('market://details?id=com.whatsapp.w4b');
-            } catch (e2) {
-              await Linking.openURL('https://web.whatsapp.com');
-            }
-          }
         } else {
-          // iOS
-          const waBusinessUrl = 'whatsapp://app';
+          // Direct WhatsApp Business URL - opens the app directly
+          // Using the same scheme that works in reminders
+          const waBusinessUrl = 'whatsapp-business://';
           try {
-            const canOpen = await Linking.canOpenURL(waBusinessUrl);
-            if (canOpen) {
-              await Linking.openURL(waBusinessUrl);
-            } else {
+            await Linking.openURL(waBusinessUrl);
+            return;
+          } catch (e) {
+            // If WhatsApp Business fails, try regular WhatsApp
+            try {
+              await Linking.openURL('whatsapp://');
+              return;
+            } catch (e2) {
+              // Only as last resort, open web
               await Linking.openURL('https://web.whatsapp.com');
             }
-          } catch (e) {
-            await Linking.openURL('https://web.whatsapp.com');
           }
         }
         return;
