@@ -349,6 +349,55 @@ async def delete_reminder(reminder_id: str):
         logger.error(f"Delete reminder error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.put("/reminders/{reminder_id}")
+async def update_reminder(reminder_id: str, reminder_update: ReminderUpdate):
+    """Update a reminder"""
+    try:
+        # Get existing reminder
+        existing = await db.reminders.find_one({"id": reminder_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Reminder not found")
+        
+        # Build update dict with only provided fields
+        update_data = {}
+        for field, value in reminder_update.dict(exclude_unset=True).items():
+            if value is not None:
+                update_data[field] = value
+        
+        if not update_data:
+            return Reminder(**existing)
+        
+        # Update in database
+        result = await db.reminders.update_one(
+            {"id": reminder_id},
+            {"$set": update_data}
+        )
+        
+        # Reschedule if scheduled_time or auto_execute changed
+        if 'scheduled_time' in update_data or 'auto_execute' in update_data:
+            new_scheduled_time = update_data.get('scheduled_time', existing.get('scheduled_time'))
+            new_auto_execute = update_data.get('auto_execute', existing.get('auto_execute', False))
+            
+            # Remove existing job
+            job_id = f"reminder_{reminder_id}"
+            if scheduler.get_job(job_id):
+                scheduler.remove_job(job_id)
+            
+            # Schedule new job if auto_execute is enabled
+            if new_auto_execute and new_scheduled_time:
+                schedule_reminder_execution(reminder_id, new_scheduled_time, True)
+        
+        # Get updated reminder
+        updated = await db.reminders.find_one({"id": reminder_id})
+        logger.info(f"Updated reminder: {reminder_id}")
+        return Reminder(**updated)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update reminder error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ===== HEALTH CHECK =====
 
 @api_router.post("/keep/sync")
