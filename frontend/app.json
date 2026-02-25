@@ -52,8 +52,8 @@
       "typedRoutes": true
     },
     "extra": {
-      "eas": {
-        "projectId": "justblr-matrix"
+      "router": {
+        "origin": false
       }
     }
   }
