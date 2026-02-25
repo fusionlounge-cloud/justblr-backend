@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://remind-vocal.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://voice-first-hub.preview.emergentagent.com').rstrip('/')
 
 
 class TestAutoExecuteScheduling:
