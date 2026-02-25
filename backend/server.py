@@ -510,6 +510,18 @@ async def mark_reminder_executed(reminder_id: str):
 
 # ===== HEALTH CHECK =====
 
+@api_router.get("/download/app")
+async def download_app():
+    """Download the app zip file"""
+    file_path = ROOT_DIR / "static" / "justblr-matrix-app.zip"
+    if file_path.exists():
+        return FileResponse(
+            path=str(file_path),
+            filename="justblr-matrix-app.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="File not found")
+
 @api_router.get("/")
 async def root():
     return {"message": "Voice Assistant API is running", "version": "2.1.0", "scheduler": "enabled"}
