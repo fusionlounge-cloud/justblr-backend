@@ -1,14 +1,14 @@
-# Voice Assistant - Personal Productivity App
+# Justblr Matrix Assistant - Voice-First Mobile Productivity App
 
 ## Original Problem Statement
-Build a voice-first mobile application for personal productivity with:
+Build a voice-first mobile application named "Justblr Matrix Assistant" for personal productivity with:
 - Central dashboard for managing reminders and notes
 - Reminders for different categories: Meet, Call, SMS, WhatsApp, Deskwork
 - Note-taking with Google Keep integration
-- Social media hub for quick access to Instagram, Facebook, LinkedIn, Alibaba, WhatsApp, WeChat
+- Social media hub for quick access to Instagram, Facebook, LinkedIn, Alibaba, WhatsApp Business, WeChat
 - Voice commands with South Indian accent support (using Deepgram)
 - Contact integration for reminders
-- **Scheduling features**: Date/Time picker, Auto-execute, Local notifications
+- Scheduling features: Date/Time picker, Auto-execute, Local notifications
 
 ## Tech Stack
 - **Frontend**: Expo (React Native) with expo-router
@@ -17,37 +17,56 @@ Build a voice-first mobile application for personal productivity with:
 - **Contacts**: expo-contacts (mobile only)
 - **Notifications**: expo-notifications
 
-## Core Requirements
+## Core Features
 
 ### 1. Dashboard
 - Quick Actions: 6 icons (Meet, Call, SMS, WhatsApp, Deskwork, Notes)
-- View All Reminders: 5 category cards showing counts (Meet, Call, SMS, WhatsApp, Deskwork) - NO Notes
+- View All Reminders: 5 category cards showing counts
 - Social Media Hub: 6 apps (Instagram, Facebook, LinkedIn, WA Business, WeChat, Alibaba)
+- Global Voice Command button in header
+- Custom Justblr Matrix logo and branding
 
 ### 2. Reminder Management
-- Create reminders with title, contact, phone, notes
-- Voice input for title and notes
-- Bulk deletion with checkboxes (Select, Select All, Delete)
-- Action buttons: CALL, SMS, WA for direct execution
-- Phone numbers must preserve + prefix
+- Create/Edit reminders with title, contact, phone, notes
+- Native date/time picker with quick presets
+- Auto-Execute toggle (defaults ON)
+- Compact reminder list with Edit/Delete buttons
+- Bulk deletion with checkboxes
 
-### 3. Scheduling Features (NEW)
-- **Date/Time Picker**: Modal with datetime-local input for selecting custom times
-- **Quick Presets**: "In 30 min", "In 1 hour", "In 2 hours", "Tomorrow 9 AM", "Tomorrow 6 PM"
-- **Auto-Execute**: Toggle for call/sms/whatsapp - backend scheduler triggers action at scheduled time
-- **Notify Me**: Toggle for local notifications (defaults to ON)
+### 3. Scheduling System
+- **APScheduler**: Backend auto-execution at scheduled time
+- **Presets**: "In 30 min", "In 1 hour", "Tomorrow 4:30 PM", etc.
+- **Native Picker**: Platform-specific date/time selection
 
-### 4. Platform Support
-- Mobile: Full contact integration via expo-contacts
-- Web/Desktop: Manual contact entry (expo-contacts not supported)
+## Completed Work
 
-## Implemented Features
+### Feb 25, 2026
+- [x] Fixed WhatsApp Business link in Social Media Hub (uses Android intent)
+- [x] Fixed app.json projectId issue for EAS builds
+- [x] Created downloadable ZIP with simplified APK build instructions
+- [x] Download API working at /api/download/app
 
 ### Feb 24, 2026
-- [x] Date/Time Picker with quick presets and custom selection modal
+- [x] Full scheduling system with native date/time picker
 - [x] Auto-Execute toggle for call/sms/whatsapp actions
-- [x] Backend scheduler using APScheduler for auto-execution
-- [x] expo-notifications integration for local notifications
+- [x] Backend APScheduler for auto-execution
+- [x] Rebranded to "Justblr Matrix Assistant" with custom logo
+- [x] Global voice command button in dashboard header
+- [x] Edit reminder functionality (PUT endpoint + frontend)
+- [x] Compact single-line reminder cards
+- [x] Hidden "What to remind?" for Call/SMS/WhatsApp
+
+## Pending Issues
+- P1: WhatsApp Business link needs user testing on device
+
+## Upcoming Tasks
+- P1: User validation of voice command feature on device
+- P2: Optimize contact loading for 36k+ contacts
+
+## Future/Backlog
+- P3: Google Contacts integration for web
+- P4: Enhanced Google Keep integration
+- P5: Re-enable and test notifications
 - [x] GET /api/reminders/triggered endpoint for triggered reminders
 - [x] PUT /api/reminders/{id}/executed endpoint to mark as executed
 - [x] All scheduling features tested and verified (100% pass rate)
