@@ -1,4 +1,6 @@
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -27,6 +29,11 @@ DEEPGRAM_API_KEY = os.environ['DEEPGRAM_API_KEY']
 
 # Create the main app
 app = FastAPI()
+
+# Serve static files for downloads
+STATIC_DIR = ROOT_DIR / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
