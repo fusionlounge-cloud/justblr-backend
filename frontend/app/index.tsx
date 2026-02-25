@@ -305,22 +305,24 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
+        // Open WhatsApp Business chats - same as reminder functionality
         if (Platform.OS === 'web') {
           await Linking.openURL('https://web.whatsapp.com');
         } else {
-          // Use intent URL to open WhatsApp Business app directly on Android
-          // This is the most reliable way to open a specific app
-          const intentUrl = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end';
-          try {
-            await Linking.openURL(intentUrl);
-          } catch (e) {
+          // Use the exact same URL pattern that works in reminders
+          // whatsapp-business://send opens the app to select a contact
+          const url = 'whatsapp-business://send?text=';
+          const canOpen = await Linking.canOpenURL(url);
+          if (canOpen) {
+            await Linking.openURL(url);
+          } else {
             // Fallback to regular WhatsApp
-            try {
-              const waIntent = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp;end';
-              await Linking.openURL(waIntent);
-            } catch (e2) {
-              // Final fallback
-              await Linking.openURL('whatsapp://send');
+            const waUrl = 'whatsapp://send?text=';
+            const canOpenWa = await Linking.canOpenURL(waUrl);
+            if (canOpenWa) {
+              await Linking.openURL(waUrl);
+            } else {
+              Alert.alert('WhatsApp Not Found', 'Please install WhatsApp or WhatsApp Business');
             }
           }
         }
