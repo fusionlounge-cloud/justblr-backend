@@ -25,22 +25,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-// Conditional notification import to avoid Expo Go errors
-let Notifications: typeof import('expo-notifications') | null = null;
-try {
-  if (Platform.OS !== 'web') {
-    Notifications = require('expo-notifications');
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-  }
-} catch (e) {
-  console.log('Notifications not available');
-}
+// Notifications disabled for build compatibility
 
 export default function ActionScreen() {
   const router = useRouter();
