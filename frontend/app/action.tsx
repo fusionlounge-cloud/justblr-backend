@@ -26,6 +26,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 // Notifications disabled for build compatibility
+const Notifications = null;
 
 export default function ActionScreen() {
   const router = useRouter();
