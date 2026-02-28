@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   Image,
   Modal,
-  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,24 +20,6 @@ import { Audio } from 'expo-av';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
-
-// Request Android permissions on app start
-const requestAndroidPermissions = async () => {
-  if (Platform.OS !== 'android') return;
-  
-  try {
-    const permissions = [
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-    ].filter(Boolean);
-    
-    const results = await PermissionsAndroid.requestMultiple(permissions);
-    console.log('Permission results:', results);
-  } catch (err) {
-    console.warn('Permission request error:', err);
-  }
-};
 
 // Quick Actions - all 6
 const QUICK_ACTIONS = [
