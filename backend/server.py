@@ -588,3 +588,53 @@ async def download_app():
             media_type="application/zip"
         )
     raise HTTPException(status_code=404, detail="File not found")
+
+
+@api_router.get("/scan")
+async def scan_qr():
+    """Return QR code page for Expo Go scanning"""
+    html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan with Expo Go</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #1a1a2e;
+            color: white;
+        }
+        h1 { margin-bottom: 20px; font-size: 24px; }
+        #qrcode { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px;
+            margin: 20px;
+        }
+        p { color: #aaa; max-width: 400px; text-align: center; padding: 0 20px; }
+        .url { color: #4fc3f7; font-family: monospace; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Justblr Matrix</h1>
+    <canvas id="qrcode"></canvas>
+    <p>Open <b>Expo Go</b> app on your phone and scan this QR code</p>
+    <p class="url">exp://voice-first-hub.ngrok.io</p>
+    <script>
+        QRCode.toCanvas(document.getElementById('qrcode'), 'exp://voice-first-hub.ngrok.io', {
+            width: 280,
+            margin: 2
+        });
+    </script>
+</body>
+</html>
+"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
