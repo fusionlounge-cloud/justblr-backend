@@ -544,7 +544,6 @@ async def scan_qr():
 <html>
 <head>
     <title>Scan with Expo Go</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -558,27 +557,19 @@ async def scan_qr():
             color: white;
         }
         h1 { margin-bottom: 20px; font-size: 24px; }
-        #qrcode { 
+        img { 
             background: white; 
             padding: 20px; 
             border-radius: 10px;
             margin: 20px;
         }
         p { color: #aaa; max-width: 400px; text-align: center; padding: 0 20px; }
-        .url { color: #4fc3f7; font-family: monospace; margin-top: 20px; }
     </style>
 </head>
 <body>
     <h1>Justblr Matrix</h1>
-    <canvas id="qrcode"></canvas>
-    <p>Open <b>Expo Go</b> app on your phone and scan this QR code</p>
-    <p class="url">exp://voice-first-hub.ngrok.io</p>
-    <script>
-        QRCode.toCanvas(document.getElementById('qrcode'), 'exp://voice-first-hub.ngrok.io', {
-            width: 280,
-            margin: 2
-        });
-    </script>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=exp://voice-first-hub.ngrok.io" alt="QR Code">
+    <p>Open <b>Expo Go</b> app and scan this QR code</p>
 </body>
 </html>
 """
