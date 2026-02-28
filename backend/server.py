@@ -577,18 +577,6 @@ async def shutdown_event():
     logger.info("Scheduler stopped")
     client.close()
 
-@api_router.get("/download/app")
-async def download_app():
-    """Download the app zip file"""
-    file_path = ROOT_DIR / "static" / "justblr-matrix-app.zip"
-    if file_path.exists():
-        return FileResponse(
-            path=str(file_path),
-            filename="justblr-matrix-app.zip",
-            media_type="application/zip"
-        )
-    raise HTTPException(status_code=404, detail="File not found")
-
 
 @api_router.get("/scan")
 async def scan_qr():
