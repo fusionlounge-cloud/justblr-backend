@@ -17,9 +17,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 import { Audio } from 'expo-av';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Constants from 'expo-constants';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
+
+// Get or create device ID
+const getDeviceId = async (): Promise<string> => {
+  try {
+    let deviceId = await AsyncStorage.getItem('device_id');
+    if (!deviceId) {
+      // Generate unique device ID
+      const installId = Constants.default?.installationId || '';
+      deviceId = installId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await AsyncStorage.setItem('device_id', deviceId);
+    }
+    return deviceId;
+  } catch (e) {
+    return `device_${Date.now()}`;
+  }
+};
 
 // Quick Actions - all 6
 const QUICK_ACTIONS = [
@@ -64,7 +82,8 @@ export default function DashboardScreen() {
 
   const fetchReminders = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/reminders`);
+      const deviceId = await getDeviceId();
+      const response = await axios.get(`${BACKEND_URL}/api/reminders?device_id=${deviceId}`);
       setReminders(response.data || []);
     } catch (error) {
       console.error('Error fetching reminders:', error);

@@ -139,6 +139,7 @@ class ReminderCreate(BaseModel):
     scheduled_time: datetime
     notes: Optional[str] = None
     auto_execute: bool = False  # If true, auto-trigger at scheduled time
+    device_id: Optional[str] = None  # For device-specific data
 
 class ReminderUpdate(BaseModel):
     title: Optional[str] = None
@@ -161,6 +162,7 @@ class Reminder(BaseModel):
     auto_execute: bool = False
     auto_execute_triggered: bool = False
     triggered_at: Optional[datetime] = None
+    device_id: Optional[str] = None  # For device-specific data
 
 class VoiceCommandRequest(BaseModel):
     command: str
@@ -314,12 +316,14 @@ async def create_reminder(reminder: ReminderCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/reminders", response_model=List[Reminder])
-async def get_reminders(completed: Optional[bool] = None):
-    """Get all reminders, optionally filter by completion status"""
+async def get_reminders(completed: Optional[bool] = None, device_id: Optional[str] = None):
+    """Get all reminders, optionally filter by completion status and device_id"""
     try:
         query = {}
         if completed is not None:
             query["is_completed"] = completed
+        if device_id:
+            query["device_id"] = device_id
         
         reminders = await db.reminders.find(query).sort("scheduled_time", 1).to_list(1000)
         return [Reminder(**reminder) for reminder in reminders]

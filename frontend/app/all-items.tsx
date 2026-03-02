@@ -13,8 +13,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Constants from 'expo-constants';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+// Get or create device ID
+const getDeviceId = async (): Promise<string> => {
+  try {
+    let deviceId = await AsyncStorage.getItem('device_id');
+    if (!deviceId) {
+      const installId = Constants.default?.installationId || '';
+      deviceId = installId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await AsyncStorage.setItem('device_id', deviceId);
+    }
+    return deviceId;
+  } catch (e) {
+    return `device_${Date.now()}`;
+  }
+};
 
 const CATEGORIES = [
   { type: 'meet', name: 'Meet', icon: 'people', color: '#FF6B6B' },
@@ -37,7 +54,8 @@ export default function AllItemsScreen() {
 
   const fetchReminders = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/reminders`);
+      const deviceId = await getDeviceId();
+      const response = await axios.get(`${BACKEND_URL}/api/reminders?device_id=${deviceId}`);
       setReminders(response.data || []);
     } catch (error) {
       console.error('Error fetching reminders:', error);

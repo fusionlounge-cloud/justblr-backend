@@ -22,8 +22,25 @@ import { Audio } from 'expo-av';
 import axios from 'axios';
 import { getContactsCache, setContactsCache, isCacheValid, clearContactsCache } from '../utils/contactsCache';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Constants from 'expo-constants';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+// Get or create device ID
+const getDeviceId = async (): Promise<string> => {
+  try {
+    let deviceId = await AsyncStorage.getItem('device_id');
+    if (!deviceId) {
+      const installId = Constants.default?.installationId || '';
+      deviceId = installId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await AsyncStorage.setItem('device_id', deviceId);
+    }
+    return deviceId;
+  } catch (e) {
+    return `device_${Date.now()}`;
+  }
+};
 
 // Notifications disabled for build compatibility
 const Notifications = null;
@@ -433,6 +450,7 @@ export default function ActionScreen() {
         ]);
       } else {
         // Create new reminder
+        const deviceId = await getDeviceId();
         response = await axios.post(`${BACKEND_URL}/api/reminders`, {
           title: reminderTitle,
           contact_name: contactName || undefined,
@@ -441,6 +459,7 @@ export default function ActionScreen() {
           scheduled_time: scheduledTime.toISOString(),
           notes: content || undefined,
           auto_execute: autoExecute,
+          device_id: deviceId,
         });
 
         console.log('Save response:', response.data);
