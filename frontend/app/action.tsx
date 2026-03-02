@@ -20,7 +20,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
-import { getContactsCache, setContactsCache, isCacheValid } from '../utils/contactsCache';
+import { getContactsCache, setContactsCache, isCacheValid, clearContactsCache } from '../utils/contactsCache';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
@@ -70,6 +70,7 @@ export default function ActionScreen() {
   const [contactsPermission, setContactsPermission] = useState(false);
   const [allContacts, setAllContacts] = useState([]);
   const [contactsCount, setContactsCount] = useState(0);
+  const [refreshingContacts, setRefreshingContacts] = useState(false);
   
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
@@ -223,6 +224,72 @@ export default function ActionScreen() {
     setContactPhone(contact.phoneNumber);
     setShowSuggestions(false);
     setContactSuggestions([]);
+  };
+
+  // Refresh contacts - clears cache and reloads from device
+  const refreshContacts = async () => {
+    if (Platform.OS === 'web') return;
+    
+    setRefreshingContacts(true);
+    clearContactsCache();
+    
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Contact permission is required');
+        setRefreshingContacts(false);
+        return;
+      }
+      
+      const { data } = await Contacts.getContactsAsync({
+        fields: [
+          Contacts.Fields.Name,
+          Contacts.Fields.FirstName,
+          Contacts.Fields.LastName,
+          Contacts.Fields.MiddleName,
+          Contacts.Fields.PhoneNumbers,
+        ],
+      });
+      
+      const formatted = [];
+      data.forEach((contact, idx) => {
+        const displayName = contact.name || 
+          [contact.firstName, contact.middleName, contact.lastName].filter(Boolean).join(' ').trim() ||
+          'Unknown';
+        
+        const searchText = [
+          contact.name,
+          contact.firstName,
+          contact.lastName,
+          contact.middleName,
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+          contact.phoneNumbers.forEach((phone, pIdx) => {
+            if (phone.number && phone.number.trim()) {
+              const originalPhone = phone.number.trim();
+              formatted.push({
+                id: `c${idx}p${pIdx}`,
+                name: displayName,
+                searchText: searchText,
+                phoneNumber: originalPhone,
+                phoneDigits: originalPhone.replace(/[^\d+]/g, ''),
+              });
+            }
+          });
+        }
+      });
+      
+      setContactsCache(formatted);
+      setAllContacts(formatted);
+      setContactsCount(formatted.length);
+      Alert.alert('Contacts Refreshed', `Loaded ${formatted.length} contacts`);
+    } catch (error) {
+      console.error('Error refreshing contacts:', error);
+      Alert.alert('Error', 'Failed to refresh contacts');
+    } finally {
+      setRefreshingContacts(false);
+    }
   };
 
   const getColor = () => {
@@ -601,7 +668,20 @@ export default function ActionScreen() {
                 ) : loadingContacts ? (
                   <Text style={styles.contactStatus}>Loading contacts...</Text>
                 ) : contactsCount > 0 ? (
-                  <Text style={styles.contactStatus}>{contactsCount} contacts</Text>
+                  <View style={styles.contactStatusRow}>
+                    <Text style={styles.contactStatus}>{contactsCount} contacts</Text>
+                    <TouchableOpacity 
+                      onPress={refreshContacts} 
+                      disabled={refreshingContacts}
+                      style={styles.refreshButton}
+                    >
+                      {refreshingContacts ? (
+                        <ActivityIndicator size="small" color="#667eea" />
+                      ) : (
+                        <Ionicons name="refresh" size={18} color="#667eea" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 ) : null}
               </View>
               <View style={styles.contactInputWrapper}>
@@ -837,6 +917,8 @@ const styles = StyleSheet.create({
   recordingText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#FF6B6B' },
   contactInputWrapper: { position: 'relative', flexDirection: 'row', alignItems: 'center' },
   contactLoader: { position: 'absolute', right: 16 },
+  contactStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  refreshButton: { padding: 4 },
   suggestionsContainer: {
     backgroundColor: '#fff', borderRadius: 12, marginTop: 8,
     borderWidth: 1, borderColor: '#e9ecef', maxHeight: 300, overflow: 'hidden', zIndex: 1000, elevation: 5,
