@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,11 @@ import {
   KeyboardAvoidingView,
   Switch,
   Modal,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
@@ -100,6 +101,21 @@ export default function ActionScreen() {
   
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+
+  // Handle back button press to go back to home
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return undefined;
+      
+      const onBackPress = () => {
+        router.replace('/');
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [router])
+  );
 
   // Initialize picker values when modal opens
   useEffect(() => {

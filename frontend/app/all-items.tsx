@@ -57,15 +57,15 @@ export default function AllItemsScreen() {
   // Handle back button press to go back to home
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS !== 'android') return;
+      if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
         router.replace('/');
         return true;
       };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
     }, [router])
   );
 
