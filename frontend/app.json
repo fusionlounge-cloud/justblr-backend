@@ -17,6 +17,9 @@
     },
     "android": {
       "package": "com.justblr.matrix",
+      "enableDangerousExperimentalLeanBuilds": false,
+      "enableProguardInReleaseBuilds": false,
+      "enableShrinkResourcesInReleaseBuilds": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"

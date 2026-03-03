@@ -446,6 +446,7 @@ export default function ActionScreen() {
           },
           trigger: {
             seconds: secondsUntilTrigger,
+            channelId: 'default',
           },
         });
         console.log('Notification scheduled:', notificationId, 'in', secondsUntilTrigger, 'seconds');
