@@ -431,23 +431,33 @@ export default function ActionScreen() {
         return;
       }
       
-      const trigger = new Date(reminderTime);
+      const triggerDate = new Date(reminderTime);
+      const now = new Date();
       
-      // Only schedule if it's in the future
-      if (trigger.getTime() > Date.now()) {
-        await Notifications.scheduleNotificationAsync({
+      // Calculate seconds until the reminder
+      const secondsUntilTrigger = Math.floor((triggerDate.getTime() - now.getTime()) / 1000);
+      
+      // Only schedule if it's in the future (at least 5 seconds)
+      if (secondsUntilTrigger > 5) {
+        const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
-            title: `${actionName} Reminder`,
+            title: `⏰ ${actionName} Reminder`,
             body: reminderTitle || `Time for your ${actionName.toLowerCase()}!`,
             data: { type: actionType, contact: contactName },
-            sound: true,
+            sound: 'default',
           },
-          trigger,
+          trigger: {
+            seconds: secondsUntilTrigger,
+          },
         });
-        console.log('Notification scheduled for:', trigger);
+        console.log('Notification scheduled:', notificationId, 'in', secondsUntilTrigger, 'seconds');
+        Alert.alert('Notification Set', `You will be reminded in ${Math.round(secondsUntilTrigger / 60)} minutes`);
+      } else {
+        console.log('Reminder time is in the past or too soon');
       }
     } catch (error) {
       console.log('Notification scheduling error:', error);
+      Alert.alert('Notification Error', 'Could not schedule notification. Please check app permissions.');
     }
   };
 
