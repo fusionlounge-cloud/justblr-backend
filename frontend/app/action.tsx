@@ -459,12 +459,11 @@ export default function ActionScreen() {
             body: reminderTitle || `Time for your ${actionName.toLowerCase()}!`,
             data: { type: actionType, contact: contactName },
             sound: 'default',
-            priority: Notifications.AndroidNotificationPriority.MAX,
           },
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: secondsUntilTrigger,
-            channelId: 'default',
+            repeats: false,
           },
         });
         console.log('Notification scheduled:', notificationId, 'in', secondsUntilTrigger, 'seconds');
@@ -473,7 +472,7 @@ export default function ActionScreen() {
         const scheduled = await Notifications.getAllScheduledNotificationsAsync();
         console.log('All scheduled notifications:', scheduled.length);
         
-        Alert.alert('Reminder Set', `Notification will appear in ${Math.round(secondsUntilTrigger / 60)} minutes.\n\nNote: Keep the app open or in background. Android may delay notifications if screen is off.`);
+        Alert.alert('Reminder Set', `Notification will appear in ${Math.round(secondsUntilTrigger / 60)} minutes.\n\nNote: Keep the app open or in background.`);
       } else {
         Alert.alert('Time Too Soon', 'Please set reminder for at least 1 minute from now.');
       }
