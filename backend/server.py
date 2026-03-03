@@ -323,7 +323,12 @@ async def get_reminders(completed: Optional[bool] = None, device_id: Optional[st
         if completed is not None:
             query["is_completed"] = completed
         if device_id:
-            query["device_id"] = device_id
+            # Show reminders for this device OR reminders without any device_id (legacy)
+            query["$or"] = [
+                {"device_id": device_id},
+                {"device_id": None},
+                {"device_id": {"$exists": False}}
+            ]
         
         reminders = await db.reminders.find(query).sort("scheduled_time", 1).to_list(1000)
         return [Reminder(**reminder) for reminder in reminders]
