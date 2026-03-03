@@ -435,28 +435,35 @@ export default function ActionScreen() {
       // Calculate seconds until the reminder
       const secondsUntilTrigger = Math.floor((triggerDate.getTime() - now.getTime()) / 1000);
       
-      // Only schedule if it's in the future (at least 5 seconds)
-      if (secondsUntilTrigger > 5) {
+      // Only schedule if it's in the future (at least 10 seconds for Android reliability)
+      if (secondsUntilTrigger > 10) {
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
             title: `⏰ ${actionName} Reminder`,
             body: reminderTitle || `Time for your ${actionName.toLowerCase()}!`,
             data: { type: actionType, contact: contactName },
             sound: 'default',
+            priority: Notifications.AndroidNotificationPriority.MAX,
           },
           trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: secondsUntilTrigger,
             channelId: 'default',
           },
         });
         console.log('Notification scheduled:', notificationId, 'in', secondsUntilTrigger, 'seconds');
-        Alert.alert('Notification Set', `You will be reminded in ${Math.round(secondsUntilTrigger / 60)} minutes`);
+        
+        // Verify it was scheduled
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        console.log('All scheduled notifications:', scheduled.length);
+        
+        Alert.alert('Reminder Set', `Notification will appear in ${Math.round(secondsUntilTrigger / 60)} minutes.\n\nNote: Keep the app open or in background. Android may delay notifications if screen is off.`);
       } else {
-        console.log('Reminder time is in the past or too soon');
+        Alert.alert('Time Too Soon', 'Please set reminder for at least 1 minute from now.');
       }
     } catch (error) {
       console.log('Notification scheduling error:', error);
-      Alert.alert('Notification Error', 'Could not schedule notification. Please check app permissions.');
+      Alert.alert('Notification Error', 'Could not schedule notification: ' + String(error));
     }
   };
 
