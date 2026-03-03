@@ -42,8 +42,19 @@ const getDeviceId = async (): Promise<string> => {
   }
 };
 
-// Notifications disabled for build compatibility
-const Notifications = null;
+// Import and setup notifications
+import * as Notifications from 'expo-notifications';
+
+// Configure notifications
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
 
 export default function ActionScreen() {
   const router = useRouter();
@@ -403,9 +414,23 @@ export default function ActionScreen() {
 
   // Schedule local notification
   const scheduleNotification = async (reminderTitle: string, reminderTime: Date) => {
-    if (Platform.OS === 'web' || !notifyMe || !Notifications) return;
+    if (Platform.OS === 'web' || !notifyMe) return;
     
     try {
+      // Request notification permissions
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        Alert.alert('Notification Permission', 'Please enable notifications in your phone settings to receive reminders.');
+        return;
+      }
+      
       const trigger = new Date(reminderTime);
       
       // Only schedule if it's in the future
@@ -422,7 +447,7 @@ export default function ActionScreen() {
         console.log('Notification scheduled for:', trigger);
       }
     } catch (error) {
-      console.log('Notification scheduling not available:', error);
+      console.log('Notification scheduling error:', error);
     }
   };
 
