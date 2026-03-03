@@ -41,6 +41,6 @@ That's it! The build will happen in the cloud. You'll get a download link for yo
 1. Download the APK from the link Expo provides
 2. Transfer the APK to your phone
 3. Install it (you may need to enable "Install from unknown sources")
-4. The app will connect to: https://voice-first-hub.preview.emergentagent.com
+4. The app will connect to: https://reminder-voice-app-1.preview.emergentagent.com
 
 Enjoy your Justblr Matrix Assistant!

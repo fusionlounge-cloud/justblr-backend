@@ -6,179 +6,164 @@ Core features include:
 4.  A social media hub for quick access to Instagram, Facebook, LinkedIn, Alibaba, WhatsApp, and WeChat.
 5.  All features controllable via voice commands.
 6.  Contact integration for reminders (e.g., remind me to call John Doe).
-7.  Ability to schedule reminders for a specific date/time, with an option for automatic execution (e.g., auto-send SMS).
+7.  Ability to schedule reminders for a specific date/time, with an option for automatic execution.
+8.  The user requires a stable, installable Android app (APK) and eventually wants to publish it on the market.
 
 **PRODUCT REQUIREMENTS**:
--   **Dashboard**: Main screen with Quick Actions, View All Reminders, and Social Media Hub. Should feature the Justblr Matrix name and user-provided logo. A global voice command button should be present in the header.
+-   **Dashboard**: Main screen with Quick Actions, View All Reminders, and Social Media Hub.
 -   **Reminders**:
-    -   Creation screen should support setting a title (for some types), contact, notes, schedule, and toggles for auto-execute and notifications.
-    -   The What to remind? field should be hidden for Call, SMS, and WhatsApp actions.
-    -   The schedule should default to Tomorrow at 4:30 PM but be changeable by the user.
-    -   The Auto-Execute toggle should be ON by default.
-    -   The reminder list view should be compact, showing only the contact name with Edit and Delete buttons.
--   **Integrations**:
-    -   Must read device contacts for reminders.
-    -   Social media links must open the correct apps (specifically, WhatsApp Business should work).
--   **Build & Deployment**: The user needs a stable, installable Android app (APK) that doesn't rely on a temporary tunnel URL.
+    -   Creation with title, contact, notes, schedule, and toggles for auto-execute and notifications.
+    -   List view should be compact.
+-   **Build & Deployment**: User needs a stable, installable Android app (APK).
+-   **Multi-user Support**: Each friend testing the app should have their own separate data.
+-   **Notifications**: Must be reliable and provide specific details about the reminder.
+-   **Navigation**: The app should not quit unexpectedly when using back gestures or buttons.
+-   **Contacts**: Ability to refresh the contact list within the app.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is an Expo (React Native) app with a FastAPI/MongoDB backend.
--   **Frontend**: The UI has been rebranded with the Justblr Matrix name and logo. A global voice command button is in the header. The reminder creation screen () includes a native date/time picker for mobile, schedule presets, and toggles for Auto-Execute and Notify Me. The View All Reminders screen () has a compact layout and includes an Edit button.
--   **Backend**: The backend () uses APScheduler to handle scheduled, auto-executed actions. It has full CRUD APIs for reminders, including a new PUT endpoint for editing. It also includes a  endpoint to provide a zipped archive of the project source code.
--   **Build Process**: The agent has attempted to guide the user through building an APK using EAS CLI locally, but this has failed due to the user's difficulty with command-line tools and environment-specific issues.
+The application is an Expo (React Native) app with a FastAPI/MongoDB backend. The agent has successfully navigated a very difficult and lengthy process to help the user build a working Android APK. Key features implemented include:
+- A Refresh Contacts button.
+- Multi-device data separation using a unique device ID, allowing friends to test the app without sharing data.
+- The backend was updated to ensure old reminders (created before the device ID feature) are still visible to the original user.
+- A functional APK has been built and installed by the user. However, this APK has critical usability bugs related to notifications and navigation.
 
 **Last working item**:
--   **Last item agent was working**: The agent was trying to help the user build an Android APK. After multiple failed attempts to guide the user through CLI commands (Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username, An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username, An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username) and file edits (), the user expressed frustration and asked for a simpler process. The agent's last action was to attempt to fix an invalid project ID in  on the user's behalf.
--   **Status**: BLOCKED
--   **Agent Testing Done**: N/A
--   **Which testing method agent to use?** N/A (User-facing build issue)
--   **User Testing Done**: N/A
+-   **Last item agent was working**: The user reported that while notifications are now firing, they are generic (e.g., Call reminder) and do not include the specific contact's name, making them unhelpful. The agent acknowledged the issue and was about to modify the notification creation logic.
+-   **Status**: IN PROGRESS
+-   **Agent Testing Done**: N
+-   **Which testing method agent to use?** Frontend change. After implementing the fix, the agent must trigger a new EAS build and provide the user with the new APK for testing.
+-   **User Testing Done**: Y (User tested the last APK and reported this issue).
 
 **All Pending/In progress Issue list**:
--   Issue 1: User is unable to build an APK for stable testing (P0)
--   Issue 2: WhatsApp Business link in the Social Media Hub is not working correctly (P1)
+-   Issue 1: Notification reminders are not specific (P0)
+-   Issue 2: Back swipe/gesture quits the app from sub-screens (P0)
+-   Issue 3: WhatsApp Business link in the Social Media Hub is not working (P1)
 
 **Issues Detail**:
--   **Issue 1: User is unable to build an APK for stable testing**
-    -   **Attempted fixes**: The agent guided the user through Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username, An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username, and An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username. This failed due to login issues and project configuration errors ( in ). The user found the process too complicated.
+-   **Issue 1: Notification reminders are not specific**
+    -   **Attempted fixes**: None. This is a new requirement based on the last working feature.
     -   **Next debug checklist**:
-        1.  Do not ask the user to run complex CLI commands or edit files.
-        2.  The agent should take full responsibility for the build process.
-        3.  The agent tried a local build and it failed due to environment issues (disk space, NDK architecture). The correct approach is to use EAS Cloud Build.
-        4.  Prepare the project for EAS Build (ensure  and  are correct).
-        5.  Guide the user through a one-time EAS login and then trigger the cloud build for them or provide a single, simple command to do so. The simplest path is for the agent to prepare the project, zip it, and provide a new download link with extremely simple instructions for the user to run the build.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is the user's primary source of frustration. A stable, installable APK will eliminate the need for the unreliable ngrok tunnel and allow for proper testing.
+        1.  Open .
+        2.  Find the  function.
+        3.  In the  call, modify the  to include the contact's name. Example: . The reminder details should be available in a state variable within that function's scope.
+    -   **Why fix this issue and what will be achieved with the fix?**: A generic notification is useless. This fix will make the core reminder feature functional and valuable.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
+    -   **Blocked on other issue**: None.
+
+-   **Issue 2: Back swipe/gesture quits the app**
+    -   **Attempted fixes**: Numerous failed attempts, including , , , , , , and disabling predictive back gestures in . The issue persists.
+    -   **Next debug checklist**:
+        1.  Re-examine  and .
+        2.  The  from  is the idiomatic way to handle this. The previous attempt might have been flawed.
+        3.  Implement  in both  and .
+        4.  The handler function should call  and crucially, it MUST  to signify that the event has been handled and to prevent the default action (exiting the app).
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical usability bug that makes the app feel broken and frustrates the user immensely.
     -   **Status**: IN PROGRESS
     -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: N/A
+    -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
+    -   **Blocked on other issue**: None.
 
--   **Issue 2: WhatsApp Business link in the Social Media Hub is not working correctly**
-    -   **Attempted fixes**: The agent tried multiple URL schemes (, , Android ). The user consistently reports it either shows an invalid link error or opens the Play Store instead of their chat list.
+-   **Issue 3: WhatsApp Business link in Social Media Hub is not working**
+    -   **Attempted fixes**: Various URL schemes (, ).
     -   **Next debug checklist**:
-        1.  The link for reminders *works*. The social hub link does not. The key difference is that reminders use  while the hub link has no phone number.
-        2.  The next attempt should be to simply open the app without any action. The correct deep link to just open the app is often just .
-        3.  Implement a fallback mechanism: . This attempts to open Business first, and if it fails, opens regular WhatsApp.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a required feature from the user that has been a persistent bug.
-    -   **Status**: IN PROGRESS
+        1.  Review  where the social media links are rendered.
+        2.  The correct deep link to simply open the app's main screen is often just the app's scheme, e.g., .
+        3.  Implement a fallback: .
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a pending feature requirement from the original problem statement.
+    -   **Status**: NOT STARTED
     -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Frontend
-
-**In progress Task List**:
--   **Task 1: Provide the user with a simple method to get an installable APK (P0)**
-    -   **Where to resume**: The user is frustrated with complex CLI commands. The next agent must simplify the process.
-    -   **What will be achieved with this?**: The user will finally have a stable version of the app on their device for testing.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: N/A
-    -   **Blocked on something**: The agent must successfully prepare the project for a cloud build.
+    -   **Should Test frontend/backend/both after fix?**: Frontend.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks**:
-    -   P1: Full user validation of the global voice command feature on the dashboard.
-    -   P2: Revisit and implement a scalable solution for the slow contact loading (36k+ contacts). The current in-memory cache is not a long-term solution.
+    -   P1: Guide the user through publishing the final, stable app to the Google Play Store.
 -   **Future Tasks**:
-    -   P3: Implement Google Contacts integration for the web version.
-    -   P4: Enhance Google Keep integration beyond just deep-linking.
-    -   P5: Re-enable and test notifications, which were disabled earlier.
+    -   P2: Build an iOS version of the app (requires the user to purchase an Apple Developer account).
+    -   P3: Revisit and implement a scalable solution for slow loading of the user's 36,000+ contacts.
+    -   P4: Communicate to the user that placing a voice icon *inside* third-party apps like WhatsApp is not technically feasible.
+    -   P5: Enhance Google Keep integration beyond simple deep-linking.
 
 **Completed work in this session**
--   Successfully resolved the app's initial broken state by fixing the ngrok tunnel connection.
--   Implemented a full scheduling system:
-    -   Frontend UI with a native date/time picker, schedule presets, and default time (Tomorrow 4:30 PM).
-    -   Backend auto-execution of reminders using APScheduler.
-    -   Auto-Execute toggle that defaults to ON.
--   Rebranded the app to Justblr Matrix assistant and added the user's custom logo to the header.
--   Added a global voice command button to the dashboard header.
--   Implemented a full Edit Reminder feature, including a backend PUT endpoint and frontend logic.
--   Redesigned reminder cards to a more compact, single-line layout.
--   Conditionally hid the What to remind? input for Call, SMS, and WhatsApp actions.
--   Fixed numerous UI bugs and deprecation warnings ( props).
--   Created a  endpoint to allow the user to download the project source code.
+-   **Finally produced a working APK**: After an extremely prolonged and difficult series of build failures, a working APK was successfully built via EAS, resolving the user's biggest blocker.
+-   **Implemented multi-device data separation**: Each phone now has its own private reminder list using a unique , allowing friends to test the app.
+-   **Added Refresh Contacts button**: Users can now manually reload their contact list inside the app.
+-   **Restored old reminders**: The backend was fixed to ensure reminders created before the multi-device update are still visible.
+-   **Fixed multiple build-related issues**: Resolved countless errors related to package versions, Expo SDK compatibility, Android permissions, Metro bundler configuration, and missing files (, ).
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Infeasible voice icon in 3rd party apps**
-    -   **Debug checklist**: The user's request to have a voice icon *inside* WhatsApp/SMS is not technically possible. The agent needs to clearly communicate this limitation.
-    -   **Why to solve this issue and what will be achieved with this?**: To manage user expectations and prevent wasted effort.
-    -   **Should Test frontend/backend/both after fix**: N/A (requires communication, not code).
+-   **Infeasible voice icon in 3rd party apps**: The user requested a voice icon inside WhatsApp/SMS. The agent has not yet communicated that this is technically impossible.
+-   **Slow contact loading**: The initial solution was a simple cache, noted as not a long-term fix for 36,000+ contacts.
+
+**Known issue recurrence from previous fork**
+-   **APK Build Failures**: Recurrence count: 10+. The entire session was dominated by the inability to produce a stable APK. This is the single most recurring and frustrating issue for the user. While an APK was finally built, the process is extremely fragile.
+-   **Back Navigation**: Recurrence count: 5+. The issue of the back swipe/button quitting the app has been reported and fixed multiple times but persists.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend**: Expo, React Native, TypeScript, .
+-   **Frontend**: Expo (SDK 54), React Native, TypeScript, ,  (for unique ID), .
 -   **Backend**: FastAPI, MongoDB (via ), APScheduler.
--   **Scheduling**:  for native mobile date/time selection,  on the backend for job execution.
--   **State Management**: React , , .
--   **Builds**: EAS (Expo Application Services) for creating APKs.
+-   **Builds**: EAS (Expo Application Services) Cloud Build.
+-   **Data Separation**: Using  from  as a unique  for each user.
 
 **key DB schema**
 -   **reminders**: 
 
 **All files of reference**
--   : Updated with new header, logo, title, and voice command button/modal logic.
--   : Heavily modified to include scheduling logic, native date/time picker, default states, and edit functionality.
--   : Updated with compact reminder card style and an Edit button with its handler.
--   : Updated with a PUT endpoint for editing reminders, the APScheduler logic for auto-execution, and the  endpoint.
--   : Created to configure the EAS build process.
--   : Modified to include Android package name, icons, and adaptive icon settings for the APK build.
+-   : Modified all reminder endpoints (GET, POST, PUT, DELETE) to filter and save based on .
+-   : The most heavily modified file. Contains logic for creating reminders, scheduling notifications, refreshing contacts, and handling the back button.
+-   : Modified to fetch and pass the  for displaying reminders.
+-   : Modified to fetch reminders with  and to handle back navigation.
+-   : Contains the specific dependency versions that led to the last successful build.
+-   : Contains critical Android permissions (, ) and the  plugin configuration.
+
+**Areas that need refactoring**:
+-   The back navigation logic is scattered and has been repeatedly implemented incorrectly. A clean, single approach using  from  in  and  is needed.
+-   The entire build configuration (, , ) is extremely brittle. Any change risks breaking the build.
+
+**key api endpoints**
+-   : Fetches reminders for a specific device.
+-   : Creates a reminder, now requires a  in the body.
+-   : Used repeatedly to provide the user with the updated source code for building the APK.
 
 **Critical Info for New Agent**
--   **User is not technical**: The user has repeatedly struggled with command-line instructions (Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username, An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username, ). Do not ask the user to perform complex technical steps. Your top priority is to provide them with a simple, one-click or single-command solution to get the APK.
--   **APK Build is the #1 Priority**: The user's main problem is the unstable Expo Go tunnel (), which disconnects frequently. Building an APK is the only permanent solution and must be addressed first.
--   **Use EAS Cloud Build**: Local Android builds on the agent's machine failed due to environment issues. The correct and most reliable method is using EAS Build, which builds the app in a clean cloud environment.
--   **Simplify Instructions**: When you provide the final solution, make it foolproof. For example: Download this file, unzip it, run this ONE command.
+-   **The user is extremely frustrated and non-technical.** The build process has been a nightmare for them. Prioritize clear, simple, single-command instructions. Acknowledge their frustration and be decisive. Avoid asking them to debug things.
+-   **APK builds are high-risk.** The last successful build is a fragile victory. Before asking the user to build again, be absolutely certain your fix is correct and well-tested in theory. Double-check that all required files (like ) are included in the build package.
+-   **The two P0 bugs are critical.** The app is not usable for the user until (1) notifications are specific and (2) back navigation is fixed. Address these two issues as the absolute top priority.
+-   **Communicate limitations.** The user still has expectations that may not be technically feasible (e.g., voice icon in other apps). It is important to manage these expectations clearly and respectfully.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: States they have the correct login/password for Expo and asks for the next step.
-2.  **Agent**: Instructs the user to run An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username.
-3.  **User**: Shares a screenshot showing the build failed because the project isn't linked.
-4.  **Agent**: Instructs the user to run An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username.
-5.  **User**: Shares a screenshot showing An Expo user account is required to proceed.
-
-Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username failed due to an invalid project ID in .
-6.  **Agent**: Instructs the user to manually edit  using  to delete the  lines.
-7.  **User**: not able to find. start fresh, please dont give me complicated work - **STATUS: PENDING**. This is a clear signal to stop providing complex instructions.
-8.  **Agent**: Acknowledges the user's request and decides to fix the file and provide a fresh download.
-9.  **User**: Asks for guidance after seeing the Log in to EAS with email or username (exit and run eas login --help to see other login options)
-Input is required, but stdin is not readable. Failed to display prompt: Email or username failed screen.
-10. **Agent**: Provides instructions on how to create/login to an Expo account.
+1.  User: Both back swipe and notifications are still not working.
+2.  Agent: Investigates and finds root causes (missing notification channel, Expo gesture bug). Implements fixes.
+3.  User: will you recheck properly... stop troubling me.
+4.  Agent: Re-checks, finds a potential issue, fixes it, and provides new build instructions.
+5.  User: pls cross check once more and give the working version.
+6.  Agent: Does another round of verification and confirms the package is ready.
+7.  User: what next app will it work now. Build succeeds.
+8.  Agent: Shares the successful APK link.
+9.  **User**: **it is showing call reminder but which call app just a notification of call reminder is coming, but it has to open specifically asto which the call / whatsapp / sms reminder is due** (STATUS: PENDING)
+10. Agent: The notification is working now. Let me fix it to show the contact name: (Current state)
 
 **Project Health Check:**
--   **Broken**: The user's workflow for testing the app is broken due to the unreliable Expo Go tunnel and their inability to build a stable APK. The application code itself is functional.
+-   **Broken**: The app has two critical, user-facing bugs that make core features (reminders and navigation) unusable or frustrating. The build process is extremely fragile. User trust is very low.
+
+**3rd Party Integrations**
+-   Expo
+-   MongoDB
+-   APScheduler
 
 **Testing status**
--   Testing agent used after significant changes: YES (after scheduling features were added).
--   Troubleshoot agent used after agent stuck in loop: NO
+-   Testing agent used after significant changes: NO
+-   Troubleshoot agent used after agent stuck in loop: YES, once, which successfully identified a permission conflict.
 -   Test files created: None.
--   Known regressions: The WhatsApp Business link in the social hub is a recurring bug that has not been successfully fixed.
+-   Known regressions: The back navigation issue has regressed multiple times after attempted fixes.
 
 **What agent forgot to execute**
--   The agent failed to recognize the user's technical limitations early on, leading to a frustrating loop of complex CLI instructions.
--   The agent did not provide a simple, automated solution for the APK build, instead trying to guide the user through a manual process that was destined to fail.
--   The agent has not yet clearly communicated the technical impossibility of placing a voice icon inside third-party applications like WhatsApp.</analysis>
+-   The agent repeatedly failed to create a stable build, indicating a lack of a systematic approach to dependency management and build configuration for Expo.
+-   The agent failed to fix the back navigation bug despite numerous attempts, suggesting a misunderstanding of 's navigation stack and event handling.
+-   The agent consistently provided the user with build commands that failed, causing immense user frustration and wasting time. More self-verification of the build package and configuration was needed before handing off to the user.</analysis>

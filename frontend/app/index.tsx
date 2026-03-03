@@ -324,37 +324,35 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Open WhatsApp Business app directly
+        // Open WhatsApp Business app - simplified approach
         if (Platform.OS === 'web') {
           await Linking.openURL('https://web.whatsapp.com');
-        } else if (Platform.OS === 'android') {
-          // On Android, use intent to open WhatsApp Business main activity
+          return;
+        }
+        
+        // For mobile (Android/iOS), try multiple approaches
+        const urlsToTry = [
+          'whatsapp://app', // Standard WhatsApp
+          'whatsapp://', // Alternative WhatsApp scheme
+        ];
+        
+        let opened = false;
+        for (const url of urlsToTry) {
           try {
-            // Try opening WhatsApp Business package directly
-            const businessIntent = 'intent://main#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end';
-            await Linking.openURL(businessIntent);
-          } catch {
-            // Fallback: Try regular WhatsApp
-            try {
-              const waIntent = 'intent://main#Intent;scheme=whatsapp;package=com.whatsapp;end';
-              await Linking.openURL(waIntent);
-            } catch {
-              Alert.alert('WhatsApp Not Found', 'Please install WhatsApp or WhatsApp Business');
+            const canOpen = await Linking.canOpenURL(url);
+            if (canOpen) {
+              await Linking.openURL(url);
+              opened = true;
+              break;
             }
+          } catch (e) {
+            console.log('Failed to open:', url, e);
           }
-        } else {
-          // iOS - try WhatsApp Business first, then regular WhatsApp
-          const canOpenBusiness = await Linking.canOpenURL('whatsapp-business://');
-          if (canOpenBusiness) {
-            await Linking.openURL('whatsapp-business://');
-          } else {
-            const canOpenWa = await Linking.canOpenURL('whatsapp://');
-            if (canOpenWa) {
-              await Linking.openURL('whatsapp://');
-            } else {
-              Alert.alert('WhatsApp Not Found', 'Please install WhatsApp or WhatsApp Business');
-            }
-          }
+        }
+        
+        if (!opened) {
+          // Last resort: try to open Play Store for WhatsApp
+          Alert.alert('WhatsApp Not Found', 'Please install WhatsApp from the Play Store');
         }
         return;
       }

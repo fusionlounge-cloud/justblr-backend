@@ -102,14 +102,16 @@ export default function ActionScreen() {
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
 
-  // Handle back button press to go back to home
+  // Handle back button press - navigate back properly without quitting app
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
-        router.replace('/');
-        return true;
+        // Use router.back() to go to previous screen in the stack
+        // This prevents the app from quitting
+        router.back();
+        return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
@@ -426,7 +428,7 @@ export default function ActionScreen() {
     }
   };
 
-  // Schedule local notification
+  // Schedule local notification with SPECIFIC details
   const scheduleNotification = async (reminderTitle: string, reminderTime: Date) => {
     if (Platform.OS === 'web' || !notifyMe) return;
     
@@ -453,11 +455,33 @@ export default function ActionScreen() {
       
       // Only schedule if it's in the future (at least 10 seconds for Android reliability)
       if (secondsUntilTrigger > 10) {
+        // Build SPECIFIC notification title with action type and contact
+        const actionLabel = actionName.toUpperCase();
+        const contactLabel = contactName ? contactName : (title.trim() || 'Reminder');
+        const notificationTitle = `${actionLabel}: ${contactLabel}`;
+        
+        // Build SPECIFIC notification body with all details
+        let bodyParts = [];
+        if (contactName) bodyParts.push(`Contact: ${contactName}`);
+        if (contactPhone) bodyParts.push(`Phone: ${contactPhone}`);
+        if (content) bodyParts.push(`Notes: ${content}`);
+        
+        // If no contact info, use a helpful message
+        const notificationBody = bodyParts.length > 0 
+          ? bodyParts.join('\n') 
+          : `Time for your scheduled ${actionName.toLowerCase()}!`;
+        
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
-            title: `⏰ ${actionName} Reminder`,
-            body: reminderTitle || `Time for your ${actionName.toLowerCase()}!`,
-            data: { type: actionType, contact: contactName },
+            title: notificationTitle,
+            body: notificationBody,
+            data: { 
+              type: actionType, 
+              actionName: actionName,
+              contact: contactName, 
+              phone: contactPhone,
+              notes: content 
+            },
             sound: 'default',
           },
           trigger: {
@@ -466,13 +490,9 @@ export default function ActionScreen() {
             repeats: false,
           },
         });
-        console.log('Notification scheduled:', notificationId, 'in', secondsUntilTrigger, 'seconds');
+        console.log('Notification scheduled:', notificationId, 'Title:', notificationTitle, 'in', secondsUntilTrigger, 'seconds');
         
-        // Verify it was scheduled
-        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-        console.log('All scheduled notifications:', scheduled.length);
-        
-        Alert.alert('Reminder Set', `Notification will appear in ${Math.round(secondsUntilTrigger / 60)} minutes.\n\nNote: Keep the app open or in background.`);
+        Alert.alert('Reminder Set', `You will be notified: "${notificationTitle}" in ${Math.round(secondsUntilTrigger / 60)} minutes`);
       } else {
         Alert.alert('Time Too Soon', 'Please set reminder for at least 1 minute from now.');
       }

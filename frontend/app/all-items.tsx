@@ -54,14 +54,16 @@ export default function AllItemsScreen() {
     fetchReminders();
   }, []);
 
-  // Handle back button press to go back to home
+  // Handle back button press - navigate back properly without quitting app
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
-        router.replace('/');
-        return true;
+        // Use router.back() to go to previous screen in the stack
+        // This prevents the app from quitting
+        router.back();
+        return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
