@@ -45,16 +45,14 @@ const getDeviceId = async (): Promise<string> => {
 // Import and setup notifications
 import * as Notifications from 'expo-notifications';
 
-// Configure notifications
-if (Platform.OS !== 'web') {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
-}
+// Configure notification handler at module level
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function ActionScreen() {
   const router = useRouter();

@@ -2,31 +2,32 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, BackHandler, Platform } from 'react-native';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useNavigation } from 'expo-router';
 
 export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
+  const navigation = useNavigation();
 
-  // Handle Android hardware back button
+  // Handle Android hardware back button and gesture
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       // If we're on the home screen, let the default behavior (exit app) happen
-      if (pathname === '/' || pathname === '/index') {
+      if (pathname === '/' || pathname === '/index' || pathname === '') {
         return false; // Let system handle it (exit app)
       }
       // Otherwise, go back
-      if (router.canGoBack()) {
-        router.back();
+      if (navigation.canGoBack()) {
+        navigation.goBack();
         return true; // Prevent default behavior
       }
       return false;
     });
 
     return () => backHandler.remove();
-  }, [pathname, router]);
+  }, [pathname, navigation]);
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -35,13 +36,30 @@ export default function RootLayout() {
           headerShown: false,
           animation: 'slide_from_right',
           gestureEnabled: true,
-          gestureDirection: 'horizontal',
+          fullScreenGestureEnabled: true,
         }}
       >
-        <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+        <Stack.Screen 
+          name="index" 
+          options={{ 
+            gestureEnabled: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="action" 
+          options={{ 
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
+          }} 
+        />
+        <Stack.Screen 
+          name="all-items" 
+          options={{ 
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
+          }} 
+        />
         <Stack.Screen name="voice-command" />
-        <Stack.Screen name="action" />
-        <Stack.Screen name="all-items" />
       </Stack>
     </GestureHandlerRootView>
   );
