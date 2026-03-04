@@ -24,29 +24,22 @@ export default function RootLayout() {
   }, []);
 
   // Handle Android hardware back button at root level
-  // This is a fallback - individual screens also handle back navigation
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       // On home screen, allow default behavior (exit app)
       if (pathname === '/' || pathname === '/index' || pathname === '') {
-        return false;
+        return false; // Let system handle (exit app)
       }
       
-      // On other screens, navigate back
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-        return true; // Prevent default (app exit)
-      }
-      
-      // If can't go back but not on home, try router
-      router.back();
-      return true;
+      // On ANY other screen, ALWAYS go to home
+      router.replace('/');
+      return true; // Prevent default (app exit)
     });
 
     return () => backHandler.remove();
-  }, [pathname, navigation, router]);
+  }, [pathname, router]);
 
   return (
     <GestureHandlerRootView style={styles.container}>

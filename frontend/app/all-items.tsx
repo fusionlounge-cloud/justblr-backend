@@ -54,21 +54,25 @@ export default function AllItemsScreen() {
     fetchReminders();
   }, []);
 
-  // Handle back button press - navigate back properly without quitting app
+  // Handle back button press - ALWAYS go to home screen
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
-        // Use router.back() to go to previous screen in the stack
-        // This prevents the app from quitting
-        router.back();
+        // If viewing a category, go back to categories grid
+        if (selectedCategory) {
+          setSelectedCategory(null);
+          return true;
+        }
+        // Otherwise, go to home screen
+        router.replace('/');
         return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [router])
+    }, [router, selectedCategory])
   );
 
   const fetchReminders = async () => {

@@ -102,15 +102,14 @@ export default function ActionScreen() {
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
 
-  // Handle back button press - navigate back properly without quitting app
+  // Handle back button press - ALWAYS go to home screen
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
-        // Use router.back() to go to previous screen in the stack
-        // This prevents the app from quitting
-        router.back();
+        // Always navigate to home screen, never exit app
+        router.replace('/');
         return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 
