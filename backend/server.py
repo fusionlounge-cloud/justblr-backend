@@ -910,6 +910,18 @@ async def startup_event():
     scheduler.start()
     logger.info("Scheduler started")
     
+    # Load Twilio config from database
+    global twilio_client, TWILIO_PHONE_NUMBER, TWILIO_WHATSAPP_NUMBER
+    try:
+        twilio_config = await db.settings.find_one({"key": "twilio_config"})
+        if twilio_config:
+            twilio_client = TwilioClient(twilio_config["account_sid"], twilio_config["auth_token"])
+            TWILIO_PHONE_NUMBER = twilio_config["phone_number"]
+            TWILIO_WHATSAPP_NUMBER = twilio_config.get("whatsapp_number", "whatsapp:+14155238886")
+            logger.info(f"Twilio loaded from database: {TWILIO_PHONE_NUMBER}")
+    except Exception as e:
+        logger.error(f"Failed to load Twilio config: {str(e)}")
+    
     # Reschedule any pending auto-execute reminders from database
     try:
         pending = await db.reminders.find({
