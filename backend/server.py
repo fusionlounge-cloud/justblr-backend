@@ -185,6 +185,27 @@ class Note(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+# ===== SYNC MODELS =====
+
+class Contact(BaseModel):
+    name: str
+    phone: str
+    email: Optional[str] = None
+
+class ContactsSyncRequest(BaseModel):
+    device_id: str
+    contacts: List[Contact]
+
+class SyncCodeRequest(BaseModel):
+    device_id: str
+
+class SyncCodeVerifyRequest(BaseModel):
+    sync_code: str
+
+class SyncCodeResponse(BaseModel):
+    sync_code: str
+    expires_in: int = 3600  # 1 hour
+
 # ===== VOICE ENDPOINTS =====
 
 @api_router.post("/voice/stt", response_model=STTResponse)
@@ -471,6 +492,98 @@ async def delete_note(note_id: str):
         logger.error(f"Delete note error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ===== SYNC ENDPOINTS (For Web-Mobile Sync) =====
+import random
+import string
+
+@api_router.post("/sync/generate-code", response_model=SyncCodeResponse)
+async def generate_sync_code(request: SyncCodeRequest):
+    """Generate a 6-digit sync code for linking web to mobile"""
+    try:
+        # Generate 6-digit code
+        sync_code = ''.join(random.choices(string.digits, k=6))
+        
+        # Store in database with expiration
+        await db.sync_codes.delete_many({"device_id": request.device_id})  # Remove old codes
+        await db.sync_codes.insert_one({
+            "sync_code": sync_code,
+            "device_id": request.device_id,
+            "created_at": datetime.now(timezone.utc),
+            "expires_at": datetime.now(timezone.utc).timestamp() + 3600  # 1 hour
+        })
+        
+        return SyncCodeResponse(sync_code=sync_code, expires_in=3600)
+    except Exception as e:
+        logger.error(f"Generate sync code error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/sync/verify-code")
+async def verify_sync_code(request: SyncCodeVerifyRequest):
+    """Verify sync code and return device_id for web session"""
+    try:
+        # Find the sync code
+        code_doc = await db.sync_codes.find_one({"sync_code": request.sync_code})
+        
+        if not code_doc:
+            raise HTTPException(status_code=404, detail="Invalid sync code")
+        
+        # Check expiration
+        if code_doc.get("expires_at", 0) < datetime.now(timezone.utc).timestamp():
+            await db.sync_codes.delete_one({"sync_code": request.sync_code})
+            raise HTTPException(status_code=400, detail="Sync code expired")
+        
+        device_id = code_doc.get("device_id")
+        
+        return {"device_id": device_id, "message": "Successfully linked"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Verify sync code error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/sync/contacts")
+async def sync_contacts(request: ContactsSyncRequest):
+    """Sync contacts from mobile to cloud"""
+    try:
+        # Delete existing contacts for this device
+        await db.contacts.delete_many({"device_id": request.device_id})
+        
+        # Insert new contacts
+        if request.contacts:
+            contacts_to_insert = [
+                {
+                    "device_id": request.device_id,
+                    "name": c.name,
+                    "phone": c.phone,
+                    "email": c.email,
+                    "synced_at": datetime.now(timezone.utc)
+                }
+                for c in request.contacts
+            ]
+            await db.contacts.insert_many(contacts_to_insert)
+        
+        return {"message": f"Synced {len(request.contacts)} contacts", "count": len(request.contacts)}
+    except Exception as e:
+        logger.error(f"Sync contacts error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/sync/contacts/{device_id}")
+async def get_synced_contacts(device_id: str, search: Optional[str] = None, limit: int = 100):
+    """Get synced contacts for a device"""
+    try:
+        query = {"device_id": device_id}
+        if search:
+            query["$or"] = [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"phone": {"$regex": search, "$options": "i"}}
+            ]
+        
+        contacts = await db.contacts.find(query, {"_id": 0}).limit(limit).to_list(limit)
+        return {"contacts": contacts, "count": len(contacts)}
+    except Exception as e:
+        logger.error(f"Get contacts error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ===== GOOGLE CONTACTS ENDPOINTS =====
 
 @api_router.get("/contacts/google")
@@ -585,8 +698,22 @@ async def scan_qr():
     from fastapi.responses import HTMLResponse
     return HTMLResponse(content=html)
 
+# Serve web dashboard static files
+WEB_BUILD_DIR = ROOT_DIR.parent / "web" / "build"
+
+@api_router.get("/dashboard")
+async def serve_dashboard():
+    """Serve the web dashboard"""
+    index_path = WEB_BUILD_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    raise HTTPException(status_code=404, detail="Web dashboard not built")
+
 # Include the router in the main app
 app.include_router(api_router)
+
+if WEB_BUILD_DIR.exists():
+    app.mount("/api/web-static", StaticFiles(directory=str(WEB_BUILD_DIR), html=True), name="web_dashboard")
 
 app.add_middleware(
     CORSMiddleware,

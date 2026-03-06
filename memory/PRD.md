@@ -10,9 +10,11 @@ Build a voice-first mobile productivity application named "Justblr Matrix Assist
 - Contact integration for reminders
 - Schedule reminders for specific date/time with auto-execute option
 - Android APK for distribution
+- **Web dashboard synced with mobile app**
 
 ## Tech Stack
-- **Frontend**: Expo SDK 54, React Native, TypeScript, expo-router
+- **Mobile**: Expo SDK 54, React Native, TypeScript, expo-router
+- **Web**: React 18, CSS, served via FastAPI
 - **Backend**: FastAPI, MongoDB (motor), APScheduler
 - **Build**: EAS (Expo Application Services) Cloud Build
 - **Data Separation**: expo-constants installationId as device_id
@@ -20,16 +22,17 @@ Build a voice-first mobile productivity application named "Justblr Matrix Assist
 ## Database Schema
 ```
 reminders: {
-  _id,
-  action_type,
-  contact_name,
-  contact_phone,
-  notes,
-  scheduled_time,
-  auto_execute,
-  triggered,
-  created_at,
-  device_id
+  _id, id, action_type, contact_name, contact_phone,
+  notes, scheduled_time, auto_execute, triggered,
+  created_at, device_id
+}
+
+contacts: {
+  device_id, name, phone, email, synced_at
+}
+
+sync_codes: {
+  sync_code, device_id, created_at, expires_at
 }
 ```
 
@@ -39,9 +42,14 @@ reminders: {
 - `PUT /api/reminders/:id` - Update reminder
 - `DELETE /api/reminders/:id` - Delete reminder
 - `POST /api/voice/stt` - Speech-to-text for voice commands
+- `POST /api/sync/generate-code` - Generate 6-digit sync code
+- `POST /api/sync/verify-code` - Verify sync code and get device_id
+- `POST /api/sync/contacts` - Sync contacts from mobile
+- `GET /api/sync/contacts/{device_id}` - Get synced contacts
+- `GET /api/web-static/index.html` - Web dashboard
 
 ## Completed Features
-- [x] Working APK built via EAS (2026-03-03)
+- [x] Working APK built via EAS
 - [x] Multi-device data separation using device_id
 - [x] Refresh Contacts button
 - [x] Voice command system
@@ -49,15 +57,18 @@ reminders: {
 - [x] Reminder creation with scheduling
 - [x] Auto-execute toggle for calls/SMS/WhatsApp
 - [x] Notification system
-- [x] **FIXED: Specific notification content** (2026-03-03) - Shows "CALL: John Doe" with contact details
-- [x] **FIXED: Back navigation** (2026-03-03) - Uses router.back() instead of router.replace()
-- [x] **FIXED: WhatsApp Business link** (2026-03-03) - Simplified URL scheme handling
+- [x] **FIXED: Specific notification content** - Shows "CALL: John Doe"
+- [x] **FIXED: Back navigation** - Uses router.replace('/') to go home
+- [x] **FIXED: WhatsApp Business link** - Simplified URL scheme
+- [x] **NEW: Web Dashboard** (2026-03-06) - Desktop browser access
+- [x] **NEW: Link to Web** (2026-03-06) - 6-digit sync code system
+- [x] **NEW: Contacts sync** (2026-03-06) - Upload contacts to cloud for web access
 
 ## Pending Testing
-- [ ] Test new APK with all 3 fixes
-- [ ] Verify notification shows contact name
-- [ ] Verify back swipe returns to previous screen
-- [ ] Verify WhatsApp opens from Social Media Hub
+- [ ] Build new APK with Link to Web feature
+- [ ] Test notification shows contact name
+- [ ] Test back swipe returns to home screen
+- [ ] Test web dashboard sync flow
 
 ## Upcoming Tasks (P1)
 - [ ] Guide user through Google Play Store publishing
@@ -68,17 +79,19 @@ reminders: {
 - [ ] Enhanced Google Keep integration
 
 ## Key Files
-- `/app/frontend/app/action.tsx` - Create/edit reminders, notifications, contacts
-- `/app/frontend/app/index.tsx` - Dashboard, social media hub
+- `/app/frontend/app/index.tsx` - Dashboard, social hub, Link to Web modal
+- `/app/frontend/app/action.tsx` - Create/edit reminders, notifications
 - `/app/frontend/app/all-items.tsx` - Reminder list view
 - `/app/frontend/app/_layout.tsx` - Navigation stack config
-- `/app/backend/server.py` - API endpoints with device_id filtering
+- `/app/backend/server.py` - API endpoints, sync endpoints
+- `/app/web/src/App.js` - Web dashboard React app
+
+## Web Dashboard Access
+```
+https://reminder-voice-app-1.preview.emergentagent.com/api/web-static/index.html
+```
 
 ## Known Limitations
 - Voice icon inside 3rd party apps (WhatsApp/SMS) is not technically feasible
 - Contact loading for 36,000+ contacts needs optimization
-
-## User Notes
-- User is non-technical - provide simple, clear instructions
-- APK build process is fragile - verify fixes before requesting rebuild
-- User has been frustrated with repeated build failures - be decisive
+- Web dashboard requires mobile app to generate sync code first

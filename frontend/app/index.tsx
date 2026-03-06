@@ -72,6 +72,11 @@ export default function DashboardScreen() {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [voiceProcessing, setVoiceProcessing] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState('');
+  
+  // Link to Web states
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [syncCode, setSyncCode] = useState('');
+  const [syncLoading, setSyncLoading] = useState(false);
 
   // Refresh reminders when screen is focused
   useFocusEffect(
@@ -193,6 +198,27 @@ export default function DashboardScreen() {
     setVoiceProcessing(false);
     setVoiceRecording(null);
     setVoiceStatus('');
+  };
+
+  // Link to Web function
+  const generateSyncCode = async () => {
+    setSyncLoading(true);
+    try {
+      const deviceId = await getDeviceId();
+      const response = await axios.post(`${BACKEND_URL}/api/sync/generate-code`, {
+        device_id: deviceId
+      });
+      setSyncCode(response.data.sync_code);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate sync code');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const openLinkModal = async () => {
+    setShowLinkModal(true);
+    await generateSyncCode();
   };
 
   const openGoogleKeep = async () => {
@@ -554,6 +580,12 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity 
+              style={styles.linkWebBtn}
+              onPress={openLinkModal}
+            >
+              <Ionicons name="laptop-outline" size={20} color="#667eea" />
+            </TouchableOpacity>
+            <TouchableOpacity 
               style={styles.voiceCommandBtn}
               onPress={startVoiceCommand}
             >
@@ -566,6 +598,44 @@ export default function DashboardScreen() {
             />
           </View>
         </View>
+
+        {/* Link to Web Modal */}
+        <Modal visible={showLinkModal} transparent animationType="fade">
+          <View style={styles.voiceModalOverlay}>
+            <View style={styles.voiceModalContent}>
+              <TouchableOpacity style={styles.voiceModalClose} onPress={() => setShowLinkModal(false)}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+              
+              <View style={styles.linkIconContainer}>
+                <Ionicons name="laptop-outline" size={48} color="#667eea" />
+              </View>
+              <Text style={styles.voiceModalTitle}>Link to Web</Text>
+              <Text style={styles.linkDescription}>
+                Enter this code on the web dashboard to sync your reminders and contacts
+              </Text>
+              
+              {syncLoading ? (
+                <ActivityIndicator size="large" color="#667eea" style={{ marginVertical: 20 }} />
+              ) : (
+                <View style={styles.syncCodeContainer}>
+                  {syncCode.split('').map((digit, idx) => (
+                    <View key={idx} style={styles.syncCodeDigit}>
+                      <Text style={styles.syncCodeText}>{digit}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              <Text style={styles.linkHint}>Code expires in 1 hour</Text>
+              
+              <TouchableOpacity style={styles.linkRefreshBtn} onPress={generateSyncCode}>
+                <Ionicons name="refresh" size={18} color="#667eea" />
+                <Text style={styles.linkRefreshText}>Generate New Code</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Voice Command Modal */}
         <Modal visible={showVoiceModal} transparent animationType="fade">
@@ -1090,5 +1160,71 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 12,
+  },
+  // Link to Web styles
+  linkWebBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: 'rgba(102, 126, 234, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  linkIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: 'rgba(102, 126, 234, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  linkDescription: {
+    fontSize: 14,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  syncCodeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  syncCodeDigit: {
+    width: 48,
+    height: 60,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#667eea',
+  },
+  syncCodeText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#667eea',
+  },
+  linkHint: {
+    fontSize: 12,
+    color: '#adb5bd',
+    marginBottom: 16,
+  },
+  linkRefreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+  },
+  linkRefreshText: {
+    fontSize: 14,
+    color: '#667eea',
+    fontWeight: '500',
   },
 });
