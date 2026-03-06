@@ -85,6 +85,11 @@ async def execute_reminder_action(reminder_id: str):
         notes = reminder.get('notes', '')
         title = reminder.get('title', '')
         
+        # Fix phone number format - ensure it has country code
+        if contact_phone and not contact_phone.startswith('+'):
+            # Assume Indian number if no country code
+            contact_phone = '+91' + contact_phone.replace(' ', '').replace('-', '')
+        
         # Log the execution
         execution_log = {
             "reminder_id": reminder_id,
@@ -96,6 +101,7 @@ async def execute_reminder_action(reminder_id: str):
         
         # Execute based on reminder type
         execution_result = None
+        execution_success = False
         
         if reminder_type == 'sms' and contact_phone and twilio_client and TWILIO_PHONE_NUMBER:
             # Send SMS via Twilio
@@ -109,6 +115,7 @@ async def execute_reminder_action(reminder_id: str):
                 execution_result = {"sms_sid": message.sid, "status": "sent"}
                 execution_log["status"] = "sms_sent"
                 execution_log["message_sid"] = message.sid
+                execution_success = True
                 logger.info(f"SMS sent to {contact_phone} for reminder {reminder_id}, SID: {message.sid}")
             except Exception as e:
                 execution_result = {"error": str(e), "status": "failed"}
@@ -146,14 +153,22 @@ async def execute_reminder_action(reminder_id: str):
             # For other types (meet, deskwork), just mark as triggered
             execution_log["status"] = "triggered"
         
-        # Update reminder status
+        # Update reminder status - MARK AS COMPLETED after successful execution
+        update_data = {
+            "auto_execute_triggered": True,
+            "triggered_at": datetime.now(timezone.utc),
+            "execution_result": execution_result
+        }
+        
+        # If SMS or WhatsApp was successfully sent, mark as completed and disable auto_execute
+        if execution_success:
+            update_data["is_completed"] = True
+            update_data["auto_execute"] = False  # Disable auto-execute after success
+            logger.info(f"Reminder {reminder_id} marked as COMPLETED after successful {reminder_type}")
+        
         await db.reminders.update_one(
             {"id": reminder_id},
-            {"$set": {
-                "auto_execute_triggered": True,
-                "triggered_at": datetime.now(timezone.utc),
-                "execution_result": execution_result
-            }}
+            {"$set": update_data}
         )
         
         await db.execution_logs.insert_one(execution_log)
