@@ -15,6 +15,7 @@ import requests
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
+from twilio.rest import Client as TwilioClient
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -26,6 +27,22 @@ db = client[os.environ['DB_NAME']]
 
 # Deepgram API key
 DEEPGRAM_API_KEY = os.environ['DEEPGRAM_API_KEY']
+
+# Twilio configuration (optional - will work without it but won't send SMS/WhatsApp)
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+TWILIO_WHATSAPP_NUMBER = os.environ.get('TWILIO_WHATSAPP_NUMBER', 'whatsapp:+14155238886')  # Twilio sandbox number
+
+# Initialize Twilio client if credentials are available
+twilio_client = None
+if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN:
+    try:
+        twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        logger_twilio = logging.getLogger('twilio')
+        logger_twilio.info("Twilio client initialized successfully")
+    except Exception as e:
+        logging.error(f"Failed to initialize Twilio client: {e}")
 
 # Create the main app
 app = FastAPI()
@@ -64,6 +81,7 @@ async def execute_reminder_action(reminder_id: str):
         
         reminder_type = reminder.get('reminder_type')
         contact_phone = reminder.get('contact_phone', '')
+        contact_name = reminder.get('contact_name', '')
         notes = reminder.get('notes', '')
         title = reminder.get('title', '')
         
@@ -76,20 +94,70 @@ async def execute_reminder_action(reminder_id: str):
             "status": "triggered"
         }
         
-        # For mobile apps, we can't directly make calls/SMS from server
-        # Instead, we mark it as "ready to execute" and send push notification
-        # The mobile app will handle the actual execution
+        # Execute based on reminder type
+        execution_result = None
         
+        if reminder_type == 'sms' and contact_phone and twilio_client and TWILIO_PHONE_NUMBER:
+            # Send SMS via Twilio
+            try:
+                message_body = notes if notes else f"Reminder: {title}"
+                message = twilio_client.messages.create(
+                    body=message_body,
+                    from_=TWILIO_PHONE_NUMBER,
+                    to=contact_phone
+                )
+                execution_result = {"sms_sid": message.sid, "status": "sent"}
+                execution_log["status"] = "sms_sent"
+                execution_log["message_sid"] = message.sid
+                logger.info(f"SMS sent to {contact_phone} for reminder {reminder_id}, SID: {message.sid}")
+            except Exception as e:
+                execution_result = {"error": str(e), "status": "failed"}
+                execution_log["status"] = "sms_failed"
+                execution_log["error"] = str(e)
+                logger.error(f"Failed to send SMS for reminder {reminder_id}: {str(e)}")
+        
+        elif reminder_type == 'whatsapp' and contact_phone and twilio_client:
+            # Send WhatsApp message via Twilio
+            try:
+                message_body = notes if notes else f"Reminder: {title}"
+                # Format phone number for WhatsApp (must include country code)
+                whatsapp_to = f"whatsapp:{contact_phone}" if not contact_phone.startswith('whatsapp:') else contact_phone
+                message = twilio_client.messages.create(
+                    body=message_body,
+                    from_=TWILIO_WHATSAPP_NUMBER,
+                    to=whatsapp_to
+                )
+                execution_result = {"whatsapp_sid": message.sid, "status": "sent"}
+                execution_log["status"] = "whatsapp_sent"
+                execution_log["message_sid"] = message.sid
+                logger.info(f"WhatsApp sent to {contact_phone} for reminder {reminder_id}, SID: {message.sid}")
+            except Exception as e:
+                execution_result = {"error": str(e), "status": "failed"}
+                execution_log["status"] = "whatsapp_failed"
+                execution_log["error"] = str(e)
+                logger.error(f"Failed to send WhatsApp for reminder {reminder_id}: {str(e)}")
+        
+        elif reminder_type == 'call':
+            # For calls, we can only trigger on mobile device
+            execution_log["status"] = "call_pending"
+            logger.info(f"Call reminder {reminder_id} marked as pending - requires mobile device")
+        
+        else:
+            # For other types (meet, deskwork), just mark as triggered
+            execution_log["status"] = "triggered"
+        
+        # Update reminder status
         await db.reminders.update_one(
             {"id": reminder_id},
             {"$set": {
                 "auto_execute_triggered": True,
-                "triggered_at": datetime.now(timezone.utc)
+                "triggered_at": datetime.now(timezone.utc),
+                "execution_result": execution_result
             }}
         )
         
         await db.execution_logs.insert_one(execution_log)
-        logger.info(f"Auto-execution triggered for reminder {reminder_id} ({reminder_type})")
+        logger.info(f"Auto-execution completed for reminder {reminder_id} ({reminder_type})")
         
     except Exception as e:
         logger.error(f"Error executing reminder {reminder_id}: {str(e)}")
@@ -583,6 +651,91 @@ async def get_synced_contacts(device_id: str, search: Optional[str] = None, limi
     except Exception as e:
         logger.error(f"Get contacts error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ===== TWILIO SMS/WHATSAPP ENDPOINTS =====
+
+class TwilioConfigRequest(BaseModel):
+    account_sid: str
+    auth_token: str
+    phone_number: str
+    whatsapp_number: Optional[str] = None
+
+class SendMessageRequest(BaseModel):
+    to_phone: str
+    message: str
+    message_type: Literal["sms", "whatsapp"] = "sms"
+
+@api_router.post("/twilio/configure")
+async def configure_twilio(request: TwilioConfigRequest):
+    """Configure Twilio credentials (stores in database for persistence)"""
+    global twilio_client, TWILIO_PHONE_NUMBER, TWILIO_WHATSAPP_NUMBER
+    try:
+        # Test the credentials by initializing client
+        test_client = TwilioClient(request.account_sid, request.auth_token)
+        
+        # Store in database for persistence
+        await db.settings.update_one(
+            {"key": "twilio_config"},
+            {"$set": {
+                "key": "twilio_config",
+                "account_sid": request.account_sid,
+                "auth_token": request.auth_token,
+                "phone_number": request.phone_number,
+                "whatsapp_number": request.whatsapp_number or "whatsapp:+14155238886",
+                "updated_at": datetime.now(timezone.utc)
+            }},
+            upsert=True
+        )
+        
+        # Update global variables
+        twilio_client = test_client
+        TWILIO_PHONE_NUMBER = request.phone_number
+        TWILIO_WHATSAPP_NUMBER = request.whatsapp_number or "whatsapp:+14155238886"
+        
+        return {"message": "Twilio configured successfully", "phone_number": request.phone_number}
+    except Exception as e:
+        logger.error(f"Twilio configuration error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid Twilio credentials: {str(e)}")
+
+@api_router.get("/twilio/status")
+async def get_twilio_status():
+    """Check if Twilio is configured"""
+    is_configured = twilio_client is not None and TWILIO_PHONE_NUMBER is not None
+    return {
+        "configured": is_configured,
+        "phone_number": TWILIO_PHONE_NUMBER if is_configured else None,
+        "whatsapp_number": TWILIO_WHATSAPP_NUMBER if is_configured else None
+    }
+
+@api_router.post("/twilio/send")
+async def send_message(request: SendMessageRequest):
+    """Send SMS or WhatsApp message (for testing)"""
+    if not twilio_client:
+        raise HTTPException(status_code=400, detail="Twilio not configured. Please configure first.")
+    
+    try:
+        if request.message_type == "sms":
+            if not TWILIO_PHONE_NUMBER:
+                raise HTTPException(status_code=400, detail="Twilio phone number not configured")
+            message = twilio_client.messages.create(
+                body=request.message,
+                from_=TWILIO_PHONE_NUMBER,
+                to=request.to_phone
+            )
+            return {"status": "sent", "type": "sms", "sid": message.sid}
+        
+        elif request.message_type == "whatsapp":
+            whatsapp_to = f"whatsapp:{request.to_phone}" if not request.to_phone.startswith('whatsapp:') else request.to_phone
+            message = twilio_client.messages.create(
+                body=request.message,
+                from_=TWILIO_WHATSAPP_NUMBER,
+                to=whatsapp_to
+            )
+            return {"status": "sent", "type": "whatsapp", "sid": message.sid}
+    
+    except Exception as e:
+        logger.error(f"Send message error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ===== GOOGLE CONTACTS ENDPOINTS =====
 
