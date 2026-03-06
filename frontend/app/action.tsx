@@ -785,7 +785,10 @@ export default function ActionScreen() {
                   value={contactName}
                   onChangeText={(text) => {
                     setContactName(text);
-                    if (contactPhone && text !== contactName) {
+                    // Only clear phone if user is searching for a new contact (not editing)
+                    // Don't clear if just correcting the name
+                    if (contactPhone && text.length < contactName.length - 5) {
+                      // Only clear if significantly different (more than 5 chars removed)
                       setContactPhone('');
                     }
                   }}
