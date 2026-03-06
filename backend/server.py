@@ -75,8 +75,8 @@ async def execute_reminder_action(reminder_id: str):
             logger.warning(f"Reminder {reminder_id} not found for auto-execution")
             return
         
-        if reminder.get('is_completed'):
-            logger.info(f"Reminder {reminder_id} already completed, skipping")
+        if reminder.get('is_completed') or reminder.get('auto_execute_triggered'):
+            logger.info(f"Reminder {reminder_id} already completed/triggered, skipping")
             return
         
         reminder_type = reminder.get('reminder_type')
@@ -85,10 +85,15 @@ async def execute_reminder_action(reminder_id: str):
         notes = reminder.get('notes', '')
         title = reminder.get('title', '')
         
-        # Fix phone number format - ensure it has country code
-        if contact_phone and not contact_phone.startswith('+'):
-            # Assume Indian number if no country code
-            contact_phone = '+91' + contact_phone.replace(' ', '').replace('-', '')
+        # Clean and fix phone number format
+        if contact_phone:
+            # Remove all non-digit characters except +
+            cleaned = ''.join(c for c in contact_phone if c.isdigit() or c == '+')
+            # If no country code, add +91 for India
+            if cleaned and not cleaned.startswith('+'):
+                cleaned = '+91' + cleaned
+            contact_phone = cleaned
+            logger.info(f"Cleaned phone number: {contact_phone}")
         
         # Log the execution
         execution_log = {
@@ -153,14 +158,14 @@ async def execute_reminder_action(reminder_id: str):
             # For other types (meet, deskwork), just mark as triggered
             execution_log["status"] = "triggered"
         
-        # Update reminder status - MARK AS COMPLETED after successful execution
+        # ALWAYS mark as triggered to prevent rescheduling
         update_data = {
-            "auto_execute_triggered": True,
+            "auto_execute_triggered": True,  # Always set to prevent rescheduling
             "triggered_at": datetime.now(timezone.utc),
             "execution_result": execution_result
         }
         
-        # If SMS or WhatsApp was successfully sent, mark as completed and disable auto_execute
+        # If SMS or WhatsApp was successfully sent, also mark as completed
         if execution_success:
             update_data["is_completed"] = True
             update_data["auto_execute"] = False  # Disable auto-execute after success
@@ -176,6 +181,14 @@ async def execute_reminder_action(reminder_id: str):
         
     except Exception as e:
         logger.error(f"Error executing reminder {reminder_id}: {str(e)}")
+        # Even on error, mark as triggered to prevent infinite rescheduling
+        try:
+            await db.reminders.update_one(
+                {"id": reminder_id},
+                {"$set": {"auto_execute_triggered": True, "execution_result": {"error": str(e)}}}
+            )
+        except:
+            pass
 
 def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto_execute: bool):
     """Schedule a reminder for auto-execution"""
