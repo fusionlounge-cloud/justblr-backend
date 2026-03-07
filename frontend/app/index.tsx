@@ -19,6 +19,8 @@ import axios from 'axios';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Constants from 'expo-constants';
+import * as Notifications from 'expo-notifications';
+import * as Contacts from 'expo-contacts';
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
@@ -77,6 +79,58 @@ export default function DashboardScreen() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [syncCode, setSyncCode] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
+
+  // Handle notification response - open WhatsApp/SMS when user taps notification
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    
+    const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const data = response.notification.request.content.data;
+      const actionType = data?.type;
+      const phone = data?.phone;
+      const notes = data?.notes || '';
+      
+      if (!phone) return;
+      
+      // Clean phone number
+      let cleanPhone = phone.replace(/[^0-9+]/g, '');
+      if (!cleanPhone.startsWith('+')) {
+        cleanPhone = '+91' + cleanPhone;
+      }
+      
+      try {
+        if (actionType === 'whatsapp') {
+          // Open WhatsApp with pre-filled message
+          const message = encodeURIComponent(notes || 'Hello!');
+          const phoneForWA = cleanPhone.replace('+', '');
+          const waUrl = `whatsapp://send?phone=${phoneForWA}&text=${message}`;
+          
+          const canOpen = await Linking.canOpenURL(waUrl);
+          if (canOpen) {
+            await Linking.openURL(waUrl);
+          } else {
+            // Fallback to web WhatsApp
+            await Linking.openURL(`https://wa.me/${phoneForWA}?text=${message}`);
+          }
+        } else if (actionType === 'sms') {
+          // Open SMS app with pre-filled message
+          const message = encodeURIComponent(notes || '');
+          const smsUrl = Platform.OS === 'ios' 
+            ? `sms:${cleanPhone}&body=${message}`
+            : `sms:${cleanPhone}?body=${message}`;
+          await Linking.openURL(smsUrl);
+        } else if (actionType === 'call') {
+          // Open phone dialer
+          await Linking.openURL(`tel:${cleanPhone}`);
+        }
+      } catch (error) {
+        console.log('Error opening app:', error);
+        Alert.alert('Error', 'Could not open the app');
+      }
+    });
+    
+    return () => subscription.remove();
+  }, []);
 
   // Refresh reminders when screen is focused
   useFocusEffect(
