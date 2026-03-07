@@ -198,10 +198,7 @@ function Dashboard({ deviceId, onUnlink }) {
     }
   };
 
-  // WhatsApp window reference
-  const [waWindow, setWaWindow] = useState(null);
-
-  // Open WhatsApp Web with pre-filled message (reuses same tab)
+  // Copy WhatsApp link to clipboard (avoids multiple tabs)
   const openWhatsApp = (phone, message) => {
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (!cleanPhone.startsWith('91') && cleanPhone.length === 10) {
@@ -210,15 +207,13 @@ function Dashboard({ deviceId, onUnlink }) {
     const encodedMsg = encodeURIComponent(message || 'Hello!');
     const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`;
     
-    // Check if we have an existing window that's still open
-    if (waWindow && !waWindow.closed) {
-      waWindow.location.href = url;
-      waWindow.focus();
-    } else {
-      // Open new window and store reference
-      const newWindow = window.open(url, 'whatsapp_window');
-      setWaWindow(newWindow);
-    }
+    // Copy to clipboard
+    navigator.clipboard.writeText(url).then(() => {
+      alert(`WhatsApp link copied!\n\nPaste this in your browser's address bar or existing WhatsApp Web tab:\n\n${url}`);
+    }).catch(() => {
+      // Fallback - prompt to copy
+      prompt('Copy this WhatsApp link:', url);
+    });
   };
 
   // Open SMS (will use default mail client or show alert)
