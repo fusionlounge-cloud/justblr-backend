@@ -289,12 +289,15 @@ export default function DashboardScreen() {
         return;
       }
       
-      const { data } = await Contacts.getContactsAsync({
+      // Get total count first
+      const { data: allContacts } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
+        pageSize: 50000, // Request all contacts at once
+        pageOffset: 0,
       });
       
       // Format ALL contacts for sync (no limit)
-      const contactsToSync = data
+      const contactsToSync = allContacts
         .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
         .map(c => ({
           name: c.name || 'Unknown',
@@ -302,8 +305,8 @@ export default function DashboardScreen() {
           email: c.emails?.[0]?.email || null
         }));
       
-      // Upload in batches of 1000 for large contact lists
-      const batchSize = 1000;
+      // Upload in batches of 2000 for large contact lists
+      const batchSize = 2000;
       let syncedCount = 0;
       
       for (let i = 0; i < contactsToSync.length; i += batchSize) {
@@ -316,6 +319,11 @@ export default function DashboardScreen() {
           append: !isFirstBatch // First batch replaces, rest append
         });
         syncedCount += batch.length;
+        
+        // Show progress for large syncs
+        if (contactsToSync.length > 5000) {
+          console.log(`Synced ${syncedCount} of ${contactsToSync.length} contacts`);
+        }
       }
       
       Alert.alert('Success', `${syncedCount} contacts synced to cloud!`);
