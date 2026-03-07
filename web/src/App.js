@@ -198,14 +198,15 @@ function Dashboard({ deviceId, onUnlink }) {
     }
   };
 
-  // Open WhatsApp Web with pre-filled message
+  // Open WhatsApp Web with pre-filled message (reuses same tab)
   const openWhatsApp = (phone, message) => {
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (!cleanPhone.startsWith('91') && cleanPhone.length === 10) {
       cleanPhone = '91' + cleanPhone;
     }
     const encodedMsg = encodeURIComponent(message || 'Hello!');
-    window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`, '_blank');
+    // Use named window 'whatsapp' to reuse the same tab
+    window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`, 'whatsapp');
   };
 
   // Open SMS (will use default mail client or show alert)
