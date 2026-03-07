@@ -167,6 +167,7 @@ function Dashboard({ deviceId, onUnlink }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [filterType, setFilterType] = useState(null); // null = all, or 'call', 'sms', 'whatsapp'
 
   useEffect(() => {
     fetchData();
@@ -195,6 +196,21 @@ function Dashboard({ deviceId, onUnlink }) {
     } catch (err) {
       alert('Failed to delete');
     }
+  };
+
+  // Open WhatsApp Web with pre-filled message
+  const openWhatsApp = (phone, message) => {
+    let cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (!cleanPhone.startsWith('91') && cleanPhone.length === 10) {
+      cleanPhone = '91' + cleanPhone;
+    }
+    const encodedMsg = encodeURIComponent(message || 'Hello!');
+    window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`, '_blank');
+  };
+
+  // Open SMS (will use default mail client or show alert)
+  const openSMS = (phone, message) => {
+    alert(`SMS to ${phone}: ${message}\n\nNote: SMS can only be sent from mobile device.`);
   };
 
   const stats = {
@@ -236,28 +252,28 @@ function Dashboard({ deviceId, onUnlink }) {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className={`stat-card ${filterType === null ? 'active' : ''}`} onClick={() => setFilterType(null)} style={{cursor: 'pointer'}}>
           <div className="stat-icon total"><InboxIcon /></div>
           <div className="stat-info">
             <h3>{stats.total}</h3>
             <p>Total Reminders</p>
           </div>
         </div>
-        <div className="stat-card">
+        <div className={`stat-card ${filterType === 'call' ? 'active' : ''}`} onClick={() => setFilterType('call')} style={{cursor: 'pointer'}}>
           <div className="stat-icon call"><PhoneIcon /></div>
           <div className="stat-info">
             <h3>{stats.call}</h3>
             <p>Call Reminders</p>
           </div>
         </div>
-        <div className="stat-card">
+        <div className={`stat-card ${filterType === 'sms' ? 'active' : ''}`} onClick={() => setFilterType('sms')} style={{cursor: 'pointer'}}>
           <div className="stat-icon sms"><MessageIcon /></div>
           <div className="stat-info">
             <h3>{stats.sms}</h3>
             <p>SMS Reminders</p>
           </div>
         </div>
-        <div className="stat-card">
+        <div className={`stat-card ${filterType === 'whatsapp' ? 'active' : ''}`} onClick={() => setFilterType('whatsapp')} style={{cursor: 'pointer'}}>
           <div className="stat-icon whatsapp"><MessageIcon /></div>
           <div className="stat-info">
             <h3>{stats.whatsapp}</h3>
@@ -265,6 +281,15 @@ function Dashboard({ deviceId, onUnlink }) {
           </div>
         </div>
       </div>
+
+      {filterType && (
+        <div style={{marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8}}>
+          <span style={{color: '#a1a1aa'}}>Showing: {filterType.toUpperCase()} reminders</span>
+          <button className="btn btn-secondary" onClick={() => setFilterType(null)} style={{padding: '4px 12px', fontSize: 12}}>
+            Clear Filter
+          </button>
+        </div>
+      )}
 
       <div className="main-content">
         <div className="section-card">
@@ -292,7 +317,9 @@ function Dashboard({ deviceId, onUnlink }) {
             </div>
           ) : (
             <div className="reminder-list">
-              {reminders.map(reminder => (
+              {reminders
+                .filter(r => filterType ? r.reminder_type === filterType : true)
+                .map(reminder => (
                 <div key={reminder.id} className="reminder-card">
                   <div className="reminder-header">
                     <div className="reminder-type">
@@ -301,6 +328,26 @@ function Dashboard({ deviceId, onUnlink }) {
                       </span>
                     </div>
                     <div className="reminder-actions">
+                      {reminder.reminder_type === 'whatsapp' && reminder.contact_phone && (
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => openWhatsApp(reminder.contact_phone, reminder.notes || reminder.title)}
+                          title="Open WhatsApp"
+                          style={{padding: '6px 12px', marginRight: 8}}
+                        >
+                          Send WhatsApp
+                        </button>
+                      )}
+                      {reminder.reminder_type === 'call' && reminder.contact_phone && (
+                        <button 
+                          className="btn btn-secondary"
+                          onClick={() => window.open(`tel:${reminder.contact_phone}`, '_blank')}
+                          title="Call"
+                          style={{padding: '6px 12px', marginRight: 8}}
+                        >
+                          Call
+                        </button>
+                      )}
                       <button 
                         className="btn btn-danger"
                         onClick={() => deleteReminder(reminder.id)}
@@ -320,6 +367,11 @@ function Dashboard({ deviceId, onUnlink }) {
                   <div className="reminder-time">
                     <ClockIcon /> {formatDate(reminder.scheduled_time)}
                   </div>
+                  {reminder.notes && (
+                    <div style={{marginTop: 8, padding: 8, background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 13, color: '#a1a1aa'}}>
+                      {reminder.notes}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

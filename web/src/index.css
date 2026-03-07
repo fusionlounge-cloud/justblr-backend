@@ -228,6 +228,17 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+}
+
+.stat-card.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
 }
 
 .stat-icon {
