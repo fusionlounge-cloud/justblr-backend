@@ -293,25 +293,35 @@ export default function DashboardScreen() {
         fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
       });
       
-      // Format contacts for sync
+      // Format ALL contacts for sync (no limit)
       const contactsToSync = data
         .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
-        .slice(0, 500) // Limit to 500 contacts
         .map(c => ({
           name: c.name || 'Unknown',
           phone: c.phoneNumbers[0]?.number || '',
           email: c.emails?.[0]?.email || null
         }));
       
-      // Upload to backend
-      await axios.post(`${BACKEND_URL}/api/sync/contacts`, {
-        device_id: deviceId,
-        contacts: contactsToSync
-      });
+      // Upload in batches of 1000 for large contact lists
+      const batchSize = 1000;
+      let syncedCount = 0;
       
-      Alert.alert('Success', `${contactsToSync.length} contacts synced to cloud!`);
+      for (let i = 0; i < contactsToSync.length; i += batchSize) {
+        const batch = contactsToSync.slice(i, i + batchSize);
+        const isFirstBatch = i === 0;
+        
+        await axios.post(`${BACKEND_URL}/api/sync/contacts`, {
+          device_id: deviceId,
+          contacts: batch,
+          append: !isFirstBatch // First batch replaces, rest append
+        });
+        syncedCount += batch.length;
+      }
+      
+      Alert.alert('Success', `${syncedCount} contacts synced to cloud!`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to sync contacts');
+      console.log('Sync error:', error);
+      Alert.alert('Error', 'Failed to sync contacts: ' + String(error));
     } finally {
       setSyncLoading(false);
     }

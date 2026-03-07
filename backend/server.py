@@ -291,6 +291,7 @@ class Contact(BaseModel):
 class ContactsSyncRequest(BaseModel):
     device_id: str
     contacts: List[Contact]
+    append: bool = False  # If true, append to existing contacts instead of replacing
 
 class SyncCodeRequest(BaseModel):
     device_id: str
@@ -641,8 +642,9 @@ async def verify_sync_code(request: SyncCodeVerifyRequest):
 async def sync_contacts(request: ContactsSyncRequest):
     """Sync contacts from mobile to cloud"""
     try:
-        # Delete existing contacts for this device
-        await db.contacts.delete_many({"device_id": request.device_id})
+        # If not appending, delete existing contacts first
+        if not request.append:
+            await db.contacts.delete_many({"device_id": request.device_id})
         
         # Insert new contacts
         if request.contacts:
@@ -658,13 +660,16 @@ async def sync_contacts(request: ContactsSyncRequest):
             ]
             await db.contacts.insert_many(contacts_to_insert)
         
-        return {"message": f"Synced {len(request.contacts)} contacts", "count": len(request.contacts)}
+        # Get total count after sync
+        total_count = await db.contacts.count_documents({"device_id": request.device_id})
+        
+        return {"message": f"Synced {len(request.contacts)} contacts", "count": len(request.contacts), "total": total_count}
     except Exception as e:
         logger.error(f"Sync contacts error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/sync/contacts/{device_id}")
-async def get_synced_contacts(device_id: str, search: Optional[str] = None, limit: int = 100):
+async def get_synced_contacts(device_id: str, search: Optional[str] = None, limit: int = 50000):
     """Get synced contacts for a device"""
     try:
         query = {"device_id": device_id}
@@ -674,8 +679,11 @@ async def get_synced_contacts(device_id: str, search: Optional[str] = None, limi
                 {"phone": {"$regex": search, "$options": "i"}}
             ]
         
+        # Get total count first
+        total_count = await db.contacts.count_documents({"device_id": device_id})
+        
         contacts = await db.contacts.find(query, {"_id": 0}).limit(limit).to_list(limit)
-        return {"contacts": contacts, "count": len(contacts)}
+        return {"contacts": contacts, "count": len(contacts), "total": total_count}
     except Exception as e:
         logger.error(f"Get contacts error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
