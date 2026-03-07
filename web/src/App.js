@@ -198,30 +198,17 @@ function Dashboard({ deviceId, onUnlink }) {
     }
   };
 
-  // Track if WhatsApp Web is already open
-  const [waOpened, setWaOpened] = useState(false);
-  const [currentWaInfo, setCurrentWaInfo] = useState(null);
-
-  // Open WhatsApp Web - only opens once, then shows info for subsequent clicks
+  // Open WhatsApp Desktop App (uses whatsapp:// protocol)
   const openWhatsApp = (phone, message, contactName) => {
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (!cleanPhone.startsWith('91') && cleanPhone.length === 10) {
       cleanPhone = '91' + cleanPhone;
     }
     const encodedMsg = encodeURIComponent(message || 'Hello!');
-    const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`;
     
-    // Set current info to display
-    setCurrentWaInfo({ phone: cleanPhone, message: message || 'Hello!', name: contactName });
-    
-    if (!waOpened) {
-      // First time - open WhatsApp Web
-      window.open(url, '_blank');
-      setWaOpened(true);
-    } else {
-      // Already open - just open new link (WhatsApp handles it)
-      window.open(url, '_blank');
-    }
+    // Use whatsapp:// protocol for desktop app
+    const url = `whatsapp://send?phone=${cleanPhone}&text=${encodedMsg}`;
+    window.location.href = url;
   };
 
   // Open SMS (will use default mail client or show alert)
