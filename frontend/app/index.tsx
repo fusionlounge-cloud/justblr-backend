@@ -221,6 +221,48 @@ export default function DashboardScreen() {
     await generateSyncCode();
   };
 
+  // Sync contacts to cloud for web dashboard
+  const syncContactsToCloud = async () => {
+    setSyncLoading(true);
+    try {
+      const deviceId = await getDeviceId();
+      
+      // Get contacts from phone
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant contacts permission');
+        setSyncLoading(false);
+        return;
+      }
+      
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
+      });
+      
+      // Format contacts for sync
+      const contactsToSync = data
+        .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
+        .slice(0, 500) // Limit to 500 contacts
+        .map(c => ({
+          name: c.name || 'Unknown',
+          phone: c.phoneNumbers[0]?.number || '',
+          email: c.emails?.[0]?.email || null
+        }));
+      
+      // Upload to backend
+      await axios.post(`${BACKEND_URL}/api/sync/contacts`, {
+        device_id: deviceId,
+        contacts: contactsToSync
+      });
+      
+      Alert.alert('Success', `${contactsToSync.length} contacts synced to cloud!`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to sync contacts');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const openGoogleKeep = async () => {
     const keepUrls = {
       ios: 'comgooglekeep://',
@@ -632,6 +674,11 @@ export default function DashboardScreen() {
               <TouchableOpacity style={styles.linkRefreshBtn} onPress={generateSyncCode}>
                 <Ionicons name="refresh" size={18} color="#667eea" />
                 <Text style={styles.linkRefreshText}>Generate New Code</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={[styles.linkRefreshBtn, {marginTop: 12, backgroundColor: '#22c55e20'}]} onPress={syncContactsToCloud}>
+                <Ionicons name="cloud-upload" size={18} color="#22c55e" />
+                <Text style={[styles.linkRefreshText, {color: '#22c55e'}]}>Sync Contacts to Cloud</Text>
               </TouchableOpacity>
             </View>
           </View>
