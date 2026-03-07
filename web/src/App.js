@@ -198,8 +198,12 @@ function Dashboard({ deviceId, onUnlink }) {
     }
   };
 
-  // Copy WhatsApp link to clipboard (avoids multiple tabs)
-  const openWhatsApp = (phone, message) => {
+  // Track if WhatsApp Web is already open
+  const [waOpened, setWaOpened] = useState(false);
+  const [currentWaInfo, setCurrentWaInfo] = useState(null);
+
+  // Open WhatsApp Web - only opens once, then shows info for subsequent clicks
+  const openWhatsApp = (phone, message, contactName) => {
     let cleanPhone = phone.replace(/[^0-9]/g, '');
     if (!cleanPhone.startsWith('91') && cleanPhone.length === 10) {
       cleanPhone = '91' + cleanPhone;
@@ -207,13 +211,17 @@ function Dashboard({ deviceId, onUnlink }) {
     const encodedMsg = encodeURIComponent(message || 'Hello!');
     const url = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`;
     
-    // Copy to clipboard
-    navigator.clipboard.writeText(url).then(() => {
-      alert(`WhatsApp link copied!\n\nPaste this in your browser's address bar or existing WhatsApp Web tab:\n\n${url}`);
-    }).catch(() => {
-      // Fallback - prompt to copy
-      prompt('Copy this WhatsApp link:', url);
-    });
+    // Set current info to display
+    setCurrentWaInfo({ phone: cleanPhone, message: message || 'Hello!', name: contactName });
+    
+    if (!waOpened) {
+      // First time - open WhatsApp Web
+      window.open(url, '_blank');
+      setWaOpened(true);
+    } else {
+      // Already open - just open new link (WhatsApp handles it)
+      window.open(url, '_blank');
+    }
   };
 
   // Open SMS (will use default mail client or show alert)
