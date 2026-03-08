@@ -412,6 +412,30 @@ async def process_voice_command(request: VoiceCommandRequest):
 
 # ===== REMINDER ENDPOINTS =====
 
+class MigrateDeviceRequest(BaseModel):
+    from_device_ids: List[str]
+    to_device_id: str
+
+@api_router.post("/reminders/migrate")
+async def migrate_reminders(request: MigrateDeviceRequest):
+    """Migrate reminders from old device IDs to new device ID"""
+    try:
+        result = await db.reminders.update_many(
+            {"device_id": {"$in": request.from_device_ids}},
+            {"$set": {"device_id": request.to_device_id}}
+        )
+        
+        # Also migrate contacts
+        await db.contacts.update_many(
+            {"device_id": {"$in": request.from_device_ids}},
+            {"$set": {"device_id": request.to_device_id}}
+        )
+        
+        return {"message": f"Migrated {result.modified_count} reminders to {request.to_device_id}"}
+    except Exception as e:
+        logger.error(f"Migration error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/reminders", response_model=Reminder)
 async def create_reminder(reminder: ReminderCreate):
     """Create a new reminder with optional auto-execution scheduling"""
