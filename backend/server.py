@@ -459,18 +459,12 @@ async def create_reminder(reminder: ReminderCreate):
 
 @api_router.get("/reminders", response_model=List[Reminder])
 async def get_reminders(completed: Optional[bool] = None, device_id: Optional[str] = None):
-    """Get all reminders, optionally filter by completion status and device_id"""
+    """Get all reminders - returns ALL reminders regardless of device_id"""
     try:
         query = {}
         if completed is not None:
             query["is_completed"] = completed
-        if device_id:
-            # Show reminders for this device OR reminders without any device_id (legacy)
-            query["$or"] = [
-                {"device_id": device_id},
-                {"device_id": None},
-                {"device_id": {"$exists": False}}
-            ]
+        # REMOVED device_id filtering - show ALL reminders always
         
         reminders = await db.reminders.find(query).sort("scheduled_time", 1).to_list(1000)
         return [Reminder(**reminder) for reminder in reminders]
