@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -138,6 +139,16 @@ export default function DashboardScreen() {
       fetchReminders();
     }, [])
   );
+
+  // Auto-refresh when app comes from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        fetchReminders();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   const fetchReminders = async () => {
     try {
