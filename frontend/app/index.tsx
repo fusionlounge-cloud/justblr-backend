@@ -152,15 +152,24 @@ export default function DashboardScreen() {
 
   const fetchReminders = async () => {
     try {
+      setIsLoading(true);
       const deviceId = await getDeviceId();
+      console.log('Fetching reminders for device:', deviceId);
       const response = await axios.get(`${BACKEND_URL}/api/reminders?device_id=${deviceId}`);
+      console.log('Got reminders:', response.data?.length || 0);
       setReminders(response.data || []);
     } catch (error) {
       console.error('Error fetching reminders:', error);
+      Alert.alert('Error', 'Failed to load reminders. Pull down to refresh.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Fetch reminders on component mount
+  useEffect(() => {
+    fetchReminders();
+  }, []);
 
   // Voice Command Functions
   const startVoiceCommand = async () => {
