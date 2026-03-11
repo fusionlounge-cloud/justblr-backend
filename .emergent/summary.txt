@@ -1,169 +1,169 @@
-<analysis>**original_problem_statement**: The user wants to build a voice-first mobile productivity application named Justblr Matrix assistant.
-Core features include:
-1.  A central dashboard for managing reminders and notes.
-2.  Quick actions for different categories: Meet, Call, SMS, WhatsApp, Deskwork, Keep Notes.
-3.  A note-taking feature (currently deep-links to Google Keep).
-4.  A social media hub for quick access to Instagram, Facebook, LinkedIn, Alibaba, WhatsApp, and WeChat.
-5.  All features controllable via voice commands.
-6.  Contact integration for reminders (e.g., remind me to call John Doe).
-7.  Ability to schedule reminders for a specific date/time, with an option for automatic execution.
-8.  The user requires a stable, installable Android app (APK) and eventually wants to publish it on the market.
+<analysis>**original_problem_statement**: The user wants to build a voice-first mobile productivity application named Justblr Matrix assistant. Core features include a central dashboard, reminders with quick actions (Meet, Call, SMS, etc.), and a social media hub. The user later requested a desktop (web) version that syncs with the mobile app, and automated SMS/WhatsApp sending for reminders.
 
 **PRODUCT REQUIREMENTS**:
--   **Dashboard**: Main screen with Quick Actions, View All Reminders, and Social Media Hub.
--   **Reminders**:
-    -   Creation with title, contact, notes, schedule, and toggles for auto-execute and notifications.
-    -   List view should be compact.
--   **Build & Deployment**: User needs a stable, installable Android app (APK).
--   **Multi-user Support**: Each friend testing the app should have their own separate data.
--   **Notifications**: Must be reliable and provide specific details about the reminder.
--   **Navigation**: The app should not quit unexpectedly when using back gestures or buttons.
--   **Contacts**: Ability to refresh the contact list within the app.
+-   **Mobile App**: An Android app with a dashboard, reminder creation/listing, contact integration, and notifications.
+-   **Web Dashboard**: A desktop-accessible web app that syncs reminders and contacts from the mobile app, allowing users to manage reminders from their computer.
+-   **Automation**: Ability to automatically send SMS and WhatsApp messages at a scheduled time.
+-   **Data Sync**: Reminders and contacts should be synchronized between the mobile and web applications.
+-   **Stability**: The app must be stable, without critical usability bugs like unexpected crashes or data disappearing.
+-   **Build & Deployment**: User needs a stable, installable Android app (APK) and eventually wants to publish it.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is an Expo (React Native) app with a FastAPI/MongoDB backend. The agent has successfully navigated a very difficult and lengthy process to help the user build a working Android APK. Key features implemented include:
-- A Refresh Contacts button.
-- Multi-device data separation using a unique device ID, allowing friends to test the app without sharing data.
-- The backend was updated to ensure old reminders (created before the device ID feature) are still visible to the original user.
-- A functional APK has been built and installed by the user. However, this APK has critical usability bugs related to notifications and navigation.
+A full-stack application with an Expo (React Native) mobile app, a FastAPI/MongoDB backend, and a React web dashboard. Key features are implemented, including reminder management, contact syncing, and automated SMS/WhatsApp via Twilio. A significant backend change was made to remove  filtering when fetching reminders, which aimed to solve the recurring problem of reminders disappearing after app reinstalls. However, several critical usability and sync-related issues persist.
 
 **Last working item**:
--   **Last item agent was working**: The user reported that while notifications are now firing, they are generic (e.g., Call reminder) and do not include the specific contact's name, making them unhelpful. The agent acknowledged the issue and was about to modify the notification creation logic.
+-   **Last item agent was working**: The user reported that the Meet and Deskwork reminder categories were missing from the stats cards on the web dashboard. The agent had identified the file  and was about to add these missing categories to the UI.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?** Frontend change. After implementing the fix, the agent must trigger a new EAS build and provide the user with the new APK for testing.
--   **User Testing Done**: Y (User tested the last APK and reported this issue).
+-   **Which testing method agent to use?** Frontend (web). The agent should finish editing  and then verify the change by accessing the web dashboard's URL. No APK build is required.
+-   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Notification reminders are not specific (P0)
--   Issue 2: Back swipe/gesture quits the app from sub-screens (P0)
--   Issue 3: WhatsApp Business link in the Social Media Hub is not working (P1)
+-   Issue 1: Meet and Deskwork categories are missing from the web dashboard (P0)
+-   Issue 2: Back swipe/gesture quits the mobile app from sub-screens (P0, Recurring)
+-   Issue 3: Mobile app is not saving phone numbers correctly from contacts (P1, Recurring)
+-   Issue 4: Web dashboard un-links from mobile data on app reinstall (P1)
 
 **Issues Detail**:
--   **Issue 1: Notification reminders are not specific**
-    -   **Attempted fixes**: None. This is a new requirement based on the last working feature.
+-   **Issue 1: Meet and Deskwork missing on web dashboard**
+    -   **Attempted fixes**: None. Agent has identified the file to edit.
     -   **Next debug checklist**:
-        1.  Open .
-        2.  Find the  function.
-        3.  In the  call, modify the  to include the contact's name. Example: . The reminder details should be available in a state variable within that function's scope.
-    -   **Why fix this issue and what will be achieved with the fix?**: A generic notification is useless. This fix will make the core reminder feature functional and valuable.
+        1.  Edit .
+        2.  Locate the  calculation logic and include counts for Meet and Deskwork reminders.
+        3.  Add two new stat card components to the JSX for Meet and Deskwork.
+        4.  Ensure the new cards are clickable and filter the reminder list, consistent with existing cards.
+    -   **Why fix this issue and what will be achieved with the fix?**: To provide a complete and consistent overview of all reminder types on the web dashboard.
     -   **Status**: IN PROGRESS
     -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
-    -   **Blocked on other issue**: None.
+    -   **Should Test frontend/backend/both after fix?**: Frontend (web)
 
 -   **Issue 2: Back swipe/gesture quits the app**
-    -   **Attempted fixes**: Numerous failed attempts, including , , , , , , and disabling predictive back gestures in . The issue persists.
+    -   **Attempted fixes**: Multiple failed attempts using , , , and . The issue continues to regress.
     -   **Next debug checklist**:
-        1.  Re-examine  and .
-        2.  The  from  is the idiomatic way to handle this. The previous attempt might have been flawed.
-        3.  Implement  in both  and .
-        4.  The handler function should call  and crucially, it MUST  to signify that the event has been handled and to prevent the default action (exiting the app).
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical usability bug that makes the app feel broken and frustrates the user immensely.
+        1.  The root cause is incorrect handling of the  navigation stack.  was a poor workaround.
+        2.  Re-implement the back handler in  and  using the  hook from .
+        3.  The handler function must call  and, most importantly,  to prevent the default OS action (exiting the app).
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical usability bug that makes the app feel broken and has frustrated the user immensely.
     -   **Status**: IN PROGRESS
     -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
-    -   **Blocked on other issue**: None.
 
--   **Issue 3: WhatsApp Business link in Social Media Hub is not working**
-    -   **Attempted fixes**: Various URL schemes (, ).
+-   **Issue 3: Mobile app saves incorrect phone numbers**
+    -   **Attempted fixes**: Backend logic was added to clean numbers, but this is a workaround, not a fix.
     -   **Next debug checklist**:
-        1.  Review  where the social media links are rendered.
-        2.  The correct deep link to simply open the app's main screen is often just the app's scheme, e.g., .
-        3.  Implement a fallback: .
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a pending feature requirement from the original problem statement.
+        1.  The problem is in . The contact picker is returning masked numbers (with 'XXXX') or numbers with extra digits.
+        2.  Investigate the  function. Instead of trusting , the code should iterate through the  array (if it exists) to find a valid, non-masked number.
+        3.  The app clears the selected phone number if the user edits the contact name field, which must be fixed.
+    -   **Why fix this issue and what will be achieved with the fix?**: The SMS/WhatsApp automation feature is unusable without correct phone numbers.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
+
+-   **Issue 4: Web dashboard un-links on app reinstall**
+    -   **Attempted fixes**: User has to manually unlink and re-link with a new sync code.
+    -   **Next debug checklist**: This is an architectural flaw. The sync mechanism relies on the transient . The fix requires changing the backend () and frontend (, ) to associate data with a more permanent user identifier instead of .
+    -   **Why fix this issue and what will be achieved with the fix?**: To provide a seamless experience between the mobile and web apps without requiring constant re-linking.
     -   **Status**: NOT STARTED
     -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Frontend.
+    -   **Should Test frontend/backend/both after fix?**: Both.
+
+**In progress Task List**:
+-   **Task 1: Add Meet and Deskwork to web dashboard**
+    -   **Where to resume**: The agent should start by editing  to add the new stat cards and filtering logic.
+    -   **What will be achieved with this?**: The web dashboard will accurately reflect all reminder categories present in the mobile app.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: Frontend (web)
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks**:
-    -   P1: Guide the user through publishing the final, stable app to the Google Play Store.
+    -   P0: Fix all four issues listed in the .
+    -   P1: Guide the user through publishing the final, stable app to the Google Play Store once all critical bugs are resolved.
 -   **Future Tasks**:
-    -   P2: Build an iOS version of the app (requires the user to purchase an Apple Developer account).
-    -   P3: Revisit and implement a scalable solution for slow loading of the user's 36,000+ contacts.
-    -   P4: Communicate to the user that placing a voice icon *inside* third-party apps like WhatsApp is not technically feasible.
-    -   P5: Enhance Google Keep integration beyond simple deep-linking.
+    -   P2: Build an iOS version of the app.
+    -   P3: Revisit and improve the performance of loading/syncing 34,000+ contacts.
+    -   P4: Communicate to the user that placing a voice icon *inside* third-party apps like WhatsApp is technically not feasible.
 
 **Completed work in this session**
--   **Finally produced a working APK**: After an extremely prolonged and difficult series of build failures, a working APK was successfully built via EAS, resolving the user's biggest blocker.
--   **Implemented multi-device data separation**: Each phone now has its own private reminder list using a unique , allowing friends to test the app.
--   **Added Refresh Contacts button**: Users can now manually reload their contact list inside the app.
--   **Restored old reminders**: The backend was fixed to ensure reminders created before the multi-device update are still visible.
--   **Fixed multiple build-related issues**: Resolved countless errors related to package versions, Expo SDK compatibility, Android permissions, Metro bundler configuration, and missing files (, ).
+-   Built and deployed a React web dashboard.
+-   Implemented device-to-web sync via a sync code.
+-   Integrated Twilio for automated SMS and a tap to send flow for WhatsApp.
+-   Implemented contact syncing (with batching) from mobile to the cloud.
+-   **Permanently fixed the reminders disappearing bug** by removing the  dependency for fetching reminders in the backend.
+-   Added an auto-refresh data listener to the mobile app to improve data consistency.
+-   Modified the web dashboard to use the  protocol, enabling it to open the WhatsApp Desktop app directly.
 
 **Earlier issues found/mentioned but not fixed**
--   **Infeasible voice icon in 3rd party apps**: The user requested a voice icon inside WhatsApp/SMS. The agent has not yet communicated that this is technically impossible.
--   **Slow contact loading**: The initial solution was a simple cache, noted as not a long-term fix for 36,000+ contacts.
+-   **Infeasible voice icon in 3rd party apps**: The user wants a voice icon inside WhatsApp/SMS. The agent has not yet informed the user that this is technically impossible.
+-   **Slow contact loading**: While syncing is batched, the initial loading of 34,000+ contacts on the mobile app may still be slow and needs performance optimization.
 
 **Known issue recurrence from previous fork**
--   **APK Build Failures**: Recurrence count: 10+. The entire session was dominated by the inability to produce a stable APK. This is the single most recurring and frustrating issue for the user. While an APK was finally built, the process is extremely fragile.
--   **Back Navigation**: Recurrence count: 5+. The issue of the back swipe/button quitting the app has been reported and fixed multiple times but persists.
+-   **Back Navigation**: This issue has recurred over 5 times. The agent's fixes have been ineffective, indicating a misunderstanding of .
+-   **APK Build Failures**: The user has been forced to rebuild the APK dozens of times due to recurring bugs and a fragile build process, causing extreme frustration.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend**: Expo (SDK 54), React Native, TypeScript, ,  (for unique ID), .
--   **Backend**: FastAPI, MongoDB (via ), APScheduler.
--   **Builds**: EAS (Expo Application Services) Cloud Build.
--   **Data Separation**: Using  from  as a unique  for each user.
+-   **Frontend (Mobile)**: Expo (SDK 54), React Native, TypeScript, , .
+-   **Frontend (Web)**: React.js.
+-   **Backend**: FastAPI, MongoDB (), APScheduler, Twilio.
+-   **Builds**: EAS Cloud Build for the Android APK. The web app is a static build served by FastAPI.
+-   **Sync Mechanism**: A brittle system using a transient  from the mobile app and a temporary  to link the web dashboard.
 
 **key DB schema**
 -   **reminders**: 
+-   **contacts**: 
+-   **sync_codes**: 
+-   **twilio_config**: 
 
 **All files of reference**
--   : Modified all reminder endpoints (GET, POST, PUT, DELETE) to filter and save based on .
--   : The most heavily modified file. Contains logic for creating reminders, scheduling notifications, refreshing contacts, and handling the back button.
--   : Modified to fetch and pass the  for displaying reminders.
--   : Modified to fetch reminders with  and to handle back navigation.
--   : Contains the specific dependency versions that led to the last successful build.
--   : Contains critical Android permissions (, ) and the  plugin configuration.
+-   : Core backend logic. Reminder fetching was modified to be independent of .
+-   : Mobile app main screen, contains logic for data fetching, refresh, and the web sync modal.
+-   : The source of the recurring phone number and back navigation bugs.
+-   : The React component for the entire web dashboard.
 
 **Areas that need refactoring**:
--   The back navigation logic is scattered and has been repeatedly implemented incorrectly. A clean, single approach using  from  in  and  is needed.
--   The entire build configuration (, , ) is extremely brittle. Any change risks breaking the build.
+-   **Sync Architecture**: The  based sync is the root cause of many user issues. It should be replaced with a proper user account system to provide a stable identity.
+-   **Backend Monolith**:  is too large and should be split into modules (e.g., routes, services, models).
+-   **Mobile App State Management**: Data fetching is scattered and relies on component lifecycle effects, leading to caching issues. A centralized state manager would improve robustness.
 
 **key api endpoints**
--   : Fetches reminders for a specific device.
--   : Creates a reminder, now requires a  in the body.
--   : Used repeatedly to provide the user with the updated source code for building the APK.
+-   : Fetches all user reminders.
+-   : Syncs contacts from mobile to backend.
+-   : Generates a code for web dashboard linking.
+-   : Links the web dashboard using the sync code.
+-   : Serves the web dashboard UI.
 
 **Critical Info for New Agent**
--   **The user is extremely frustrated and non-technical.** The build process has been a nightmare for them. Prioritize clear, simple, single-command instructions. Acknowledge their frustration and be decisive. Avoid asking them to debug things.
--   **APK builds are high-risk.** The last successful build is a fragile victory. Before asking the user to build again, be absolutely certain your fix is correct and well-tested in theory. Double-check that all required files (like ) are included in the build package.
--   **The two P0 bugs are critical.** The app is not usable for the user until (1) notifications are specific and (2) back navigation is fixed. Address these two issues as the absolute top priority.
--   **Communicate limitations.** The user still has expectations that may not be technically feasible (e.g., voice icon in other apps). It is important to manage these expectations clearly and respectfully.
+-   **User trust is extremely low.** The user is highly frustrated with the constant APK rebuilds and recurring bugs. Prioritize stability and clear communication. Batch multiple fixes into a single build.
+-   **APK rebuilds are a sensitive operation.** The user has a paid but limited EAS plan. Only ask for a rebuild when absolutely necessary and after verifying the fix thoroughly.
+-   **The Data Disappearing issues are the user's biggest pain point.** Although the backend was patched, the app still has caching/display issues, and the web-sync mechanism is not robust. Be extremely cautious with any changes that might affect data visibility.
+-   **Twilio is on a Trial Account.** This means automated sending only works for verified numbers. The current workaround for WhatsApp (tapping a notification to open the app) is the accepted solution.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  User: Both back swipe and notifications are still not working.
-2.  Agent: Investigates and finds root causes (missing notification channel, Expo gesture bug). Implements fixes.
-3.  User: will you recheck properly... stop troubling me.
-4.  Agent: Re-checks, finds a potential issue, fixes it, and provides new build instructions.
-5.  User: pls cross check once more and give the working version.
-6.  Agent: Does another round of verification and confirms the package is ready.
-7.  User: what next app will it work now. Build succeeds.
-8.  Agent: Shares the successful APK link.
-9.  **User**: **it is showing call reminder but which call app just a notification of call reminder is coming, but it has to open specifically asto which the call / whatsapp / sms reminder is due** (STATUS: PENDING)
-10. Agent: The notification is working now. Let me fix it to show the contact name: (Current state)
+1.  User: its come. but next day this should not disappear (Reminders reappeared, but user is wary).
+2.  User: on the desktop version, meet , deskwork both are missing ? (Reports a new issue).
+3.  Agent: Starts working on the web dashboard fix.
+(No further user messages are pending; the agent is in the middle of a task).
 
 **Project Health Check:**
--   **Broken**: The app has two critical, user-facing bugs that make core features (reminders and navigation) unusable or frustrating. The build process is extremely fragile. User trust is very low.
+-   **Broken**: The application has several critical, recurring usability bugs (back navigation, data caching, contact handling). The sync mechanism between mobile and web is brittle. User trust is minimal.
 
 **3rd Party Integrations**
--   Expo
--   MongoDB
--   APScheduler
+-   Expo (Builds and mobile framework)
+-   Twilio (SMS/WhatsApp automation) - Trial Account
+-   MongoDB (Database)
+-   APScheduler (Backend task scheduling)
 
 **Testing status**
 -   Testing agent used after significant changes: NO
--   Troubleshoot agent used after agent stuck in loop: YES, once, which successfully identified a permission conflict.
+-   Troubleshoot agent used after agent stuck in loop: YES (in previous sessions)
 -   Test files created: None.
--   Known regressions: The back navigation issue has regressed multiple times after attempted fixes.
+-   Known regressions: Back navigation is a major recurring regression. Data display issues have also recurred frequently.
 
 **What agent forgot to execute**
--   The agent repeatedly failed to create a stable build, indicating a lack of a systematic approach to dependency management and build configuration for Expo.
--   The agent failed to fix the back navigation bug despite numerous attempts, suggesting a misunderstanding of 's navigation stack and event handling.
--   The agent consistently provided the user with build commands that failed, causing immense user frustration and wasting time. More self-verification of the build package and configuration was needed before handing off to the user.</analysis>
+-   The agent has not used  for highly recurring bugs like back navigation, leading to a frustrating trial-and-error cycle with the user.
+-   The agent has not addressed the core architectural flaw of using a transient  for user identity, which is the source of all sync-related problems.
+-   The agent has not managed user expectations by clarifying that some requests (e.g., a voice icon inside WhatsApp) are technically impossible.</analysis>

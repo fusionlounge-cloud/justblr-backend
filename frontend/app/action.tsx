@@ -102,14 +102,14 @@ export default function ActionScreen() {
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
 
-  // Handle back button press - ALWAYS go to home screen
+  // Handle back button press - Navigate back properly
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
-        // Always navigate to home screen, never exit app
-        router.replace('/');
+        // Navigate back to the previous screen instead of exiting
+        router.back();
         return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 
@@ -214,6 +214,14 @@ export default function ActionScreen() {
             contact.phoneNumbers.forEach((phone, pIdx) => {
               if (phone.number && phone.number.trim()) {
                 const originalPhone = phone.number.trim();
+                // Skip masked numbers (containing X's) or numbers that are too short
+                if (originalPhone.includes('X') || originalPhone.includes('x')) {
+                  return; // Skip masked numbers
+                }
+                const digitsOnly = originalPhone.replace(/[^\d]/g, '');
+                if (digitsOnly.length < 7) {
+                  return; // Skip numbers too short to be valid
+                }
                 formatted.push({
                   id: `c${idx}p${pIdx}`,
                   name: displayName,
@@ -311,6 +319,14 @@ export default function ActionScreen() {
           contact.phoneNumbers.forEach((phone, pIdx) => {
             if (phone.number && phone.number.trim()) {
               const originalPhone = phone.number.trim();
+              // Skip masked numbers (containing X's) or numbers that are too short
+              if (originalPhone.includes('X') || originalPhone.includes('x')) {
+                return; // Skip masked numbers
+              }
+              const digitsOnly = originalPhone.replace(/[^\d]/g, '');
+              if (digitsOnly.length < 7) {
+                return; // Skip numbers too short to be valid
+              }
               formatted.push({
                 id: `c${idx}p${pIdx}`,
                 name: displayName,
@@ -785,12 +801,8 @@ export default function ActionScreen() {
                   value={contactName}
                   onChangeText={(text) => {
                     setContactName(text);
-                    // Only clear phone if user is searching for a new contact (not editing)
-                    // Don't clear if just correcting the name
-                    if (contactPhone && text.length < contactName.length - 5) {
-                      // Only clear if significantly different (more than 5 chars removed)
-                      setContactPhone('');
-                    }
+                    // Show suggestions when typing, but don't clear phone
+                    // Phone will only be cleared when selecting a new contact
                   }}
                   onFocus={() => contactSuggestions.length > 0 && setShowSuggestions(true)}
                   editable={!loadingContacts || Platform.OS === 'web'}

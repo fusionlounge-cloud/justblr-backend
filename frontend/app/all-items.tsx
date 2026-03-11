@@ -54,7 +54,7 @@ export default function AllItemsScreen() {
     fetchReminders();
   }, []);
 
-  // Handle back button press - ALWAYS go to home screen
+  // Handle back button press - Navigate back properly
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return undefined;
@@ -65,8 +65,8 @@ export default function AllItemsScreen() {
           setSelectedCategory(null);
           return true;
         }
-        // Otherwise, go to home screen
-        router.replace('/');
+        // Otherwise, navigate back (to home screen)
+        router.back();
         return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 

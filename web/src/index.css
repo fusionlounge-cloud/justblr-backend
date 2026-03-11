@@ -254,6 +254,8 @@ body {
 .stat-icon.sms { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 .stat-icon.whatsapp { background: rgba(37, 211, 102, 0.15); color: #25d366; }
 .stat-icon.total { background: rgba(102, 126, 234, 0.15); color: #667eea; }
+.stat-icon.meet { background: rgba(255, 107, 107, 0.15); color: #FF6B6B; }
+.stat-icon.deskwork { background: rgba(167, 139, 250, 0.15); color: #A78BFA; }
 
 .stat-info h3 {
   font-size: 24px;

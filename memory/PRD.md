@@ -73,13 +73,20 @@ execution_logs: {
 - [x] Auto-execute toggle for calls/SMS/WhatsApp
 - [x] Notification system
 - [x] Specific notification content - Shows "CALL: John Doe"
-- [x] Back navigation - Uses router.replace('/') to go home
+- [x] Back navigation - Uses router.back() properly
 - [x] WhatsApp Business link - Simplified URL scheme
 - [x] **Web Dashboard** - Desktop browser access
 - [x] **Link to Web** - 6-digit sync code system
 - [x] **Contacts sync** - Upload contacts to cloud for web access
 - [x] **Twilio SMS Integration** (2026-03-06) - Auto-send SMS at scheduled time
 - [x] **Twilio WhatsApp Integration** (2026-03-06) - Auto-send WhatsApp at scheduled time
+- [x] **Web Dashboard Meet/Deskwork cards** (2026-03-11) - Added missing stat cards with icons and styling
+- [x] **Improved contact phone filtering** (2026-03-11) - Filter out masked/invalid phone numbers
+
+## Fixed Issues (2026-03-11)
+1. **Issue 1: Meet/Deskwork missing on web** - Added CSS styling for `.stat-icon.meet` and `.stat-icon.deskwork`, plus proper SVG icons
+2. **Issue 2: Back navigation exits app** - Changed from `router.replace('/')` to `router.back()` in action.tsx and all-items.tsx  
+3. **Issue 3: Phone numbers saving incorrectly** - Removed auto-clear of phone when editing name, added filter for masked (X's) and invalid short numbers
 
 ## Pending Testing
 - [ ] Build new APK with Link to Web feature
@@ -112,7 +119,7 @@ execution_logs: {
 
 ## Web Dashboard Access
 ```
-https://reminder-voice-app-1.preview.emergentagent.com/api/web-static/index.html
+https://justblr-dashboard.preview.emergentagent.com/api/web-static/index.html
 ```
 
 ## Known Limitations
@@ -120,3 +127,4 @@ https://reminder-voice-app-1.preview.emergentagent.com/api/web-static/index.html
 - Contact loading for 36,000+ contacts needs optimization
 - Web dashboard requires mobile app to generate sync code first
 - Twilio trial accounts can only send to verified numbers
+- **Web dashboard un-links on app reinstall** (Issue 4) - This is an architectural limitation. The sync relies on a transient `device_id` that changes when the app is reinstalled. A proper fix requires implementing a user account system. Current workaround: User must unlink and re-link with a new sync code after reinstalling the mobile app.
