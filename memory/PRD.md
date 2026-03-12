@@ -82,8 +82,14 @@ execution_logs: {
 - [x] **Twilio WhatsApp Integration** (2026-03-06) - Auto-send WhatsApp at scheduled time
 - [x] **Web Dashboard Meet/Deskwork cards** (2026-03-11) - Added missing stat cards with icons and styling
 - [x] **Improved contact phone filtering** (2026-03-11) - Filter out masked/invalid phone numbers
+- [x] **APK v1.0.2 Released** (2026-03-12) - All reminder display issues fixed, back navigation fixed
 
-## Fixed Issues (2026-03-11)
+## Latest APK
+- **Version**: 1.0.2
+- **Download**: https://expo.dev/artifacts/eas/kXM8kYfnrt4AbRViPKGeYa.apk
+- **Build Date**: 2026-03-12
+
+## Fixed Issues (2026-03-11/12)
 1. **Issue 1: Meet/Deskwork missing on web** - Added CSS styling for `.stat-icon.meet` and `.stat-icon.deskwork`, plus proper SVG icons
 2. **Issue 2: Back navigation exits app** - Changed from `router.replace('/')` to `router.back()` in action.tsx and all-items.tsx  
 3. **Issue 3: Phone numbers saving incorrectly** - Removed auto-clear of phone when editing name, added filter for masked (X's) and invalid short numbers
