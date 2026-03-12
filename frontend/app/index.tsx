@@ -710,7 +710,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>Justblr Matrix</Text>
-            <Text style={styles.subtitle}>Assistant</Text>
+            <Text style={styles.subtitle}>Assistant ({reminders.length} reminders)</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity 
