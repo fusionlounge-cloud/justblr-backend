@@ -523,6 +523,9 @@ export default function ActionScreen() {
     try {
       let response;
       
+      // Set axios timeout to 30 seconds
+      const axiosConfig = { timeout: 30000 };
+      
       if (isEditMode && editId) {
         // Update existing reminder
         response = await axios.put(`${BACKEND_URL}/api/reminders/${editId}`, {
@@ -532,7 +535,7 @@ export default function ActionScreen() {
           scheduled_time: scheduledTime.toISOString(),
           notes: content || undefined,
           auto_execute: autoExecute,
-        });
+        }, axiosConfig);
         
         console.log('Update response:', response.data);
         
@@ -551,7 +554,7 @@ export default function ActionScreen() {
           notes: content || undefined,
           auto_execute: autoExecute,
           device_id: deviceId,
-        });
+        }, axiosConfig);
 
         console.log('Save response:', response.data);
 
@@ -564,9 +567,10 @@ export default function ActionScreen() {
           { text: 'OK', onPress: () => router.back() },
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save reminder:', error);
-      Alert.alert('Error', 'Failed to save reminder. Please try again.');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Network error';
+      Alert.alert('Error', `Failed to save reminder: ${errorMessage}`);
     }
   };
 
