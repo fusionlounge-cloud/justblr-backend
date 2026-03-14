@@ -154,13 +154,22 @@ export default function DashboardScreen() {
     try {
       setIsLoading(true);
       const deviceId = await getDeviceId();
-      console.log('Fetching reminders for device:', deviceId);
-      const response = await axios.get(`${BACKEND_URL}/api/reminders?device_id=${deviceId}`);
+      const url = `${BACKEND_URL}/api/reminders?device_id=${deviceId}`;
+      console.log('Fetching from URL:', url);
+      console.log('BACKEND_URL value:', BACKEND_URL);
+      const response = await axios.get(url, { timeout: 30000 });
       console.log('Got reminders:', response.data?.length || 0);
-      setReminders(response.data || []);
-    } catch (error) {
-      console.error('Error fetching reminders:', error);
-      Alert.alert('Error', 'Failed to load reminders. Pull down to refresh.');
+      if (Array.isArray(response.data)) {
+        setReminders(response.data);
+      } else {
+        console.error('Response is not an array:', typeof response.data);
+        setReminders([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching reminders:', error?.message || error);
+      // Show detailed error for debugging
+      const errorMsg = error?.response?.data?.detail || error?.message || 'Unknown error';
+      Alert.alert('Load Error', `URL: ${BACKEND_URL}\nError: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
