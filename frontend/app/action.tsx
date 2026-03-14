@@ -519,15 +519,24 @@ export default function ActionScreen() {
 
   const saveReminder = async () => {
     const reminderTitle = title.trim() || `${actionName} Reminder`;
+    console.log('=== SAVE REMINDER STARTED ===');
+    console.log('BACKEND_URL:', BACKEND_URL);
 
     try {
       let response;
       
-      // Set axios timeout to 30 seconds
-      const axiosConfig = { timeout: 30000 };
+      // Set axios config with timeout and headers
+      const axiosConfig = { 
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      };
       
       if (isEditMode && editId) {
         // Update existing reminder
+        console.log('Updating reminder:', editId);
         response = await axios.put(`${BACKEND_URL}/api/reminders/${editId}`, {
           title: reminderTitle,
           contact_name: contactName || undefined,
@@ -537,7 +546,8 @@ export default function ActionScreen() {
           auto_execute: autoExecute,
         }, axiosConfig);
         
-        console.log('Update response:', response.data);
+        console.log('Update response status:', response.status);
+        console.log('Update response data:', response.data);
         
         Alert.alert('Updated!', `${actionName} reminder updated`, [
           { text: 'OK', onPress: () => router.back() },
@@ -545,7 +555,9 @@ export default function ActionScreen() {
       } else {
         // Create new reminder
         const deviceId = await getDeviceId();
-        response = await axios.post(`${BACKEND_URL}/api/reminders`, {
+        console.log('Creating new reminder for device:', deviceId);
+        
+        const payload = {
           title: reminderTitle,
           contact_name: contactName || undefined,
           contact_phone: contactPhone || undefined,
@@ -554,9 +566,13 @@ export default function ActionScreen() {
           notes: content || undefined,
           auto_execute: autoExecute,
           device_id: deviceId,
-        }, axiosConfig);
+        };
+        console.log('Payload:', JSON.stringify(payload));
+        
+        response = await axios.post(`${BACKEND_URL}/api/reminders`, payload, axiosConfig);
 
-        console.log('Save response:', response.data);
+        console.log('Save response status:', response.status);
+        console.log('Save response data:', response.data);
 
         // Schedule local notification
         if (notifyMe) {
@@ -567,10 +583,15 @@ export default function ActionScreen() {
           { text: 'OK', onPress: () => router.back() },
         ]);
       }
+      console.log('=== SAVE REMINDER SUCCESS ===');
     } catch (error: any) {
-      console.error('Failed to save reminder:', error);
-      const errorMessage = error?.response?.data?.detail || error?.message || 'Network error';
-      Alert.alert('Error', `Failed to save reminder: ${errorMessage}`);
+      console.error('=== SAVE REMINDER FAILED ===');
+      console.error('Error:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error response:', error?.response?.data);
+      
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Network error - check your connection';
+      Alert.alert('Save Failed', `Could not save reminder.\n\nURL: ${BACKEND_URL}\nError: ${errorMessage}`);
     }
   };
 

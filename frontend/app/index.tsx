@@ -151,27 +151,48 @@ export default function DashboardScreen() {
   }, []);
 
   const fetchReminders = async () => {
+    console.log('=== FETCH REMINDERS STARTED ===');
     try {
       setIsLoading(true);
       const deviceId = await getDeviceId();
       const url = `${BACKEND_URL}/api/reminders?device_id=${deviceId}`;
-      console.log('Fetching from URL:', url);
-      console.log('BACKEND_URL value:', BACKEND_URL);
-      const response = await axios.get(url, { timeout: 30000 });
-      console.log('Got reminders:', response.data?.length || 0);
-      if (Array.isArray(response.data)) {
+      
+      console.log('Fetching from:', url);
+      
+      // Make the request
+      const response = await axios.get(url, { 
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response data type:', typeof response.data);
+      console.log('Response data length:', response.data?.length);
+      
+      // Validate and set data
+      if (response.data && Array.isArray(response.data)) {
+        console.log('Setting', response.data.length, 'reminders');
         setReminders(response.data);
+        // Show success message for debugging
+        if (response.data.length === 0) {
+          console.log('No reminders found in database');
+        }
       } else {
-        console.error('Response is not an array:', typeof response.data);
+        console.error('Invalid response format:', response.data);
+        Alert.alert('Data Error', `Invalid response format: ${typeof response.data}`);
         setReminders([]);
       }
     } catch (error: any) {
-      console.error('Error fetching reminders:', error?.message || error);
-      // Show detailed error for debugging
-      const errorMsg = error?.response?.data?.detail || error?.message || 'Unknown error';
-      Alert.alert('Load Error', `URL: ${BACKEND_URL}\nError: ${errorMsg}`);
+      console.error('Fetch error:', error);
+      const errorMsg = error?.response?.data?.detail || error?.message || 'Network error';
+      Alert.alert('Connection Error', `Could not load reminders.\n\nURL: ${BACKEND_URL}\nError: ${errorMsg}\n\nPlease check your internet connection.`);
+      setReminders([]);
     } finally {
       setIsLoading(false);
+      console.log('=== FETCH REMINDERS ENDED ===');
     }
   };
 
