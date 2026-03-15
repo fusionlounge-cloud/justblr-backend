@@ -310,31 +310,46 @@ export default function DelegationScreen() {
     );
   };
 
-  // Send task to WhatsApp
+  // Send task to WhatsApp - Always open WhatsApp directly
   const sendToWhatsApp = async (task: Task) => {
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/tasks/${task.id}/send-whatsapp`);
+      // Format the message
+      let deadlineStr = "";
+      if (task.deadline) {
+        const deadline = new Date(task.deadline);
+        deadlineStr = `\nDeadline: ${deadline.toLocaleString()}`;
+      }
       
-      if (response.data.status === 'sent') {
-        Alert.alert('Success', 'Task sent via WhatsApp');
+      const message = `📋 Task Assigned:\n\n${task.description}${deadlineStr}\n\n- Sent from Justblr Matrix`;
+      
+      // Get phone number
+      let phone = task.employee_phone || '';
+      phone = phone.replace(/[^0-9+]/g, '');
+      if (!phone.startsWith('+')) {
+        phone = '+91' + phone;
+      }
+      
+      // Open WhatsApp directly with pre-filled message
+      const encodedMessage = encodeURIComponent(message);
+      const url = `whatsapp://send?phone=${phone}&text=${encodedMessage}`;
+      
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        // Mark as sent
         setTasks(tasks.map(t => t.id === task.id ? { ...t, sent_to_whatsapp: true } : t));
-      } else {
-        // Manual sending - open WhatsApp with pre-filled message
-        const phone = response.data.phone.replace(/[^0-9+]/g, '');
-        const message = encodeURIComponent(response.data.message);
-        const url = `whatsapp://send?phone=${phone}&text=${message}`;
-        
-        const canOpen = await Linking.canOpenURL(url);
-        if (canOpen) {
-          await Linking.openURL(url);
-          setTasks(tasks.map(t => t.id === task.id ? { ...t, sent_to_whatsapp: true } : t));
-        } else {
-          Alert.alert('WhatsApp Not Found', 'Please install WhatsApp');
+        // Update backend
+        try {
+          await axios.put(`${BACKEND_URL}/api/tasks/${task.id}`, { sent_to_whatsapp: true });
+        } catch (e) {
+          console.log('Failed to update sent status');
         }
+      } else {
+        Alert.alert('WhatsApp Not Found', 'Please install WhatsApp');
       }
     } catch (error: any) {
       console.error('Send WhatsApp error:', error);
-      Alert.alert('Error', 'Failed to send task');
+      Alert.alert('Error', 'Failed to open WhatsApp');
     }
   };
 
