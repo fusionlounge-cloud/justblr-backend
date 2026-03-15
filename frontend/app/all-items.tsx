@@ -55,25 +55,25 @@ export default function AllItemsScreen() {
   }, []);
 
   // Handle back button press - Navigate back properly
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return undefined;
-      
-      const onBackPress = () => {
-        // If viewing a category, go back to categories grid
-        if (selectedCategory) {
-          setSelectedCategory(null);
-          return true;
-        }
-        // Otherwise, navigate to home screen explicitly
-        router.push('/');
-        return true; // CRITICAL: return true to prevent default behavior (app exit)
-      };
+  // Handle back button press - Navigate to home
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    
+    const backAction = () => {
+      // If viewing a category, go back to categories grid
+      if (selectedCategory) {
+        setSelectedCategory(null);
+        return true;
+      }
+      // Navigate to home screen using replace
+      router.replace('/');
+      return true; // Prevent default back action (app exit)
+    };
 
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }, [router, selectedCategory])
-  );
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [selectedCategory]);
 
   const fetchReminders = async () => {
     try {

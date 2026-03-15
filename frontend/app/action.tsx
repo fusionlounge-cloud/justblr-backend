@@ -102,21 +102,20 @@ export default function ActionScreen() {
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
 
-  // Handle back button press - Navigate back properly
-  useFocusEffect(
-    useCallback(() => {
-      if (Platform.OS !== 'android') return undefined;
-      
-      const onBackPress = () => {
-        // Always navigate to home screen explicitly to avoid app exit
-        router.push('/');
-        return true; // CRITICAL: return true to prevent default behavior (app exit)
-      };
+  // Handle back button press - Navigate to home screen
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    
+    const backAction = () => {
+      // Navigate to home screen using replace to clear stack
+      router.replace('/');
+      return true; // Prevent default back action (app exit)
+    };
 
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      return () => subscription.remove();
-    }, [router])
-  );
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, []);
 
   // Initialize picker values when modal opens
   useEffect(() => {

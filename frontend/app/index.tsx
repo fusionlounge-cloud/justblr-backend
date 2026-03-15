@@ -518,37 +518,43 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Open WhatsApp Business app specifically
+        // Open WhatsApp Business app directly
         if (Platform.OS === 'web') {
           await Linking.openURL('https://business.whatsapp.com');
           return;
         }
         
-        // For mobile (Android/iOS), try WhatsApp Business first, then regular WhatsApp
-        const urlsToTry = [
-          'whatsapp://app', // WhatsApp Business uses same scheme
-          'intent://#Intent;package=com.whatsapp.w4b;end', // WhatsApp Business package
-          'intent://#Intent;package=com.whatsapp;end', // Regular WhatsApp fallback
-        ];
-        
-        let opened = false;
-        for (const url of urlsToTry) {
+        // For Android, directly launch WhatsApp Business using intent
+        if (Platform.OS === 'android') {
           try {
-            const canOpen = await Linking.canOpenURL(url);
+            // Try to launch WhatsApp Business directly
+            await Linking.sendIntent('android.intent.action.MAIN', [
+              { key: 'package', value: 'com.whatsapp.w4b' }
+            ]);
+            return;
+          } catch (intentError) {
+            console.log('Intent failed, trying URL scheme');
+          }
+          
+          // Fallback: try whatsapp-business URL scheme
+          try {
+            const canOpen = await Linking.canOpenURL('whatsapp://');
             if (canOpen) {
-              await Linking.openURL(url);
-              opened = true;
-              break;
+              await Linking.openURL('whatsapp://');
+              return;
             }
           } catch (e) {
-            console.log('Failed to open:', url, e);
+            console.log('WhatsApp URL scheme failed');
           }
         }
         
-        if (!opened) {
-          // Last resort: try to open Play Store for WhatsApp Business
-          await Linking.openURL('https://play.google.com/store/apps/details?id=com.whatsapp.w4b');
+        // iOS fallback
+        if (Platform.OS === 'ios') {
+          await Linking.openURL('whatsapp://');
+          return;
         }
+        
+        Alert.alert('WhatsApp Business', 'Please open WhatsApp Business manually');
         return;
       }
 
