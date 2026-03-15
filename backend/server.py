@@ -1082,6 +1082,7 @@ async def get_tasks_report(device_id: str, employee_id: str = None):
         # Generate report
         report = "📊 TASK REPORT\n" + "=" * 30 + "\n\n"
         
+        task_num = 1
         for emp_name, tasks_data in employees_tasks.items():
             report += f"👤 {emp_name}\n"
             report += "-" * 20 + "\n"
@@ -1089,17 +1090,20 @@ async def get_tasks_report(device_id: str, employee_id: str = None):
             if tasks_data["overdue"]:
                 report += "⚠️ OVERDUE:\n"
                 for t in tasks_data["overdue"]:
-                    report += f"  • {t['description']}\n"
+                    report += f"  {task_num}. {t['description']}\n"
+                    task_num += 1
             
             if tasks_data["pending"]:
                 report += "📋 Pending:\n"
                 for t in tasks_data["pending"]:
-                    report += f"  • {t['description']}\n"
+                    report += f"  {task_num}. {t['description']}\n"
+                    task_num += 1
             
             if tasks_data["completed"]:
                 report += "✅ Completed:\n"
                 for t in tasks_data["completed"]:
-                    report += f"  • {t['description']}\n"
+                    report += f"  {task_num}. {t['description']}\n"
+                    task_num += 1
             
             report += "\n"
         
