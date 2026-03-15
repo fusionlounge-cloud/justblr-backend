@@ -150,8 +150,10 @@ export default function DashboardScreen() {
     return () => subscription.remove();
   }, []);
 
-  const fetchReminders = async () => {
-    console.log('=== FETCH REMINDERS STARTED ===');
+  const fetchReminders = async (retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    console.log('=== FETCH REMINDERS STARTED === Attempt:', retryCount + 1);
+    
     try {
       setIsLoading(true);
       const deviceId = await getDeviceId();
@@ -169,26 +171,28 @@ export default function DashboardScreen() {
       });
       
       console.log('Response status:', response.status);
-      console.log('Response data type:', typeof response.data);
       console.log('Response data length:', response.data?.length);
       
       // Validate and set data
       if (response.data && Array.isArray(response.data)) {
         console.log('Setting', response.data.length, 'reminders');
         setReminders(response.data);
-        // Show success message for debugging
-        if (response.data.length === 0) {
-          console.log('No reminders found in database');
-        }
       } else {
         console.error('Invalid response format:', response.data);
-        Alert.alert('Data Error', `Invalid response format: ${typeof response.data}`);
         setReminders([]);
       }
     } catch (error: any) {
-      console.error('Fetch error:', error);
+      console.error('Fetch error:', error?.message);
+      
+      // Retry on 404 or network errors
+      if (retryCount < MAX_RETRIES && (error?.response?.status === 404 || !error?.response)) {
+        console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        return fetchReminders(retryCount + 1);
+      }
+      
       const errorMsg = error?.response?.data?.detail || error?.message || 'Network error';
-      Alert.alert('Connection Error', `Could not load reminders.\n\nURL: ${BACKEND_URL}\nError: ${errorMsg}\n\nPlease check your internet connection.`);
+      Alert.alert('Connection Error', `Could not load reminders after ${MAX_RETRIES} attempts.\n\nError: ${errorMsg}\n\nPlease try again in a moment.`);
       setReminders([]);
     } finally {
       setIsLoading(false);

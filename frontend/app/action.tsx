@@ -517,9 +517,10 @@ export default function ActionScreen() {
     }
   };
 
-  const saveReminder = async () => {
+  const saveReminder = async (retryCount = 0) => {
+    const MAX_RETRIES = 3;
     const reminderTitle = title.trim() || `${actionName} Reminder`;
-    console.log('=== SAVE REMINDER STARTED ===');
+    console.log('=== SAVE REMINDER STARTED === Attempt:', retryCount + 1);
     console.log('BACKEND_URL:', BACKEND_URL);
 
     try {
@@ -547,7 +548,6 @@ export default function ActionScreen() {
         }, axiosConfig);
         
         console.log('Update response status:', response.status);
-        console.log('Update response data:', response.data);
         
         Alert.alert('Updated!', `${actionName} reminder updated`, [
           { text: 'OK', onPress: () => router.back() },
@@ -567,12 +567,10 @@ export default function ActionScreen() {
           auto_execute: autoExecute,
           device_id: deviceId,
         };
-        console.log('Payload:', JSON.stringify(payload));
         
         response = await axios.post(`${BACKEND_URL}/api/reminders`, payload, axiosConfig);
 
         console.log('Save response status:', response.status);
-        console.log('Save response data:', response.data);
 
         // Schedule local notification
         if (notifyMe) {
@@ -585,13 +583,17 @@ export default function ActionScreen() {
       }
       console.log('=== SAVE REMINDER SUCCESS ===');
     } catch (error: any) {
-      console.error('=== SAVE REMINDER FAILED ===');
-      console.error('Error:', error);
-      console.error('Error message:', error?.message);
-      console.error('Error response:', error?.response?.data);
+      console.error('Save error:', error?.message);
       
-      const errorMessage = error?.response?.data?.detail || error?.message || 'Network error - check your connection';
-      Alert.alert('Save Failed', `Could not save reminder.\n\nURL: ${BACKEND_URL}\nError: ${errorMessage}`);
+      // Retry on 404 or network errors
+      if (retryCount < MAX_RETRIES && (error?.response?.status === 404 || !error?.response)) {
+        console.log(`Retrying save in ${(retryCount + 1) * 2} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        return saveReminder(retryCount + 1);
+      }
+      
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Network error';
+      Alert.alert('Save Failed', `Could not save reminder after ${MAX_RETRIES} attempts.\n\nError: ${errorMessage}`);
     }
   };
 
