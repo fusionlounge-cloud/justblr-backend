@@ -923,9 +923,18 @@ async def get_tasks(device_id: str = None, employee_id: str = None, completed: b
         for task in tasks:
             if task.get("deadline") and not task.get("is_completed"):
                 deadline = task["deadline"]
-                if isinstance(deadline, str):
-                    deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
-                task["is_overdue"] = deadline < now
+                try:
+                    if isinstance(deadline, str):
+                        deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
+                    # Make deadline timezone-aware if it's naive
+                    if deadline.tzinfo is None:
+                        deadline = deadline.replace(tzinfo=timezone.utc)
+                    task["is_overdue"] = deadline < now
+                except Exception as e:
+                    logger.error(f"Deadline check error: {e}")
+                    task["is_overdue"] = False
+            else:
+                task["is_overdue"] = False
         
         return tasks
     except Exception as e:
@@ -1052,9 +1061,16 @@ async def get_tasks_report(device_id: str, employee_id: str = None):
             is_overdue = False
             if task.get("deadline") and not task.get("is_completed"):
                 deadline = task["deadline"]
-                if isinstance(deadline, str):
-                    deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
-                is_overdue = deadline < now
+                try:
+                    if isinstance(deadline, str):
+                        deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
+                    # Make deadline timezone-aware if it's naive
+                    if deadline.tzinfo is None:
+                        deadline = deadline.replace(tzinfo=timezone.utc)
+                    is_overdue = deadline < now
+                except Exception as e:
+                    logger.error(f"Deadline comparison error: {e}")
+                    is_overdue = False
             
             if task.get("is_completed"):
                 employees_tasks[emp_name]["completed"].append(task)
