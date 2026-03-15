@@ -303,6 +303,45 @@ class SyncCodeResponse(BaseModel):
     sync_code: str
     expires_in: int = 3600  # 1 hour
 
+# ===== DELEGATION MODELS =====
+
+class EmployeeCreate(BaseModel):
+    name: str
+    phone: str
+    device_id: str  # Owner's device ID
+
+class Employee(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    phone: str
+    device_id: str  # Owner's device ID
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TaskCreate(BaseModel):
+    employee_id: str
+    description: str
+    deadline: Optional[datetime] = None
+    device_id: str  # Owner's device ID
+
+class Task(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_phone: Optional[str] = None
+    description: str
+    deadline: Optional[datetime] = None
+    is_completed: bool = False
+    completed_at: Optional[datetime] = None
+    is_overdue: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    device_id: str  # Owner's device ID
+    sent_to_whatsapp: bool = False
+
+class TaskUpdate(BaseModel):
+    description: Optional[str] = None
+    deadline: Optional[datetime] = None
+    is_completed: Optional[bool] = None
+
 # ===== VOICE ENDPOINTS =====
 
 @api_router.post("/voice/stt", response_model=STTResponse)
@@ -792,6 +831,271 @@ async def send_message(request: SendMessageRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 # ===== GOOGLE CONTACTS ENDPOINTS =====
+
+# ===== DELEGATION/TASK ENDPOINTS =====
+
+@api_router.post("/employees", response_model=Employee)
+async def create_employee(employee: EmployeeCreate):
+    """Add an employee from contacts"""
+    try:
+        new_employee = Employee(
+            name=employee.name,
+            phone=employee.phone,
+            device_id=employee.device_id
+        )
+        await db.employees.insert_one(new_employee.model_dump())
+        return new_employee
+    except Exception as e:
+        logger.error(f"Create employee error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/employees")
+async def get_employees(device_id: str = None):
+    """Get all employees for a device"""
+    try:
+        query = {}
+        if device_id:
+            query["device_id"] = device_id
+        employees = await db.employees.find(query, {"_id": 0}).to_list(length=1000)
+        return employees
+    except Exception as e:
+        logger.error(f"Get employees error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/employees/{employee_id}")
+async def delete_employee(employee_id: str):
+    """Delete an employee"""
+    try:
+        result = await db.employees.delete_one({"id": employee_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        # Also delete all tasks for this employee
+        await db.tasks.delete_many({"employee_id": employee_id})
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete employee error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tasks", response_model=Task)
+async def create_task(task: TaskCreate):
+    """Create a new task for an employee"""
+    try:
+        # Get employee details
+        employee = await db.employees.find_one({"id": task.employee_id}, {"_id": 0})
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        new_task = Task(
+            employee_id=task.employee_id,
+            employee_name=employee.get("name"),
+            employee_phone=employee.get("phone"),
+            description=task.description,
+            deadline=task.deadline,
+            device_id=task.device_id
+        )
+        await db.tasks.insert_one(new_task.model_dump())
+        logger.info(f"Created task for employee {employee.get('name')}: {task.description}")
+        return new_task
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Create task error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/tasks")
+async def get_tasks(device_id: str = None, employee_id: str = None, completed: bool = None):
+    """Get all tasks, optionally filtered"""
+    try:
+        query = {}
+        if device_id:
+            query["device_id"] = device_id
+        if employee_id:
+            query["employee_id"] = employee_id
+        if completed is not None:
+            query["is_completed"] = completed
+        
+        tasks = await db.tasks.find(query, {"_id": 0}).to_list(length=1000)
+        
+        # Check for overdue tasks
+        now = datetime.now(timezone.utc)
+        for task in tasks:
+            if task.get("deadline") and not task.get("is_completed"):
+                deadline = task["deadline"]
+                if isinstance(deadline, str):
+                    deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
+                task["is_overdue"] = deadline < now
+        
+        return tasks
+    except Exception as e:
+        logger.error(f"Get tasks error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/tasks/{task_id}")
+async def update_task(task_id: str, task_update: TaskUpdate):
+    """Update a task"""
+    try:
+        update_data = {k: v for k, v in task_update.model_dump().items() if v is not None}
+        if task_update.is_completed:
+            update_data["completed_at"] = datetime.now(timezone.utc)
+        
+        result = await db.tasks.update_one(
+            {"id": task_id},
+            {"$set": update_data}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        updated_task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+        return updated_task
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update task error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str):
+    """Delete a task"""
+    try:
+        result = await db.tasks.delete_one({"id": task_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return {"deleted": True}
+    except Exception as e:
+        logger.error(f"Delete task error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/tasks/bulk/completed")
+async def delete_completed_tasks(device_id: str):
+    """Delete all completed tasks for a device"""
+    try:
+        result = await db.tasks.delete_many({
+            "device_id": device_id,
+            "is_completed": True
+        })
+        return {"deleted_count": result.deleted_count}
+    except Exception as e:
+        logger.error(f"Delete completed tasks error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tasks/{task_id}/send-whatsapp")
+async def send_task_to_whatsapp(task_id: str):
+    """Send task to employee via WhatsApp"""
+    try:
+        task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        phone = task.get("employee_phone")
+        if not phone:
+            raise HTTPException(status_code=400, detail="Employee phone number not available")
+        
+        # Format message
+        deadline_str = ""
+        if task.get("deadline"):
+            deadline = task["deadline"]
+            if isinstance(deadline, str):
+                deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
+            deadline_str = f"\nDeadline: {deadline.strftime('%d %b %Y, %I:%M %p')}"
+        
+        message = f"📋 Task Assigned:\n\n{task['description']}{deadline_str}\n\n- Sent from Justblr Matrix"
+        
+        # Send via Twilio if configured
+        if twilio_client and TWILIO_WHATSAPP_NUMBER:
+            cleaned_phone = ''.join(c for c in phone if c.isdigit() or c == '+')
+            if not cleaned_phone.startswith('+'):
+                cleaned_phone = '+91' + cleaned_phone
+            
+            whatsapp_to = f"whatsapp:{cleaned_phone}"
+            try:
+                msg = twilio_client.messages.create(
+                    body=message,
+                    from_=TWILIO_WHATSAPP_NUMBER,
+                    to=whatsapp_to
+                )
+                await db.tasks.update_one({"id": task_id}, {"$set": {"sent_to_whatsapp": True}})
+                return {"status": "sent", "sid": msg.sid, "message": message}
+            except Exception as e:
+                logger.error(f"WhatsApp send error: {str(e)}")
+                # Return message for manual sending
+                return {"status": "manual", "phone": cleaned_phone, "message": message, "error": str(e)}
+        else:
+            # Return message for manual sending
+            return {"status": "manual", "phone": phone, "message": message}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Send task WhatsApp error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/tasks/report")
+async def get_tasks_report(device_id: str, employee_id: str = None):
+    """Generate a text report of tasks"""
+    try:
+        query = {"device_id": device_id}
+        if employee_id:
+            query["employee_id"] = employee_id
+        
+        tasks = await db.tasks.find(query, {"_id": 0}).to_list(length=1000)
+        
+        # Group tasks by employee
+        employees_tasks = {}
+        for task in tasks:
+            emp_name = task.get("employee_name", "Unknown")
+            if emp_name not in employees_tasks:
+                employees_tasks[emp_name] = {"pending": [], "completed": [], "overdue": []}
+            
+            # Check if overdue
+            now = datetime.now(timezone.utc)
+            is_overdue = False
+            if task.get("deadline") and not task.get("is_completed"):
+                deadline = task["deadline"]
+                if isinstance(deadline, str):
+                    deadline = datetime.fromisoformat(deadline.replace('Z', '+00:00'))
+                is_overdue = deadline < now
+            
+            if task.get("is_completed"):
+                employees_tasks[emp_name]["completed"].append(task)
+            elif is_overdue:
+                employees_tasks[emp_name]["overdue"].append(task)
+            else:
+                employees_tasks[emp_name]["pending"].append(task)
+        
+        # Generate report
+        report = "📊 TASK REPORT\n" + "=" * 30 + "\n\n"
+        
+        for emp_name, tasks_data in employees_tasks.items():
+            report += f"👤 {emp_name}\n"
+            report += "-" * 20 + "\n"
+            
+            if tasks_data["overdue"]:
+                report += "⚠️ OVERDUE:\n"
+                for t in tasks_data["overdue"]:
+                    report += f"  • {t['description']}\n"
+            
+            if tasks_data["pending"]:
+                report += "📋 Pending:\n"
+                for t in tasks_data["pending"]:
+                    report += f"  • {t['description']}\n"
+            
+            if tasks_data["completed"]:
+                report += "✅ Completed:\n"
+                for t in tasks_data["completed"]:
+                    report += f"  • {t['description']}\n"
+            
+            report += "\n"
+        
+        return {"report": report, "summary": {
+            "total": len(tasks),
+            "pending": sum(len(e["pending"]) for e in employees_tasks.values()),
+            "completed": sum(len(e["completed"]) for e in employees_tasks.values()),
+            "overdue": sum(len(e["overdue"]) for e in employees_tasks.values())
+        }}
+    except Exception as e:
+        logger.error(f"Generate report error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/contacts/google")
 async def get_google_contacts():

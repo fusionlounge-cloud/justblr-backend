@@ -65,8 +65,8 @@ export default function AllItemsScreen() {
           setSelectedCategory(null);
           return true;
         }
-        // Otherwise, navigate back (to home screen)
-        router.back();
+        // Otherwise, navigate to home screen explicitly
+        router.push('/');
         return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 

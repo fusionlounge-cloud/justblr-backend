@@ -518,16 +518,17 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Open WhatsApp Business app - simplified approach
+        // Open WhatsApp Business app specifically
         if (Platform.OS === 'web') {
-          await Linking.openURL('https://web.whatsapp.com');
+          await Linking.openURL('https://business.whatsapp.com');
           return;
         }
         
-        // For mobile (Android/iOS), try multiple approaches
+        // For mobile (Android/iOS), try WhatsApp Business first, then regular WhatsApp
         const urlsToTry = [
-          'whatsapp://app', // Standard WhatsApp
-          'whatsapp://', // Alternative WhatsApp scheme
+          'whatsapp://app', // WhatsApp Business uses same scheme
+          'intent://#Intent;package=com.whatsapp.w4b;end', // WhatsApp Business package
+          'intent://#Intent;package=com.whatsapp;end', // Regular WhatsApp fallback
         ];
         
         let opened = false;
@@ -545,8 +546,8 @@ export default function DashboardScreen() {
         }
         
         if (!opened) {
-          // Last resort: try to open Play Store for WhatsApp
-          Alert.alert('WhatsApp Not Found', 'Please install WhatsApp from the Play Store');
+          // Last resort: try to open Play Store for WhatsApp Business
+          await Linking.openURL('https://play.google.com/store/apps/details?id=com.whatsapp.w4b');
         }
         return;
       }
@@ -888,6 +889,21 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Delegation Section */}
+        <TouchableOpacity 
+          style={styles.delegationCard}
+          onPress={() => router.push('/delegation')}
+        >
+          <View style={styles.delegationIconWrap}>
+            <Ionicons name="people" size={28} color="#fff" />
+          </View>
+          <View style={styles.delegationContent}>
+            <Text style={styles.delegationTitle}>Task Delegation</Text>
+            <Text style={styles.delegationSubtitle}>Assign & track employee tasks</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#667eea" />
+        </TouchableOpacity>
+
         {/* Social Media Hub - Scrollable */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Social Media Hub</Text>
@@ -1113,6 +1129,43 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#6c757d',
     fontWeight: '700',
+  },
+  // Delegation Card
+  delegationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  delegationIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#667eea',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  delegationContent: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  delegationTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#212529',
+  },
+  delegationSubtitle: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginTop: 2,
   },
   // Social Media Scroll
   socialScroll: {

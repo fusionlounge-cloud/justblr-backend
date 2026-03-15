@@ -108,8 +108,8 @@ export default function ActionScreen() {
       if (Platform.OS !== 'android') return undefined;
       
       const onBackPress = () => {
-        // Navigate back to the previous screen instead of exiting
-        router.back();
+        // Always navigate to home screen explicitly to avoid app exit
+        router.push('/');
         return true; // CRITICAL: return true to prevent default behavior (app exit)
       };
 
