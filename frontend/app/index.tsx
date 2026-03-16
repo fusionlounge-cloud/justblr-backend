@@ -27,9 +27,6 @@ import * as Contacts from 'expo-contacts';
 const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
-// Debug: Log the URL at startup
-console.log('=== BACKEND URL ===', BACKEND_URL);
-
 // Get or create device ID
 const getDeviceId = async (): Promise<string> => {
   try {
@@ -136,23 +133,7 @@ export default function DashboardScreen() {
     return () => subscription.remove();
   }, []);
 
-  // Refresh reminders when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      fetchReminders();
-    }, [])
-  );
-
-  // Auto-refresh when app comes from background
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        fetchReminders();
-      }
-    });
-    return () => subscription.remove();
-  }, []);
-
+  // Define fetchReminders first before using in hooks
   const fetchReminders = async (retryCount = 0) => {
     const MAX_RETRIES = 5;
     console.log('=== FETCH REMINDERS STARTED === Attempt:', retryCount + 1);
@@ -179,12 +160,9 @@ export default function DashboardScreen() {
       // Validate and set data
       if (response.data && Array.isArray(response.data)) {
         console.log('Setting', response.data.length, 'reminders');
-        // DEBUG ALERT - remove later
-        Alert.alert('Debug', `Loaded ${response.data.length} reminders from server`);
         setReminders(response.data);
       } else {
         console.error('Invalid response format:', response.data);
-        Alert.alert('Debug Error', `Invalid response: ${JSON.stringify(response.data).substring(0, 100)}`);
         setReminders([]);
       }
     } catch (error: any) {
@@ -217,6 +195,23 @@ export default function DashboardScreen() {
   // Fetch reminders on component mount
   useEffect(() => {
     fetchReminders();
+  }, []);
+
+  // Refresh reminders when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchReminders();
+    }, [])
+  );
+
+  // Auto-refresh when app comes from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        fetchReminders();
+      }
+    });
+    return () => subscription.remove();
   }, []);
 
   // Voice Command Functions
