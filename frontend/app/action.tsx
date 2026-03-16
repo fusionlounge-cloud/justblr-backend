@@ -26,7 +26,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Constants from 'expo-constants';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://matrix-task-sync.preview.emergentagent.com';
+// HARDCODED URL to ensure it works
+const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
 
 // Get or create device ID
 const getDeviceId = async (): Promise<string> => {

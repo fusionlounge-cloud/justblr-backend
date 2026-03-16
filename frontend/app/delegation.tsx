@@ -23,15 +23,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Contacts from 'expo-contacts';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://matrix-task-sync.preview.emergentagent.com';
+// HARDCODED URL to ensure it works
+const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
 
-// Get device ID for data isolation
+// Get device ID for data isolation - use same key as main screen
 const getDeviceId = async () => {
   try {
-    let deviceId = await AsyncStorage.getItem('justblr_device_id');
+    let deviceId = await AsyncStorage.getItem('device_id');
     if (!deviceId) {
       deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      await AsyncStorage.setItem('justblr_device_id', deviceId);
+      await AsyncStorage.setItem('device_id', deviceId);
     }
     return deviceId;
   } catch (error) {

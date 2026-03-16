@@ -906,11 +906,10 @@ async def create_task(task: TaskCreate):
 
 @api_router.get("/tasks")
 async def get_tasks(device_id: str = None, employee_id: str = None, completed: bool = None):
-    """Get all tasks, optionally filtered"""
+    """Get all tasks - returns ALL tasks regardless of device_id"""
     try:
         query = {}
-        if device_id:
-            query["device_id"] = device_id
+        # REMOVED device_id filtering - show ALL tasks always (same as reminders)
         if employee_id:
             query["employee_id"] = employee_id
         if completed is not None:
