@@ -23,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Contacts from 'expo-contacts';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://justblr-dashboard.preview.emergentagent.com';
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://matrix-task-sync.preview.emergentagent.com';
 
 // Get device ID for data isolation
 const getDeviceId = async () => {

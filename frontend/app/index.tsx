@@ -23,7 +23,7 @@ import * as Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://justblr-dashboard.preview.emergentagent.com';
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://matrix-task-sync.preview.emergentagent.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
 // Get or create device ID
