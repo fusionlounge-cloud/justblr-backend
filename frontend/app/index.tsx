@@ -19,7 +19,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Constants from 'expo-constants';
+// Constants removed - not needed
 import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 
@@ -32,8 +32,7 @@ const getDeviceId = async (): Promise<string> => {
     let deviceId = await AsyncStorage.getItem('device_id');
     if (!deviceId) {
       // Generate unique device ID
-      const installId = Constants.default?.installationId || '';
-      deviceId = installId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       await AsyncStorage.setItem('device_id', deviceId);
     }
     return deviceId;
