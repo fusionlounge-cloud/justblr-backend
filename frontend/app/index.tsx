@@ -151,7 +151,7 @@ export default function DashboardScreen() {
   }, []);
 
   const fetchReminders = async (retryCount = 0) => {
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 5;
     console.log('=== FETCH REMINDERS STARTED === Attempt:', retryCount + 1);
     
     try {
@@ -184,15 +184,23 @@ export default function DashboardScreen() {
     } catch (error: any) {
       console.error('Fetch error:', error?.message);
       
-      // Retry on 404 or network errors
+      // Retry on 404 or network errors with longer delays
       if (retryCount < MAX_RETRIES && (error?.response?.status === 404 || !error?.response)) {
-        console.log(`Retrying in ${(retryCount + 1) * 2} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        const delay = (retryCount + 1) * 3000; // 3s, 6s, 9s, 12s, 15s
+        console.log(`Retrying in ${delay/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
         return fetchReminders(retryCount + 1);
       }
       
       const errorMsg = error?.response?.data?.detail || error?.message || 'Network error';
-      Alert.alert('Connection Error', `Could not load reminders after ${MAX_RETRIES} attempts.\n\nError: ${errorMsg}\n\nPlease try again in a moment.`);
+      Alert.alert(
+        'Connection Error', 
+        `Could not load reminders.\n\nError: ${errorMsg}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', onPress: () => fetchReminders(0) }
+        ]
+      );
       setReminders([]);
     } finally {
       setIsLoading(false);
