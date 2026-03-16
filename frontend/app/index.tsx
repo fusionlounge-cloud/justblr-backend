@@ -527,43 +527,45 @@ export default function DashboardScreen() {
   const openSocialApp = async (appName) => {
     try {
       if (appName === 'whatsapp') {
-        // Open WhatsApp Business app directly
-        if (Platform.OS === 'web') {
-          await Linking.openURL('https://business.whatsapp.com');
-          return;
-        }
-        
-        // For Android, directly launch WhatsApp Business using intent
+        // Open WhatsApp Business app directly using package URL
         if (Platform.OS === 'android') {
           try {
-            // Try to launch WhatsApp Business directly
-            await Linking.sendIntent('android.intent.action.MAIN', [
-              { key: 'package', value: 'com.whatsapp.w4b' }
-            ]);
-            return;
-          } catch (intentError) {
-            console.log('Intent failed, trying URL scheme');
-          }
-          
-          // Fallback: try whatsapp-business URL scheme
-          try {
-            const canOpen = await Linking.canOpenURL('whatsapp://');
+            // Use market intent to open WhatsApp Business
+            const waBusinessUrl = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end';
+            const canOpen = await Linking.canOpenURL(waBusinessUrl);
             if (canOpen) {
-              await Linking.openURL('whatsapp://');
+              await Linking.openURL(waBusinessUrl);
               return;
             }
           } catch (e) {
+            console.log('WhatsApp Business intent failed:', e);
+          }
+          
+          // Fallback: try launching with package
+          try {
+            await Linking.openURL('whatsapp://send');
+            return;
+          } catch (e) {
             console.log('WhatsApp URL scheme failed');
+          }
+          
+          // Final fallback: open WhatsApp (regular)
+          try {
+            await Linking.openURL('https://wa.me/');
+            return;
+          } catch (e) {
+            console.log('wa.me failed');
           }
         }
         
-        // iOS fallback
+        // iOS
         if (Platform.OS === 'ios') {
           await Linking.openURL('whatsapp://');
           return;
         }
         
-        Alert.alert('WhatsApp Business', 'Please open WhatsApp Business manually');
+        // Web fallback
+        await Linking.openURL('https://web.whatsapp.com');
         return;
       }
 
