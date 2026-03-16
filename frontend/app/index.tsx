@@ -23,8 +23,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://matrix-task-sync.preview.emergentagent.com';
+// HARDCODED URL to ensure it works
+const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
+
+// Debug: Log the URL at startup
+console.log('=== BACKEND URL ===', BACKEND_URL);
 
 // Get or create device ID
 const getDeviceId = async (): Promise<string> => {
@@ -175,9 +179,12 @@ export default function DashboardScreen() {
       // Validate and set data
       if (response.data && Array.isArray(response.data)) {
         console.log('Setting', response.data.length, 'reminders');
+        // DEBUG ALERT - remove later
+        Alert.alert('Debug', `Loaded ${response.data.length} reminders from server`);
         setReminders(response.data);
       } else {
         console.error('Invalid response format:', response.data);
+        Alert.alert('Debug Error', `Invalid response: ${JSON.stringify(response.data).substring(0, 100)}`);
         setReminders([]);
       }
     } catch (error: any) {

@@ -32,7 +32,7 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM"
       ],
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "bundler": "metro",
@@ -64,5 +64,5 @@
       }
     }
   },
-  "version": "1.2.2"
+  "version": "1.2.3-debug"
 }
