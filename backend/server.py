@@ -1239,6 +1239,79 @@ async def serve_dashboard():
         return FileResponse(str(index_path))
     raise HTTPException(status_code=404, detail="Web dashboard not built")
 
+# ===== STATIC PAGES FOR PLAY STORE =====
+
+@api_router.get("/privacy-policy")
+async def privacy_policy():
+    """Return privacy policy HTML"""
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Justblr Matrix</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; color: #333; }
+        h1 { color: #667eea; } h2 { color: #4a5568; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <h1>Privacy Policy</h1>
+    <p>Last updated: March 2026</p>
+    <h2>Introduction</h2>
+    <p>Justblr Matrix is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information.</p>
+    <h2>Information We Collect</h2>
+    <p><strong>Contact Information:</strong> With your permission, we access your device contacts to help you create reminders.</p>
+    <p><strong>Reminder Data:</strong> We store the reminders, tasks, and notes you create.</p>
+    <p><strong>Device Information:</strong> We collect a unique device identifier to sync your data.</p>
+    <h2>How We Use Your Information</h2>
+    <ul><li>To provide and maintain our service</li><li>To sync your data across devices</li><li>To send scheduled notifications</li></ul>
+    <h2>Data Storage and Security</h2>
+    <p>Your data is stored on secure servers with appropriate security measures.</p>
+    <h2>Your Rights</h2>
+    <p>You can access, correct, or delete your data at any time through the app or by contacting us.</p>
+    <h2>Contact Us</h2>
+    <p>Email: support@justblrmatrix.com</p>
+</body>
+</html>"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
+@api_router.get("/delete-data")
+async def delete_data():
+    """Return data deletion request HTML"""
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Your Data - Justblr Matrix</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; color: #333; }
+        h1 { color: #667eea; }
+        .info-box { background: #f0f4ff; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Request Data Deletion</h1>
+    <p>Justblr Matrix - Task Management App</p>
+    <div class="info-box">
+        <h3>What data we collect:</h3>
+        <ul><li>Reminders and tasks you create</li><li>Contact names associated with reminders</li><li>Device identifier for syncing</li></ul>
+    </div>
+    <h2>How to Delete Your Data</h2>
+    <h3>Option 1: Delete within the App</h3>
+    <p>You can delete individual reminders and tasks directly in the app by swiping left on any item.</p>
+    <h3>Option 2: Request Complete Data Deletion</h3>
+    <p>To request deletion of all your data, email us at: <strong>support@justblrmatrix.com</strong></p>
+    <p>Subject: Data Deletion Request</p>
+    <h3>Data Retention</h3>
+    <p>Upon receiving your request, we will delete all your data within 30 days.</p>
+</body>
+</html>"""
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html)
+
 # Include the router in the main app
 app.include_router(api_router)
 
