@@ -1312,6 +1312,16 @@ async def delete_data():
     from fastapi.responses import HTMLResponse
     return HTMLResponse(content=html)
 
+@api_router.get("/app-icon")
+async def get_app_icon():
+    """Serve app icon for Play Store"""
+    icon_path = ROOT_DIR.parent / "frontend" / "web" / "public" / "developer_icon_512.png"
+    if icon_path.exists():
+        return FileResponse(str(icon_path), media_type="image/png")
+    raise HTTPException(status_code=404, detail="Icon not found")
+
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
