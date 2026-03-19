@@ -498,12 +498,13 @@ async def create_reminder(reminder: ReminderCreate):
 
 @api_router.get("/reminders", response_model=List[Reminder])
 async def get_reminders(completed: Optional[bool] = None, device_id: Optional[str] = None):
-    """Get all reminders - returns ALL reminders regardless of device_id"""
+    """Get reminders filtered by device_id for data isolation"""
     try:
         query = {}
+        if device_id:
+            query["device_id"] = device_id
         if completed is not None:
             query["is_completed"] = completed
-        # REMOVED device_id filtering - show ALL reminders always
         
         reminders = await db.reminders.find(query).sort("scheduled_time", 1).to_list(1000)
         return [Reminder(**reminder) for reminder in reminders]
@@ -906,10 +907,11 @@ async def create_task(task: TaskCreate):
 
 @api_router.get("/tasks")
 async def get_tasks(device_id: str = None, employee_id: str = None, completed: bool = None):
-    """Get all tasks - returns ALL tasks regardless of device_id"""
+    """Get tasks filtered by device_id for data isolation"""
     try:
         query = {}
-        # REMOVED device_id filtering - show ALL tasks always (same as reminders)
+        if device_id:
+            query["device_id"] = device_id
         if employee_id:
             query["employee_id"] = employee_id
         if completed is not None:

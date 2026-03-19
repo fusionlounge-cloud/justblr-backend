@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Linking,
   RefreshControl,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -562,8 +563,11 @@ export default function DelegationScreen() {
 
         {/* Add Task Modal */}
         <Modal visible={showAddTask} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={[styles.modalContent, { marginBottom: 50 }]}>
               <Text style={styles.modalTitle}>Add Task</Text>
               <TextInput
                 style={styles.input}
@@ -625,7 +629,7 @@ export default function DelegationScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Report Modal */}
