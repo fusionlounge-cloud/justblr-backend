@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 # Backend URL from frontend .env
-BACKEND_URL = "https://matrix-task-sync.preview.emergentagent.com/api"
+BACKEND_URL = "https://remind-sync-app.preview.emergentagent.com/api"
 
 class VoiceAssistantTester:
     def __init__(self):

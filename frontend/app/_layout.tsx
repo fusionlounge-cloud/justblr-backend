@@ -47,17 +47,31 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          gestureEnabled: true,
-          fullScreenGestureEnabled: true,
+          // Disable gesture navigation to prevent accidental app exit
+          gestureEnabled: false,
+          fullScreenGestureEnabled: false,
         }}
       >
         <Stack.Screen 
           name="index" 
           options={{ gestureEnabled: false }} 
         />
-        <Stack.Screen name="action" />
-        <Stack.Screen name="all-items" />
-        <Stack.Screen name="voice-command" />
+        <Stack.Screen 
+          name="action" 
+          options={{ gestureEnabled: false }} 
+        />
+        <Stack.Screen 
+          name="all-items" 
+          options={{ gestureEnabled: false }} 
+        />
+        <Stack.Screen 
+          name="voice-command" 
+          options={{ gestureEnabled: false }} 
+        />
+        <Stack.Screen 
+          name="delegation" 
+          options={{ gestureEnabled: false }} 
+        />
       </Stack>
     </GestureHandlerRootView>
   );

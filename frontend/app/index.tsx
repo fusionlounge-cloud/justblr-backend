@@ -24,7 +24,7 @@ import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 
 // HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
+const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
 // Get or create device ID
@@ -732,7 +732,7 @@ export default function DashboardScreen() {
                       {/* Edit button */}
                       <TouchableOpacity 
                         style={styles.compactEditBtn}
-                        onPress={() => router.push(`/action?type=${reminder.reminder_type}&name=${selectedCategory.name}&edit=true&id=${reminder.id}&title=${encodeURIComponent(reminder.title || '')}&contact_name=${encodeURIComponent(reminder.contact_name || '')}&contact_phone=${encodeURIComponent(reminder.contact_phone || '')}&notes=${encodeURIComponent(reminder.notes || '')}`)}
+                        onPress={() => router.push(`/action?type=${reminder.reminder_type}&name=${selectedCategory.name}&edit=true&id=${reminder.id}&title=${encodeURIComponent(reminder.title || '')}&contact_name=${encodeURIComponent(reminder.contact_name || '')}&contact_phone=${encodeURIComponent(reminder.contact_phone || '')}&notes=${encodeURIComponent(reminder.notes || '')}&scheduled_time=${encodeURIComponent(reminder.scheduled_time || '')}`)}
                       >
                         <Ionicons name="create-outline" size={18} color="#667eea" />
                       </TouchableOpacity>

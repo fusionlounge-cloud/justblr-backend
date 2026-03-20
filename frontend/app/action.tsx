@@ -27,7 +27,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Constants from 'expo-constants';
 
 // HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
+const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
 
 // Get or create device ID
 const getDeviceId = async (): Promise<string> => {
@@ -75,14 +75,23 @@ export default function ActionScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [recordingField, setRecordingField] = useState('title');
   
-  // Scheduling state - Default to tomorrow 4:30 PM
-  const getDefaultScheduleTime = () => {
+  // Scheduling state - Use existing time in edit mode, otherwise tomorrow 4:30 PM
+  const getInitialScheduleTime = () => {
+    // In edit mode, use the existing scheduled_time from params
+    const existingTime = String(params.scheduled_time || '');
+    if (isEditMode && existingTime) {
+      const parsed = new Date(existingTime);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    // Default: tomorrow at 4:30 PM
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(16, 30, 0, 0); // 4:30 PM
+    tomorrow.setHours(16, 30, 0, 0);
     return tomorrow;
   };
-  const [scheduledTime, setScheduledTime] = useState(getDefaultScheduleTime());
+  const [scheduledTime, setScheduledTime] = useState(getInitialScheduleTime());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [autoExecute, setAutoExecute] = useState(true); // ON by default
   const [notifyMe, setNotifyMe] = useState(true);
@@ -542,6 +551,7 @@ export default function ActionScreen() {
           title: reminderTitle,
           contact_name: contactName || undefined,
           contact_phone: contactPhone || undefined,
+          reminder_type: actionType,
           scheduled_time: scheduledTime.toISOString(),
           notes: content || undefined,
           auto_execute: autoExecute,

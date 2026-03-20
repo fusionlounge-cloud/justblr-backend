@@ -1,169 +1,172 @@
-<analysis>**original_problem_statement**: The user wants to build a voice-first mobile productivity application named Justblr Matrix assistant. Core features include a central dashboard, reminders with quick actions (Meet, Call, SMS, etc.), and a social media hub. The user later requested a desktop (web) version that syncs with the mobile app, and automated SMS/WhatsApp sending for reminders.
+<analysis>**original_problem_statement**: The user wants to build a voice-first mobile productivity application named Justblr Matrix assistant. Core features include a central dashboard, reminders with quick actions (Meet, Call, SMS, etc.), a social media hub, and a task delegation feature for employees. The user is now trying to publish the app to the Google Play Store.
 
 **PRODUCT REQUIREMENTS**:
--   **Mobile App**: An Android app with a dashboard, reminder creation/listing, contact integration, and notifications.
--   **Web Dashboard**: A desktop-accessible web app that syncs reminders and contacts from the mobile app, allowing users to manage reminders from their computer.
--   **Automation**: Ability to automatically send SMS and WhatsApp messages at a scheduled time.
--   **Data Sync**: Reminders and contacts should be synchronized between the mobile and web applications.
--   **Stability**: The app must be stable, without critical usability bugs like unexpected crashes or data disappearing.
--   **Build & Deployment**: User needs a stable, installable Android app (APK) and eventually wants to publish it.
+-   **Mobile App**: An Android app with a dashboard, reminder management, contact integration, task delegation, and notifications.
+-   **Web Dashboard**: A desktop-accessible web app that syncs reminders and contacts from the mobile app.
+-   **Automation**: Ability to automatically send SMS messages for reminders.
+-   **Task Delegation**: A screen to assign, track, and report on tasks for employees.
+-   **Data Sync**: Reminders, contacts, and tasks should be synchronized between the mobile and web applications.
+-   **Stability**: The app must be stable and usable without frequent data loss or crashes. The user is currently experiencing major stability issues.
+-   **Build & Deployment**: The user needs a stable, installable Android app (APK) and wants to publish it to the Google Play Store.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application with an Expo (React Native) mobile app, a FastAPI/MongoDB backend, and a React web dashboard. Key features are implemented, including reminder management, contact syncing, and automated SMS/WhatsApp via Twilio. A significant backend change was made to remove  filtering when fetching reminders, which aimed to solve the recurring problem of reminders disappearing after app reinstalls. However, several critical usability and sync-related issues persist.
+A full-stack application with an Expo (React Native) mobile app and a FastAPI/MongoDB backend. The user has successfully created a Google Play Developer account and a merchant account, and filled out most of the store listing information. However, the app itself is highly unstable due to the backend being on a preview environment that periodically restarts, causing data loss and 404/502 errors. The user is also blocked on Play Store submission by Google's new requirement for a 14-day closed test with a minimum of 12 testers. Several critical bugs are preventing the app from being ready for testers.
 
 **Last working item**:
--   **Last item agent was working**: The user reported that the Meet and Deskwork reminder categories were missing from the stats cards on the web dashboard. The agent had identified the file  and was about to add these missing categories to the UI.
+-   **Last item agent was working**: The user provided a list of critical bugs that need to be fixed before they can share the app with testers for the Play Store closed testing period. The agent was in the process of fixing these issues.
+    1.  Reminders vanishing/failing to save (404 error).
+    2.  UI Text: Change Add employee to Add Employee/Person.
+    3.  Bug: Editing a reminder's time/date doesn't save the new time.
+    4.  Feature: Add an Edit Time button for tasks in the delegation screen.
+    5.  Question: Status of automatic WhatsApp/SMS sending.
 -   **Status**: IN PROGRESS
 -   **Agent Testing Done**: N
--   **Which testing method agent to use?** Frontend (web). The agent should finish editing  and then verify the change by accessing the web dashboard's URL. No APK build is required.
+-   **Which testing method agent to use?** Frontend testing agent. After implementing the fixes for the user's list of issues, a new APK must be built. A testing agent should be used to perform a full regression test on reminders (create, edit, save), task delegation (create, edit time), and check the UI text changes before sending the APK to the user.
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Meet and Deskwork categories are missing from the web dashboard (P0)
--   Issue 2: Back swipe/gesture quits the mobile app from sub-screens (P0, Recurring)
--   Issue 3: Mobile app is not saving phone numbers correctly from contacts (P1, Recurring)
--   Issue 4: Web dashboard un-links from mobile data on app reinstall (P1)
+-   Issue 1: Reminders vanishing or failing to save (P0, Recurring)
+-   Issue 2: Editing a reminder's time/date does not save the new value (P0)
+-   Issue 3: On the Add Task modal, the save button is hidden by the keyboard (P0)
+-   Issue 4: Back swipe/gesture quits the mobile app from sub-screens (P0, Recurring from previous fork)
+-   Issue 5: Web dashboard un-links from mobile data on app reinstall (P1)
 
 **Issues Detail**:
--   **Issue 1: Meet and Deskwork missing on web dashboard**
-    -   **Attempted fixes**: None. Agent has identified the file to edit.
+-   **Issue 1: Reminders vanishing or failing to save (P0, Recurring)**
+    -   **Attempted fixes**: The agent correctly identified this is caused by backend restarts on the unstable preview environment. The agent has repeatedly restarted the backend service and restored data from a . The agent also implemented data isolation by  so testers don't see each other's data, but this confused the user as they would lose their own data upon reinstalling.
     -   **Next debug checklist**:
-        1.  Edit .
-        2.  Locate the  calculation logic and include counts for Meet and Deskwork reminders.
-        3.  Add two new stat card components to the JSX for Meet and Deskwork.
-        4.  Ensure the new cards are clickable and filter the reminder list, consistent with existing cards.
-    -   **Why fix this issue and what will be achieved with the fix?**: To provide a complete and consistent overview of all reminder types on the web dashboard.
+        1.  Build a new APK with all the latest fixes.
+        2.  Thoroughly test reminder creation and editing.
+        3.  Re-explain to the user that the vanishing is due to the preview environment and the only permanent fix is deploying to a stable production environment.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is the primary blocker for app usability and testing. The app is useless if reminders cannot be reliably saved.
     -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Frontend (web)
-
--   **Issue 2: Back swipe/gesture quits the app**
-    -   **Attempted fixes**: Multiple failed attempts using , , , and . The issue continues to regress.
-    -   **Next debug checklist**:
-        1.  The root cause is incorrect handling of the  navigation stack.  was a poor workaround.
-        2.  Re-implement the back handler in  and  using the  hook from .
-        3.  The handler function must call  and, most importantly,  to prevent the default OS action (exiting the app).
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical usability bug that makes the app feel broken and has frustrated the user immensely.
-    -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
-
--   **Issue 3: Mobile app saves incorrect phone numbers**
-    -   **Attempted fixes**: Backend logic was added to clean numbers, but this is a workaround, not a fix.
-    -   **Next debug checklist**:
-        1.  The problem is in . The contact picker is returning masked numbers (with 'XXXX') or numbers with extra digits.
-        2.  Investigate the  function. Instead of trusting , the code should iterate through the  array (if it exists) to find a valid, non-masked number.
-        3.  The app clears the selected phone number if the user edits the contact name field, which must be fixed.
-    -   **Why fix this issue and what will be achieved with the fix?**: The SMS/WhatsApp automation feature is unusable without correct phone numbers.
-    -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Frontend (requires a new APK build).
-
--   **Issue 4: Web dashboard un-links on app reinstall**
-    -   **Attempted fixes**: User has to manually unlink and re-link with a new sync code.
-    -   **Next debug checklist**: This is an architectural flaw. The sync mechanism relies on the transient . The fix requires changing the backend () and frontend (, ) to associate data with a more permanent user identifier instead of .
-    -   **Why fix this issue and what will be achieved with the fix?**: To provide a seamless experience between the mobile and web apps without requiring constant re-linking.
-    -   **Status**: NOT STARTED
     -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: Both.
 
-**In progress Task List**:
--   **Task 1: Add Meet and Deskwork to web dashboard**
-    -   **Where to resume**: The agent should start by editing  to add the new stat cards and filtering logic.
-    -   **What will be achieved with this?**: The web dashboard will accurately reflect all reminder categories present in the mobile app.
+-   **Issue 2: Editing a reminder's time/date does not save the new value (P0)**
+    -   **Attempted fixes**: The agent added  to the payload of the  request in .
+    -   **Next debug checklist**:
+        1.  Build a new APK.
+        2.  Test the edit flow: create a reminder, edit its time, save, leave the screen, come back and verify the new time is shown.
+        3.  If the bug persists, investigate the  function in  and the full payload sent from .
+    -   **Why fix this issue and what will be achieved with the fix?**: A core feature of the app is broken.
     -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: Frontend (web)
+    -   **Is recurring issue?**: N
+
+-   **Issue 3: On the Add Task modal, the save button is hidden by the keyboard (P0)**
+    -   **Attempted fixes**: The agent wrapped the modal content in  and added the component to the imports in .
+    -   **Next debug checklist**:
+        1.  Build a new APK.
+        2.  Test the Add Task flow and confirm the save button is visible when the keyboard is open.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical UI bug that prevents users from creating tasks.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+
+**In progress Task List**:
+-   **Task 1: Guide user through Google Play Store deployment (P0)**
+    -   **Where to resume**: The user has successfully created a developer account and filled out the store listing. They are now blocked by Google's requirement to run a **closed test for 14 days with at least 12 testers**. The app is currently too buggy to be sent to testers.
+    -   **What will be achieved with this?**: The app will be published to the Google Play Store.
+    -   **Status**: BLOCKED
+    -   **Blocked on something**: The app must be stabilized and fixed. The user needs to find 12+ people to participate in the closed test.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks**:
-    -   P0: Fix all four issues listed in the .
-    -   P1: Guide the user through publishing the final, stable app to the Google Play Store once all critical bugs are resolved.
+    -   P0: Build a new, stable APK/AAB (v1.4.2) that incorporates all the recent fixes (data isolation, reminder edit, UI changes, task time edit).
+    -   P0: Answer the user's question about automatic WhatsApp/SMS sending. Explain the current tap-to-send implementation and the technical/policy limitations of full automation.
+    -   P1: Assist the user in uploading the new AAB to the Closed testing track on the Play Console and getting the test link to share with their 12 testers.
 -   **Future Tasks**:
-    -   P2: Build an iOS version of the app.
-    -   P3: Revisit and improve the performance of loading/syncing 34,000+ contacts.
-    -   P4: Communicate to the user that placing a voice icon *inside* third-party apps like WhatsApp is technically not feasible.
+    -   Build an iOS version of the app.
+    -   Address the architectural flaw of using a transient  for web/mobile sync by implementing a proper user account system.
+    -   Improve performance of loading the user's 34,000+ contacts.
 
 **Completed work in this session**
--   Built and deployed a React web dashboard.
--   Implemented device-to-web sync via a sync code.
--   Integrated Twilio for automated SMS and a tap to send flow for WhatsApp.
--   Implemented contact syncing (with batching) from mobile to the cloud.
--   **Permanently fixed the reminders disappearing bug** by removing the  dependency for fetching reminders in the backend.
--   Added an auto-refresh data listener to the mobile app to improve data consistency.
--   Modified the web dashboard to use the  protocol, enabling it to open the WhatsApp Desktop app directly.
+-   **Data Recovery**: Recovered lost reminders, contacts, and tasks by finding them in a  and migrating them to the correct .
+-   **Data Isolation**: Modified backend API endpoints (, ) to filter by , ensuring testers won't see each other's data.
+-   **UI Fixes**:
+    -   Changed Add employee text to Add Employee/Person in the delegation screen.
+    -   Wrapped the Add Task modal in  to prevent the save button from being hidden by the keyboard.
+-   **New Feature**: Added an Edit Time button and functionality for tasks in the task delegation screen.
+-   **Play Store Guidance**: Successfully guided the user through creating a developer account, paying the fee, creating a merchant account, filling out store listing info, content ratings, data safety forms, and understanding the new closed testing requirements.
+-   **Builds**: Generated multiple APKs and AABs with incrementing version codes to meet Play Store requirements.
 
 **Earlier issues found/mentioned but not fixed**
--   **Infeasible voice icon in 3rd party apps**: The user wants a voice icon inside WhatsApp/SMS. The agent has not yet informed the user that this is technically impossible.
--   **Slow contact loading**: While syncing is batched, the initial loading of 34,000+ contacts on the mobile app may still be slow and needs performance optimization.
+-   **Back swipe/gesture quits app**: A critical, recurring usability bug from the previous session that has not been addressed.
+-   **User question on automatic sending**: The user asked about the status of automatic WhatsApp/SMS sending, and the agent has not yet responded.
 
 **Known issue recurrence from previous fork**
--   **Back Navigation**: This issue has recurred over 5 times. The agent's fixes have been ineffective, indicating a misunderstanding of .
--   **APK Build Failures**: The user has been forced to rebuild the APK dozens of times due to recurring bugs and a fragile build process, causing extreme frustration.
+-   **Reminders Disappearing / App Instability**: This is the primary recurring issue of the entire project, caused by the unstable preview environment. It has happened multiple times this session, requiring the agent to restart the backend and restore data.
+-   **Back Navigation Quits App**: This issue persists from the previous fork and has not been worked on in this session.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend (Mobile)**: Expo (SDK 54), React Native, TypeScript, , .
--   **Frontend (Web)**: React.js.
--   **Backend**: FastAPI, MongoDB (), APScheduler, Twilio.
--   **Builds**: EAS Cloud Build for the Android APK. The web app is a static build served by FastAPI.
--   **Sync Mechanism**: A brittle system using a transient  from the mobile app and a temporary  to link the web dashboard.
+-   **Frontend (Mobile)**: Expo (SDK 54+), React Native, TypeScript, .
+-   **Backend**: FastAPI, MongoDB ().
+-   **Builds**: EAS Cloud Build for Android (APK for testing, AAB for Play Store).
+-   **Deployment**: Google Play Console, including its requirements for closed testing (12 testers for 14 days).
 
 **key DB schema**
 -   **reminders**: 
--   **contacts**: 
--   **sync_codes**: 
--   **twilio_config**: 
+-   **tasks**: 
 
 **All files of reference**
--   : Core backend logic. Reminder fetching was modified to be independent of .
--   : Mobile app main screen, contains logic for data fetching, refresh, and the web sync modal.
--   : The source of the recurring phone number and back navigation bugs.
--   : The React component for the entire web dashboard.
+-   : Modified to enforce data isolation by adding  filtering to the  and  endpoints.
+-   : Modified the  function to include  in the  payload, attempting to fix the edit bug.
+-   : Heavily modified to:
+    -   Change UI text from Add Employee to Add Employee/Person.
+    -   Add state, functions (, ), and UI for a new Edit Time feature for tasks.
+    -   Wrap the Add Task modal in a  to fix a UI bug.
+-   : A  profile was added to facilitate building AAB files for the Play Store.
 
 **Areas that need refactoring**:
--   **Sync Architecture**: The  based sync is the root cause of many user issues. It should be replaced with a proper user account system to provide a stable identity.
--   **Backend Monolith**:  is too large and should be split into modules (e.g., routes, services, models).
--   **Mobile App State Management**: Data fetching is scattered and relies on component lifecycle effects, leading to caching issues. A centralized state manager would improve robustness.
+-   The temporary  sync mechanism is a known architectural flaw that will cause issues for users who reinstall the app or switch devices. A proper user authentication system is needed for a scalable solution.
 
 **key api endpoints**
--   : Fetches all user reminders.
--   : Syncs contacts from mobile to backend.
--   : Generates a code for web dashboard linking.
--   : Links the web dashboard using the sync code.
--   : Serves the web dashboard UI.
+-   : Fetches reminders. Now filters by .
+-   : Updates a reminder.
+-   : Fetches tasks. Now filters by .
+-   : Updates a task. (A new endpoint might be needed for the deadline edit, or the existing one leveraged).
 
 **Critical Info for New Agent**
--   **User trust is extremely low.** The user is highly frustrated with the constant APK rebuilds and recurring bugs. Prioritize stability and clear communication. Batch multiple fixes into a single build.
--   **APK rebuilds are a sensitive operation.** The user has a paid but limited EAS plan. Only ask for a rebuild when absolutely necessary and after verifying the fix thoroughly.
--   **The Data Disappearing issues are the user's biggest pain point.** Although the backend was patched, the app still has caching/display issues, and the web-sync mechanism is not robust. Be extremely cautious with any changes that might affect data visibility.
--   **Twilio is on a Trial Account.** This means automated sending only works for verified numbers. The current workaround for WhatsApp (tapping a notification to open the app) is the accepted solution.
+-   **The user is blocked from Play Store submission.** They MUST have a stable app to give to 12+ testers for a 14-day period. Your top priority is to deliver a working APK.
+-   **Data Isolation is now active.** Each app install gets a unique . This is correct for testers, but it means the user will see an empty list after each reinstall. You may need to explain this.
+-   **The Preview Environment is the root cause of instability.** Reminders disappearing is due to the server restarting. The only permanent fix is deploying to a stable production environment, but the user must first get through the Play Store's closed testing phase. Be prepared to manually restart the backend or restore data if it happens again.
+-   **Address all five points from the user's last request.** The user is waiting for a single, stable APK that fixes all their reported issues. Do not miss any.
+
+**documents and test reports created in this job**
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  User: its come. but next day this should not disappear (Reminders reappeared, but user is wary).
-2.  User: on the desktop version, meet , deskwork both are missing ? (Reports a new issue).
-3.  Agent: Starts working on the web dashboard fix.
-(No further user messages are pending; the agent is in the middle of a task).
+1.  **User**: Asks what to do with Managed publishing off screen.
+2.  **Assistant**: Explains to keep it off and click Save.
+3.  **User**: Reports reminders are gone again with a 502 error.
+4.  **Assistant**: Fixes the backend and restores the data.
+5.  **User**: Announces their account has been verified by Google and asks for next steps.
+6.  **Assistant**: Guides the user through their bank's merchant account verification.
+7.  **User**: Asks for guidance on the closed testing requirements screen.
+8.  **Assistant**: Explains the 12 testers / 14-day rule.
+9.  **User**: Reports the web dashboard is not working (404 error).
+10. **User**: Provides a comprehensive list of 5 critical issues to fix before the app can be sent to testers. This is the current active request.
 
 **Project Health Check:**
--   **Broken**: The application has several critical, recurring usability bugs (back navigation, data caching, contact handling). The sync mechanism between mobile and web is brittle. User trust is minimal.
+-   **Broken**: The application is unusable for the required Play Store testing due to critical bugs in core features (saving/editing reminders) and persistent backend instability. User trust is very low.
 
 **3rd Party Integrations**
 -   Expo (Builds and mobile framework)
--   Twilio (SMS/WhatsApp automation) - Trial Account
+-   Twilio (SMS sending)
 -   MongoDB (Database)
--   APScheduler (Backend task scheduling)
+-   Google Play Console (Deployment)
 
 **Testing status**
 -   Testing agent used after significant changes: NO
--   Troubleshoot agent used after agent stuck in loop: YES (in previous sessions)
+-   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: None.
--   Known regressions: Back navigation is a major recurring regression. Data display issues have also recurred frequently.
+-   Known regressions: Reminder saving/editing is reported as broken. The back-swipe navigation bug is a known, unfixed regression.
 
 **What agent forgot to execute**
--   The agent has not used  for highly recurring bugs like back navigation, leading to a frustrating trial-and-error cycle with the user.
--   The agent has not addressed the core architectural flaw of using a transient  for user identity, which is the source of all sync-related problems.
--   The agent has not managed user expectations by clarifying that some requests (e.g., a voice icon inside WhatsApp) are technically impossible.</analysis>
+-   The agent did not answer the user's direct question about the status and plan for automatic WhatsApp and SMS going.
+-   The long-standing, critical back-swipe navigation bug was not addressed.</analysis>

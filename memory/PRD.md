@@ -8,7 +8,7 @@
 ### Play Store Assets
 - **App Icon (512x512)**: https://static.prod-images.emergentagent.com/jobs/0e021c61-d04a-4d5d-a69a-47688ed0bdbf/images/348f8352d24be2bd6625bb8fc3c70ce8badde7944bd1a1ca54d69e8e77091187.png
 - **Feature Graphic (1024x500)**: https://static.prod-images.emergentagent.com/jobs/0e021c61-d04a-4d5d-a69a-47688ed0bdbf/images/b42723d551f8e86c9b314628fc7944cdb6a5c1dfe5f6b77133badf6822d91928.png
-- **Privacy Policy URL**: https://matrix-task-sync.preview.emergentagent.com/api/web-static/privacy-policy.html
+- **Privacy Policy URL**: https://remind-sync-app.preview.emergentagent.com/api/web-static/privacy-policy.html
 - **Description**: See /app/PLAY_STORE_DESCRIPTION.md
 
 ---
@@ -138,7 +138,7 @@ execution_logs: {
 
 ## Web Dashboard Access
 ```
-https://matrix-task-sync.preview.emergentagent.com/api/web-static/index.html
+https://remind-sync-app.preview.emergentagent.com/api/web-static/index.html
 ```
 
 ## Known Limitations

@@ -25,7 +25,7 @@ import * as Contacts from 'expo-contacts';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 // HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://matrix-task-sync.preview.emergentagent.com';
+const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
 
 // Get device ID for data isolation - use same key as main screen
 const getDeviceId = async () => {
@@ -73,6 +73,8 @@ export default function DelegationScreen() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showContactPicker, setShowContactPicker] = useState(false);
+  const [showEditTaskTime, setShowEditTaskTime] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
   
   // Form states
   const [newEmployeeName, setNewEmployeeName] = useState('');
@@ -282,6 +284,33 @@ export default function DelegationScreen() {
     }
   };
 
+  // Edit task deadline
+  const openEditTaskTime = (task: any) => {
+    setEditingTask(task);
+    setNewTaskDeadline(task.deadline ? new Date(task.deadline) : new Date());
+    setShowEditTaskTime(true);
+  };
+
+  const saveTaskDeadline = async () => {
+    if (!editingTask || !newTaskDeadline) return;
+    try {
+      await axios.put(`${BACKEND_URL}/api/tasks/${editingTask.id}`, {
+        deadline: newTaskDeadline.toISOString(),
+      });
+      // Update local state
+      setTasks(tasks.map(t => 
+        t.id === editingTask.id 
+          ? { ...t, deadline: newTaskDeadline.toISOString() } 
+          : t
+      ));
+      setShowEditTaskTime(false);
+      setEditingTask(null);
+      Alert.alert('Success', 'Task deadline updated');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update deadline');
+    }
+  };
+
   // Delete completed tasks
   const deleteCompletedTasks = async () => {
     const completedCount = tasks.filter(t => t.is_completed && t.employee_id === selectedEmployee?.id).length;
@@ -474,6 +503,12 @@ export default function DelegationScreen() {
           </TouchableOpacity>
         )}
         <TouchableOpacity
+          style={styles.editTimeBtn}
+          onPress={() => openEditTaskTime(item)}
+        >
+          <Ionicons name="time-outline" size={20} color="#667eea" />
+        </TouchableOpacity>
+        <TouchableOpacity
           style={styles.deleteBtn}
           onPress={() => deleteTask(item.id)}
         >
@@ -632,6 +667,66 @@ export default function DelegationScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
+        {/* Edit Task Time Modal */}
+        <Modal visible={showEditTaskTime} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { marginBottom: 50 }]}>
+              <Text style={styles.modalTitle}>Edit Deadline</Text>
+              <TouchableOpacity
+                style={styles.datePickerBtn}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#667eea" />
+                <Text style={styles.datePickerText}>
+                  {newTaskDeadline ? newTaskDeadline.toLocaleString() : 'Set deadline'}
+                </Text>
+              </TouchableOpacity>
+              
+              {showDatePicker && (
+                <DateTimePicker
+                  value={newTaskDeadline || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowDatePicker(false);
+                    if (date) {
+                      setNewTaskDeadline(date);
+                      setShowTimePicker(true);
+                    }
+                  }}
+                />
+              )}
+              
+              {showTimePicker && (
+                <DateTimePicker
+                  value={newTaskDeadline || new Date()}
+                  mode="time"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowTimePicker(false);
+                    if (date) setNewTaskDeadline(date);
+                  }}
+                />
+              )}
+              
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.cancelBtn]}
+                  onPress={() => {
+                    setShowEditTaskTime(false);
+                    setEditingTask(null);
+                  }}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, styles.submitBtn]} onPress={saveTaskDeadline}>
+                  <Text style={styles.submitBtnText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         {/* Report Modal */}
         <Modal visible={showReport} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
@@ -714,7 +809,7 @@ export default function DelegationScreen() {
       <Modal visible={showAddEmployee} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Employee</Text>
+            <Text style={styles.modalTitle}>Add Employee/Person</Text>
             <TouchableOpacity
               style={styles.contactPickerBtn}
               onPress={loadContacts}
