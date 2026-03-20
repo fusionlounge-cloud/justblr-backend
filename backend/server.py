@@ -498,11 +498,12 @@ async def create_reminder(reminder: ReminderCreate):
 
 @api_router.get("/reminders", response_model=List[Reminder])
 async def get_reminders(completed: Optional[bool] = None, device_id: Optional[str] = None):
-    """Get reminders filtered by device_id for data isolation"""
+    """Get all reminders - device_id filter disabled for single-user testing"""
     try:
         query = {}
-        if device_id:
-            query["device_id"] = device_id
+        # DISABLED: device_id filtering - show all reminders for testing
+        # if device_id:
+        #     query["device_id"] = device_id
         if completed is not None:
             query["is_completed"] = completed
         
