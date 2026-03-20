@@ -23,20 +23,36 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Contacts from 'expo-contacts';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Application from 'expo-application';
 
 // HARDCODED URL to ensure it works
 const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
 
-// Get device ID for data isolation - use same key as main screen
-const getDeviceId = async () => {
+// Get STABLE device ID that persists across reinstalls
+const getDeviceId = async (): Promise<string> => {
   try {
     let deviceId = await AsyncStorage.getItem('device_id');
+    
     if (!deviceId) {
-      deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      // Try to get Android ID (persists across reinstalls)
+      if (Platform.OS === 'android') {
+        const androidId = Application.getAndroidId();
+        if (androidId) {
+          deviceId = `android_${androidId}`;
+        }
+      }
+      
+      // For iOS or if Android ID not available
+      if (!deviceId) {
+        const installId = await Application.getInstallationIdAsync();
+        deviceId = `install_${installId}`;
+      }
+      
       await AsyncStorage.setItem('device_id', deviceId);
     }
     return deviceId;
-  } catch (error) {
+  } catch (e) {
+    console.error('Error getting device ID:', e);
     return `device_${Date.now()}`;
   }
 };

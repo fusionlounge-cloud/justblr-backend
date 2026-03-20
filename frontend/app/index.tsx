@@ -22,22 +22,42 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Constants removed - not needed
 import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
+import * as Application from 'expo-application';
 
 // HARDCODED URL to ensure it works
 const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
-// Get or create device ID
+// Get STABLE device ID that persists across reinstalls
 const getDeviceId = async (): Promise<string> => {
   try {
+    // First check if we have a stored device_id (for backward compatibility)
     let deviceId = await AsyncStorage.getItem('device_id');
+    
     if (!deviceId) {
-      // Generate unique device ID
-      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Try to get Android ID (persists across reinstalls, unique per device+app combo)
+      if (Platform.OS === 'android') {
+        const androidId = Application.getAndroidId();
+        if (androidId) {
+          deviceId = `android_${androidId}`;
+        }
+      }
+      
+      // For iOS or if Android ID not available, use installation ID
+      if (!deviceId) {
+        // Installation ID is stable for the app installation
+        const installId = await Application.getInstallationIdAsync();
+        deviceId = `install_${installId}`;
+      }
+      
+      // Store it for consistency
       await AsyncStorage.setItem('device_id', deviceId);
     }
+    
     return deviceId;
   } catch (e) {
+    console.error('Error getting device ID:', e);
+    // Fallback to timestamp-based ID
     return `device_${Date.now()}`;
   }
 };
