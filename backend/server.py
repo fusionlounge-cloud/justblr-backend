@@ -260,6 +260,11 @@ class Reminder(BaseModel):
     auto_execute_triggered: bool = False
     triggered_at: Optional[datetime] = None
     device_id: Optional[str] = None  # For device-specific data
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat() + 'Z' if v.tzinfo is None else v.isoformat()
+        }
 
 class VoiceCommandRequest(BaseModel):
     command: str

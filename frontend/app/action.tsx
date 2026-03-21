@@ -93,13 +93,18 @@ export default function ActionScreen() {
   const getInitialScheduleTime = () => {
     // In edit mode, use the existing scheduled_time from params
     const existingTime = String(params.scheduled_time || '');
+    console.log('Edit mode:', isEditMode, 'Existing time param:', existingTime);
+    
     if (isEditMode && existingTime) {
+      // Parse the ISO string - JavaScript Date automatically handles UTC conversion
       const parsed = new Date(existingTime);
+      console.log('Parsed date:', parsed.toString(), 'ISO:', parsed.toISOString());
+      
       if (!isNaN(parsed.getTime())) {
         return parsed;
       }
     }
-    // Default: tomorrow at 4:30 PM
+    // Default: tomorrow at 4:30 PM local time
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(16, 30, 0, 0);
