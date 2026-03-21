@@ -25,8 +25,8 @@ import * as Contacts from 'expo-contacts';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Application from 'expo-application';
 
-// HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
+// STABLE RENDER BACKEND URL
+const BACKEND_URL = 'https://justblr-backend.onrender.com';
 
 // Get STABLE device ID that persists across reinstalls
 const getDeviceId = async (): Promise<string> => {

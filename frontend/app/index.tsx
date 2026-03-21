@@ -24,8 +24,8 @@ import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 import * as Application from 'expo-application';
 
-// HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
+// STABLE RENDER BACKEND URL
+const BACKEND_URL = 'https://justblr-backend.onrender.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
 // Get STABLE device ID that persists across reinstalls
