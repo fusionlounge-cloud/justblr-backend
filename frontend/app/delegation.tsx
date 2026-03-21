@@ -915,8 +915,16 @@ export default function DelegationScreen() {
       {/* Report Modal */}
       <Modal visible={showReport} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Task Report - All Employees</Text>
+          <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={styles.modalTitle}>Task Report - All Employees</Text>
+              <TouchableOpacity
+                onPress={() => setShowReport(false)}
+                style={{ padding: 8 }}
+              >
+                <Ionicons name="close-circle" size={28} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
             {reportSummary && (
               <View style={styles.reportSummary}>
                 <Text style={styles.summaryText}>Total: {reportSummary.total}</Text>
@@ -929,10 +937,10 @@ export default function DelegationScreen() {
               <Text style={styles.reportText}>{reportText}</Text>
             </ScrollView>
             <TouchableOpacity
-              style={[styles.modalBtn, styles.cancelBtn, { marginTop: 10 }]}
+              style={[styles.modalBtn, styles.cancelBtn, { marginTop: 15, backgroundColor: '#667eea' }]}
               onPress={() => setShowReport(false)}
             >
-              <Text style={styles.cancelBtnText}>Close</Text>
+              <Text style={[styles.cancelBtnText, { color: '#fff' }]}>Close Report</Text>
             </TouchableOpacity>
           </View>
         </View>
