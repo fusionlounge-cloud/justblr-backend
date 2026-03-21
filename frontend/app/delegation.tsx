@@ -916,13 +916,13 @@ export default function DelegationScreen() {
       <Modal visible={showReport} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { maxHeight: '80%' }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={styles.modalTitle}>Task Report - All Employees</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, paddingRight: 5 }}>
+              <Text style={[styles.modalTitle, { flex: 1 }]}>Task Report - All Employees</Text>
               <TouchableOpacity
                 onPress={() => setShowReport(false)}
-                style={{ padding: 8 }}
+                style={{ padding: 8, backgroundColor: '#fee2e2', borderRadius: 20 }}
               >
-                <Ionicons name="close-circle" size={28} color="#ef4444" />
+                <Ionicons name="close" size={24} color="#ef4444" />
               </TouchableOpacity>
             </View>
             {reportSummary && (
