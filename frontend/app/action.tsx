@@ -122,6 +122,7 @@ export default function ActionScreen() {
   const [allContacts, setAllContacts] = useState([]);
   const [contactsCount, setContactsCount] = useState(0);
   const [refreshingContacts, setRefreshingContacts] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Prevent double tap
   
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
@@ -541,10 +542,19 @@ export default function ActionScreen() {
   };
 
   const saveReminder = async (retryCount = 0) => {
+    // Prevent double tap
+    if (isSaving) {
+      console.log('Already saving, ignoring tap');
+      return;
+    }
+    setIsSaving(true);
+    
     const MAX_RETRIES = 3;
     const reminderTitle = title.trim() || `${actionName} Reminder`;
     console.log('=== SAVE REMINDER STARTED === Attempt:', retryCount + 1);
     console.log('BACKEND_URL:', BACKEND_URL);
+    console.log('Scheduled Time (local):', scheduledTime.toString());
+    console.log('Scheduled Time (ISO):', scheduledTime.toISOString());
 
     try {
       let response;
@@ -561,7 +571,7 @@ export default function ActionScreen() {
       if (isEditMode && editId) {
         // Update existing reminder
         console.log('Updating reminder:', editId);
-        response = await axios.put(`${BACKEND_URL}/api/reminders/${editId}`, {
+        const updatePayload = {
           title: reminderTitle,
           contact_name: contactName || undefined,
           contact_phone: contactPhone || undefined,
@@ -569,10 +579,15 @@ export default function ActionScreen() {
           scheduled_time: scheduledTime.toISOString(),
           notes: content || undefined,
           auto_execute: autoExecute,
-        }, axiosConfig);
+        };
+        console.log('Update payload:', JSON.stringify(updatePayload));
+        
+        response = await axios.put(`${BACKEND_URL}/api/reminders/${editId}`, updatePayload, axiosConfig);
         
         console.log('Update response status:', response.status);
+        console.log('Update response data:', JSON.stringify(response.data));
         
+        setIsSaving(false);
         Alert.alert('Updated!', `${actionName} reminder updated`, [
           { text: 'OK', onPress: () => router.back() },
         ]);
@@ -606,6 +621,7 @@ export default function ActionScreen() {
         ]);
       }
       console.log('=== SAVE REMINDER SUCCESS ===');
+      setIsSaving(false);
     } catch (error: any) {
       console.error('Save error:', error?.message);
       
@@ -616,6 +632,7 @@ export default function ActionScreen() {
         return saveReminder(retryCount + 1);
       }
       
+      setIsSaving(false);
       const errorMessage = error?.response?.data?.detail || error?.message || 'Network error';
       Alert.alert('Save Failed', `Could not save reminder after ${MAX_RETRIES} attempts.\n\nError: ${errorMessage}`);
     }
