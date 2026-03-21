@@ -28,32 +28,20 @@ import * as Application from 'expo-application';
 // STABLE RENDER BACKEND URL
 const BACKEND_URL = 'https://justblr-backend.onrender.com';
 
+// MASTER DEVICE ID - This is the primary user's permanent ID
+const MASTER_DEVICE_ID = 'master_justblr_primary_user';
+
 // Get STABLE device ID that persists across reinstalls
 const getDeviceId = async (): Promise<string> => {
   try {
-    let deviceId = await AsyncStorage.getItem('device_id');
-    
-    if (!deviceId) {
-      // Try to get Android ID (persists across reinstalls)
-      if (Platform.OS === 'android') {
-        const androidId = Application.getAndroidId();
-        if (androidId) {
-          deviceId = `android_${androidId}`;
-        }
-      }
-      
-      // For iOS or if Android ID not available
-      if (!deviceId) {
-        const installId = await Application.getInstallationIdAsync();
-        deviceId = `install_${installId}`;
-      }
-      
-      await AsyncStorage.setItem('device_id', deviceId);
+    const storedId = await AsyncStorage.getItem('device_id');
+    if (!storedId || storedId !== MASTER_DEVICE_ID) {
+      await AsyncStorage.setItem('device_id', MASTER_DEVICE_ID);
     }
-    return deviceId;
+    return MASTER_DEVICE_ID;
   } catch (e) {
     console.error('Error getting device ID:', e);
-    return `device_${Date.now()}`;
+    return MASTER_DEVICE_ID;
   }
 };
 

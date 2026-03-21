@@ -28,37 +28,27 @@ import * as Application from 'expo-application';
 const BACKEND_URL = 'https://justblr-backend.onrender.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
 
+// MASTER DEVICE ID - This is the primary user's permanent ID
+// All data will be linked to this ID to prevent data loss on updates
+const MASTER_DEVICE_ID = 'master_justblr_primary_user';
+
 // Get STABLE device ID that persists across reinstalls
 const getDeviceId = async (): Promise<string> => {
   try {
-    // First check if we have a stored device_id (for backward compatibility)
-    let deviceId = await AsyncStorage.getItem('device_id');
+    // ALWAYS use the master device ID for the primary user
+    // This ensures data never vanishes on app updates
+    const storedId = await AsyncStorage.getItem('device_id');
     
-    if (!deviceId) {
-      // Try to get Android ID (persists across reinstalls, unique per device+app combo)
-      if (Platform.OS === 'android') {
-        const androidId = Application.getAndroidId();
-        if (androidId) {
-          deviceId = `android_${androidId}`;
-        }
-      }
-      
-      // For iOS or if Android ID not available, use installation ID
-      if (!deviceId) {
-        // Installation ID is stable for the app installation
-        const installId = await Application.getInstallationIdAsync();
-        deviceId = `install_${installId}`;
-      }
-      
-      // Store it for consistency
-      await AsyncStorage.setItem('device_id', deviceId);
+    // If this is a fresh install or update, migrate to master ID
+    if (!storedId || storedId !== MASTER_DEVICE_ID) {
+      await AsyncStorage.setItem('device_id', MASTER_DEVICE_ID);
+      console.log('Device ID set to master:', MASTER_DEVICE_ID);
     }
     
-    return deviceId;
+    return MASTER_DEVICE_ID;
   } catch (e) {
     console.error('Error getting device ID:', e);
-    // Fallback to timestamp-based ID
-    return `device_${Date.now()}`;
+    return MASTER_DEVICE_ID; // Always return master ID
   }
 };
 
