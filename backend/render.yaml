@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: justblr-matrix-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        value: justblr_matrix_db
