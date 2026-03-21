@@ -1180,6 +1180,13 @@ async def download_app():
 async def root():
     return {"message": "Voice Assistant API is running", "version": "2.1.0", "scheduler": "enabled"}
 
+@api_router.get("/server-code")
+async def get_server_code():
+    """Return the server.py source code for deployment"""
+    from fastapi.responses import PlainTextResponse
+    server_path = Path(__file__)
+    return PlainTextResponse(server_path.read_text())
+
 @api_router.get("/health")
 async def health_check():
     try:
