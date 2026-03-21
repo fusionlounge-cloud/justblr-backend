@@ -1054,13 +1054,20 @@ async def send_task_to_whatsapp(task_id: str):
 
 @api_router.get("/tasks/report")
 async def get_tasks_report(device_id: str, employee_id: str = None):
-    """Generate a text report of tasks"""
+    """Generate a text report of tasks - only for active employees"""
     try:
+        # Get list of active employees first
+        active_employees = await db.employees.find({"device_id": device_id}, {"_id": 0, "name": 1}).to_list(1000)
+        active_employee_names = set(emp.get("name") for emp in active_employees)
+        
         query = {"device_id": device_id}
         if employee_id:
             query["employee_id"] = employee_id
         
-        tasks = await db.tasks.find(query, {"_id": 0}).to_list(length=1000)
+        all_tasks = await db.tasks.find(query, {"_id": 0}).to_list(length=1000)
+        
+        # Filter tasks to only include those for active employees
+        tasks = [t for t in all_tasks if t.get("employee_name") in active_employee_names]
         
         # Group tasks by employee
         employees_tasks = {}
