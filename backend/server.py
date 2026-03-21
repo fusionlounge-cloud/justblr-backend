@@ -241,6 +241,7 @@ class ReminderUpdate(BaseModel):
     title: Optional[str] = None
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
+    reminder_type: Optional[str] = None
     scheduled_time: Optional[datetime] = None
     notes: Optional[str] = None
     auto_execute: Optional[bool] = None
