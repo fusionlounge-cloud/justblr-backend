@@ -55,8 +55,14 @@ if STATIC_DIR.exists():
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Initialize scheduler for auto-execution
-scheduler = AsyncIOScheduler()
+# Initialize scheduler for auto-execution with precise timing
+scheduler = AsyncIOScheduler(
+    job_defaults={
+        'coalesce': False,
+        'max_instances': 3,
+        'misfire_grace_time': 60  # Allow 60 seconds grace for missed jobs
+    }
+)
 
 # Configure logging
 logging.basicConfig(
