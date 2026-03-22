@@ -969,13 +969,31 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        {/* Desktop Info */}
-        <View style={styles.desktopInfo}>
-          <Ionicons name="desktop" size={20} color="#6c757d" />
-          <Text style={styles.desktopText}>
-            Desktop: {Platform.OS === 'web' ? window.location.href : 'Open in browser'}
-          </Text>
-        </View>
+        {/* Desktop Connect */}
+        <TouchableOpacity 
+          style={styles.desktopConnectBtn}
+          onPress={() => {
+            const desktopUrl = 'https://justblr-dashboard.onrender.com';
+            Alert.alert(
+              'Desktop Connect',
+              `Open this link on your computer:\n\n${desktopUrl}\n\nYour Sync Code:\n${syncCode}`,
+              [
+                { text: 'Copy Link', onPress: () => {
+                  // Copy link functionality
+                  Alert.alert('Link', desktopUrl);
+                }},
+                { text: 'OK' }
+              ]
+            );
+          }}
+        >
+          <Ionicons name="desktop-outline" size={24} color="#667eea" />
+          <View style={styles.desktopConnectTextContainer}>
+            <Text style={styles.desktopConnectTitle}>Desktop Connect</Text>
+            <Text style={styles.desktopConnectSubtitle}>Sync Code: {syncCode}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#adb5bd" />
+        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -1234,7 +1252,32 @@ const styles = StyleSheet.create({
     color: '#495057',
     fontWeight: '500',
   },
-  // Desktop Info
+  // Desktop Connect
+  desktopConnectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginTop: 15,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  desktopConnectTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  desktopConnectTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#212529',
+  },
+  desktopConnectSubtitle: {
+    fontSize: 12,
+    color: '#667eea',
+    marginTop: 2,
+  },
   desktopInfo: {
     flexDirection: 'row',
     alignItems: 'center',
