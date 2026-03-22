@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Constants from 'expo-constants';
 
 // HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://remind-sync-app.preview.emergentagent.com';
+const BACKEND_URL = 'https://justblr-matrix-1.preview.emergentagent.com';
 
 // Get or create device ID
 const getDeviceId = async (): Promise<string> => {

@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://remind-sync-app.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://justblr-matrix-1.preview.emergentagent.com').rstrip('/')
 
 
 class TestAutoExecuteScheduling:
