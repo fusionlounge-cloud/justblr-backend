@@ -145,19 +145,31 @@ export default function DashboardScreen() {
 
   // Define fetchReminders first before using in hooks
   const fetchReminders = async (retryCount = 0) => {
-    const MAX_RETRIES = 5;
+    const MAX_RETRIES = 8; // More retries for cold start
     console.log('=== FETCH REMINDERS STARTED === Attempt:', retryCount + 1);
     
     try {
       setIsLoading(true);
       const deviceId = await getDeviceId();
+      console.log('Using device ID:', deviceId);
       const url = `${BACKEND_URL}/api/reminders?device_id=${deviceId}`;
       
       console.log('Fetching from:', url);
       
-      // Make the request
+      // Wake up the server first with a health check (handles Render cold start)
+      if (retryCount === 0) {
+        try {
+          console.log('Warming up server...');
+          await axios.get(`${BACKEND_URL}/api/health`, { timeout: 60000 });
+          console.log('Server is awake');
+        } catch (e) {
+          console.log('Server warmup failed, continuing anyway');
+        }
+      }
+      
+      // Make the request with longer timeout for cold starts
       const response = await axios.get(url, { 
-        timeout: 30000,
+        timeout: 60000, // 60 seconds for cold start
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -171,6 +183,13 @@ export default function DashboardScreen() {
       if (response.data && Array.isArray(response.data)) {
         console.log('Setting', response.data.length, 'reminders');
         setReminders(response.data);
+        
+        // If we got empty data but we expect data, retry once more
+        if (response.data.length === 0 && retryCount < 2) {
+          console.log('Empty response, retrying once more...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return fetchReminders(retryCount + 1);
+        }
       } else {
         console.error('Invalid response format:', response.data);
         setReminders([]);
@@ -178,9 +197,9 @@ export default function DashboardScreen() {
     } catch (error: any) {
       console.error('Fetch error:', error?.message);
       
-      // Retry on 404 or network errors with longer delays
-      if (retryCount < MAX_RETRIES && (error?.response?.status === 404 || !error?.response)) {
-        const delay = (retryCount + 1) * 3000; // 3s, 6s, 9s, 12s, 15s
+      // Retry on any error with progressive delays
+      if (retryCount < MAX_RETRIES) {
+        const delay = Math.min((retryCount + 1) * 2000, 10000); // 2s, 4s, 6s... max 10s
         console.log(`Retrying in ${delay/1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchReminders(retryCount + 1);
