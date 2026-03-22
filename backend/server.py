@@ -1206,6 +1206,17 @@ async def download_app():
 async def root():
     return {"message": "Voice Assistant API is running", "version": "2.1.0", "scheduler": "enabled"}
 
+@api_router.get("/web-app-js")
+async def get_web_app_js():
+    """Return the web App.js source code"""
+    from fastapi.responses import PlainTextResponse
+    import os
+    web_app_path = "/app/web/src/App.js"
+    if os.path.exists(web_app_path):
+        with open(web_app_path, 'r') as f:
+            return PlainTextResponse(f.read())
+    return PlainTextResponse("// File not found")
+
 @api_router.get("/server-code")
 async def get_server_code():
     """Return the server.py source code for deployment"""
