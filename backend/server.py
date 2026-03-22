@@ -196,11 +196,15 @@ async def execute_reminder_action(reminder_id: str):
         except:
             pass
 
-def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto_execute: bool):
-    """Schedule a reminder for auto-execution"""
-    if not auto_execute:
-        return
+def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto_execute: bool = False, force_schedule: bool = False):
+    """Schedule a reminder for notification and optional auto-execution
     
+    Args:
+        reminder_id: The reminder ID
+        scheduled_time: When to trigger
+        auto_execute: Whether to auto-send SMS/call
+        force_schedule: Always schedule notification even if auto_execute is False
+    """
     try:
         # Ensure scheduled_time is timezone-aware
         if scheduled_time.tzinfo is None:
@@ -215,6 +219,7 @@ def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto
             if scheduler.get_job(job_id):
                 scheduler.remove_job(job_id)
             
+            # Always schedule for notifications, auto_execute determines action
             scheduler.add_job(
                 execute_reminder_action,
                 trigger=DateTrigger(run_date=scheduled_time),
@@ -222,7 +227,7 @@ def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto
                 id=job_id,
                 replace_existing=True
             )
-            logger.info(f"Scheduled auto-execution for reminder {reminder_id} at {scheduled_time}")
+            logger.info(f"Scheduled reminder {reminder_id} at {scheduled_time} (auto_execute={auto_execute})")
     except Exception as e:
         logger.error(f"Failed to schedule reminder {reminder_id}: {str(e)}")
 
@@ -577,8 +582,8 @@ async def update_reminder(reminder_id: str, reminder_update: ReminderUpdate):
             {"$set": update_data}
         )
         
-        # Reschedule if scheduled_time or auto_execute changed
-        if 'scheduled_time' in update_data or 'auto_execute' in update_data:
+        # Reschedule if scheduled_time changed (always reschedule for notifications)
+        if 'scheduled_time' in update_data:
             new_scheduled_time = update_data.get('scheduled_time', existing.get('scheduled_time'))
             new_auto_execute = update_data.get('auto_execute', existing.get('auto_execute', False))
             
@@ -586,10 +591,12 @@ async def update_reminder(reminder_id: str, reminder_update: ReminderUpdate):
             job_id = f"reminder_{reminder_id}"
             if scheduler.get_job(job_id):
                 scheduler.remove_job(job_id)
+                logger.info(f"Removed old scheduled job for reminder {reminder_id}")
             
-            # Schedule new job if auto_execute is enabled
-            if new_auto_execute and new_scheduled_time:
-                schedule_reminder_execution(reminder_id, new_scheduled_time, True)
+            # Always schedule for the new time
+            if new_scheduled_time:
+                schedule_reminder_execution(reminder_id, new_scheduled_time, new_auto_execute)
+                logger.info(f"Rescheduled reminder {reminder_id} to {new_scheduled_time}")
         
         # Get updated reminder
         updated = await db.reminders.find_one({"id": reminder_id})

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: justblr-web
+    env: static
+    buildCommand: yarn install && yarn build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_BACKEND_URL
+        value: https://justblr-backend.onrender.com

@@ -973,15 +973,11 @@ export default function DashboardScreen() {
         <TouchableOpacity 
           style={styles.desktopConnectBtn}
           onPress={() => {
-            const desktopUrl = 'https://justblr-dashboard.onrender.com';
+            const desktopUrl = 'https://justblr-web.onrender.com';
             Alert.alert(
               'Desktop Connect',
-              `Open this link on your computer:\n\n${desktopUrl}\n\nYour Sync Code:\n${syncCode}`,
+              `Open this link on your computer:\n\n${desktopUrl}\n\nYour Sync Code: ${syncCode}\n\nEnter this code on the desktop to link your reminders.`,
               [
-                { text: 'Copy Link', onPress: () => {
-                  // Copy link functionality
-                  Alert.alert('Link', desktopUrl);
-                }},
                 { text: 'OK' }
               ]
             );
