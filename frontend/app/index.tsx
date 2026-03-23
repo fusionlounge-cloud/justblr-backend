@@ -27,10 +27,41 @@ import * as Application from 'expo-application';
 // STABLE RENDER BACKEND URL
 const BACKEND_URL = 'https://justblr-backend.onrender.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
+const WEB_DASHBOARD_URL = 'https://justblr-web.onrender.com';
+
+// Local storage keys for caching
+const CACHE_KEY_REMINDERS = 'justblr_cached_reminders';
+const CACHE_KEY_TIMESTAMP = 'justblr_cache_timestamp';
 
 // MASTER DEVICE ID - This is the primary user's permanent ID
 // All data will be linked to this ID to prevent data loss on updates
 const MASTER_DEVICE_ID = 'master_justblr_primary_user';
+
+// Helper to save reminders to local cache
+const saveRemindersToCache = async (reminders: any[]) => {
+  try {
+    await AsyncStorage.setItem(CACHE_KEY_REMINDERS, JSON.stringify(reminders));
+    await AsyncStorage.setItem(CACHE_KEY_TIMESTAMP, Date.now().toString());
+    console.log('Saved', reminders.length, 'reminders to cache');
+  } catch (e) {
+    console.error('Failed to save cache:', e);
+  }
+};
+
+// Helper to load reminders from local cache
+const loadRemindersFromCache = async (): Promise<any[]> => {
+  try {
+    const cached = await AsyncStorage.getItem(CACHE_KEY_REMINDERS);
+    if (cached) {
+      const reminders = JSON.parse(cached);
+      console.log('Loaded', reminders.length, 'reminders from cache');
+      return reminders;
+    }
+  } catch (e) {
+    console.error('Failed to load cache:', e);
+  }
+  return [];
+};
 
 // Get STABLE device ID that persists across reinstalls
 const getDeviceId = async (): Promise<string> => {
@@ -143,78 +174,80 @@ export default function DashboardScreen() {
     return () => subscription.remove();
   }, []);
 
-  // Define fetchReminders first before using in hooks
-  const fetchReminders = async (retryCount = 0) => {
-    const MAX_RETRIES = 8; // More retries for cold start
+  // Define fetchReminders with LOCAL CACHING for instant loading
+  const fetchReminders = async (retryCount = 0, showLoadingSpinner = true) => {
+    const MAX_RETRIES = 5;
     console.log('=== FETCH REMINDERS STARTED === Attempt:', retryCount + 1);
     
+    // STEP 1: IMMEDIATELY load from cache first (instant display)
+    if (retryCount === 0) {
+      const cachedReminders = await loadRemindersFromCache();
+      if (cachedReminders.length > 0) {
+        console.log('Showing cached reminders immediately:', cachedReminders.length);
+        setReminders(cachedReminders);
+        setIsLoading(false); // Stop loading spinner - show cached data
+      }
+    }
+    
+    // STEP 2: Fetch fresh data from server in background
     try {
-      setIsLoading(true);
-      const deviceId = await getDeviceId();
-      console.log('Using device ID:', deviceId);
-      const url = `${BACKEND_URL}/api/reminders?device_id=${deviceId}`;
-      
-      console.log('Fetching from:', url);
-      
-      // Wake up the server first with a health check (handles Render cold start)
-      if (retryCount === 0) {
-        try {
-          console.log('Warming up server...');
-          await axios.get(`${BACKEND_URL}/api/health`, { timeout: 60000 });
-          console.log('Server is awake');
-        } catch (e) {
-          console.log('Server warmup failed, continuing anyway');
+      if (showLoadingSpinner && retryCount === 0) {
+        // Only show loading if no cached data
+        const cachedReminders = await loadRemindersFromCache();
+        if (cachedReminders.length === 0) {
+          setIsLoading(true);
         }
       }
       
-      // Make the request with longer timeout for cold starts
+      const deviceId = await getDeviceId();
+      const url = `${BACKEND_URL}/api/reminders?device_id=${deviceId}`;
+      console.log('Fetching fresh data from:', url);
+      
+      // Make request with timeout
       const response = await axios.get(url, { 
-        timeout: 60000, // 60 seconds for cold start
+        timeout: 30000, // 30 seconds timeout
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         }
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response data length:', response.data?.length);
+      console.log('Server response:', response.status, 'items:', response.data?.length);
       
-      // Validate and set data
+      // Validate and update data
       if (response.data && Array.isArray(response.data)) {
-        console.log('Setting', response.data.length, 'reminders');
+        console.log('Updating with fresh data:', response.data.length, 'reminders');
         setReminders(response.data);
         
-        // If we got empty data but we expect data, retry once more
-        if (response.data.length === 0 && retryCount < 2) {
-          console.log('Empty response, retrying once more...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          return fetchReminders(retryCount + 1);
-        }
+        // Save to cache for next time
+        await saveRemindersToCache(response.data);
       } else {
         console.error('Invalid response format:', response.data);
-        setReminders([]);
       }
     } catch (error: any) {
       console.error('Fetch error:', error?.message);
       
-      // Retry on any error with progressive delays
+      // Retry silently in background (user already sees cached data)
       if (retryCount < MAX_RETRIES) {
-        const delay = Math.min((retryCount + 1) * 2000, 10000); // 2s, 4s, 6s... max 10s
-        console.log(`Retrying in ${delay/1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return fetchReminders(retryCount + 1);
+        const delay = Math.min((retryCount + 1) * 3000, 15000); // 3s, 6s, 9s... max 15s
+        console.log(`Background retry in ${delay/1000} seconds...`);
+        setTimeout(() => fetchReminders(retryCount + 1, false), delay);
+        return;
       }
       
-      const errorMsg = error?.response?.data?.detail || error?.message || 'Network error';
-      Alert.alert(
-        'Connection Error', 
-        `Could not load reminders.\n\nError: ${errorMsg}`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Retry', onPress: () => fetchReminders(0) }
-        ]
-      );
-      setReminders([]);
+      // Only show error if we have no cached data to show
+      const cachedReminders = await loadRemindersFromCache();
+      if (cachedReminders.length === 0) {
+        const errorMsg = error?.response?.data?.detail || error?.message || 'Network error';
+        Alert.alert(
+          'Connection Error', 
+          `Server is waking up. This may take up to 30 seconds.\n\nTip: Keep the app open and it will load automatically.`,
+          [
+            { text: 'OK' },
+            { text: 'Retry Now', onPress: () => fetchReminders(0) }
+          ]
+        );
+      }
     } finally {
       setIsLoading(false);
       console.log('=== FETCH REMINDERS ENDED ===');
@@ -795,10 +828,11 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity 
-              style={styles.linkWebBtn}
+              style={styles.desktopConnectHeaderBtn}
               onPress={openLinkModal}
             >
-              <Ionicons name="laptop-outline" size={20} color="#667eea" />
+              <Ionicons name="laptop-outline" size={22} color="#667eea" />
+              <Text style={styles.desktopConnectHeaderText}>Desktop</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.voiceCommandBtn}
@@ -825,9 +859,16 @@ export default function DashboardScreen() {
               <View style={styles.linkIconContainer}>
                 <Ionicons name="laptop-outline" size={48} color="#667eea" />
               </View>
-              <Text style={styles.voiceModalTitle}>Link to Web</Text>
+              <Text style={styles.voiceModalTitle}>Desktop Connect</Text>
+              
+              {/* Website URL */}
+              <View style={styles.websiteUrlContainer}>
+                <Text style={styles.websiteUrlLabel}>Open on your computer:</Text>
+                <Text style={styles.websiteUrl}>{WEB_DASHBOARD_URL}</Text>
+              </View>
+              
               <Text style={styles.linkDescription}>
-                Enter this code on the web dashboard to sync your reminders and contacts
+                Enter this code on the web dashboard:
               </Text>
               
               {syncLoading ? (
@@ -969,24 +1010,15 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        {/* Desktop Connect */}
+        {/* Desktop Connect - Opens the same modal */}
         <TouchableOpacity 
           style={styles.desktopConnectBtn}
-          onPress={() => {
-            const desktopUrl = 'https://justblr-web.onrender.com';
-            Alert.alert(
-              'Desktop Connect',
-              `Open this link on your computer:\n\n${desktopUrl}\n\nYour Sync Code: ${syncCode}\n\nEnter this code on the desktop to link your reminders.`,
-              [
-                { text: 'OK' }
-              ]
-            );
-          }}
+          onPress={openLinkModal}
         >
           <Ionicons name="desktop-outline" size={24} color="#667eea" />
           <View style={styles.desktopConnectTextContainer}>
             <Text style={styles.desktopConnectTitle}>Desktop Connect</Text>
-            <Text style={styles.desktopConnectSubtitle}>Sync Code: {syncCode}</Text>
+            <Text style={styles.desktopConnectSubtitle}>Tap to get sync code & website</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#adb5bd" />
         </TouchableOpacity>
@@ -1537,5 +1569,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#667eea',
     fontWeight: '500',
+  },
+  // Desktop Connect Header Button
+  desktopConnectHeaderBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+    marginRight: 8,
+  },
+  desktopConnectHeaderText: {
+    fontSize: 9,
+    color: '#667eea',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  // Website URL styles
+  websiteUrlContainer: {
+    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    width: '100%',
+  },
+  websiteUrlLabel: {
+    fontSize: 12,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  websiteUrl: {
+    fontSize: 14,
+    color: '#667eea',
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
