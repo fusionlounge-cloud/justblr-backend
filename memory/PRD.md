@@ -1,149 +1,75 @@
-# Justblr Matrix Assistant - Product Requirements Document
-
-## Play Store Ready - v1.2.0
-
-### Download APK
-**https://expo.dev/artifacts/eas/hx5oTHmMCZN9zQWUsoGDzY.apk**
-
-### Play Store Assets
-- **App Icon (512x512)**: https://static.prod-images.emergentagent.com/jobs/0e021c61-d04a-4d5d-a69a-47688ed0bdbf/images/348f8352d24be2bd6625bb8fc3c70ce8badde7944bd1a1ca54d69e8e77091187.png
-- **Feature Graphic (1024x500)**: https://static.prod-images.emergentagent.com/jobs/0e021c61-d04a-4d5d-a69a-47688ed0bdbf/images/b42723d551f8e86c9b314628fc7944cdb6a5c1dfe5f6b77133badf6822d91928.png
-- **Privacy Policy URL**: https://justblr-matrix-1.preview.emergentagent.com/api/web-static/privacy-policy.html
-- **Description**: See /app/PLAY_STORE_DESCRIPTION.md
-
----
+# Justblr Matrix - Product Requirements Document
 
 ## Original Problem Statement
-Build a voice-first mobile productivity application named "Justblr Matrix Assistant" with:
-- Central dashboard for managing reminders and notes
-- Quick actions for: Meet, Call, SMS, WhatsApp, Deskwork, Keep Notes
-- Note-taking feature (deep-links to Google Keep)
-- Social media hub for quick access to Instagram, Facebook, LinkedIn, Alibaba, WhatsApp, WeChat
-- All features controllable via voice commands
-- Contact integration for reminders
-- Schedule reminders for specific date/time with auto-execute option
-- Android APK for distribution
-- **Web dashboard synced with mobile app**
-- **Automated SMS and WhatsApp sending via Twilio**
+Voice-first mobile productivity application with central dashboard, reminders, task delegation, and web dashboard for desktop access.
 
-## Tech Stack
-- **Mobile**: Expo SDK 54, React Native, TypeScript, expo-router
-- **Web**: React 18, CSS, served via FastAPI
-- **Backend**: FastAPI, MongoDB (motor), APScheduler, Twilio
-- **Build**: EAS (Expo Application Services) Cloud Build
-- **Data Separation**: expo-constants installationId as device_id
+## Current Architecture
+- **Mobile App**: Expo (React Native) - Play Store v1.6.4 building
+- **Web Dashboard**: React static site on Render
+- **Backend**: FastAPI on Render (https://justblr-backend.onrender.com)
+- **Database**: MongoDB Atlas
 
-## Database Schema
-```
-reminders: {
-  _id, id, reminder_type, contact_name, contact_phone,
-  notes, scheduled_time, auto_execute, triggered,
-  created_at, device_id, auto_execute_triggered,
-  execution_result
-}
+## What's Been Implemented
 
-contacts: {
-  device_id, name, phone, email, synced_at
-}
+### March 24, 2026
+- [x] Web Dashboard full CRUD (Add/Edit/Delete reminders)
+- [x] Default time: Tomorrow 4:30 PM
+- [x] Title made optional
+- [x] 6 reminder types: Call, SMS, WhatsApp, Meet, Deskwork, Notes
+- [x] Contact search on web dashboard
+- [x] Filter by type on web dashboard
+- [x] Multi-user authentication (unique device IDs)
+- [x] Migration fix - existing users keep their data
+- [x] Removed mic icon from header
+- [x] "Desktop" text below laptop icon
+- [x] Desktop Connect modal with website URL
+- [x] Instant reminder loading with local cache
 
-sync_codes: {
-  sync_code, device_id, created_at, expires_at
-}
+### Previous Sessions
+- [x] Backend migrated to Render
+- [x] Database migrated to MongoDB Atlas
+- [x] Fixed back-swipe app crash
+- [x] Fixed timezone saving (UTC)
+- [x] Fixed double-tap save bug
+- [x] Task Report shows only active employees
+- [x] Web Dashboard created and deployed
 
-settings: {
-  key, account_sid, auth_token, phone_number,
-  whatsapp_number, updated_at
-}
+## URLs
+- Web Dashboard: https://justblr-web.onrender.com
+- Backend API: https://justblr-backend.onrender.com
+- Play Store: Closed Testing (14 testers)
 
-execution_logs: {
-  reminder_id, reminder_type, contact_phone,
-  executed_at, status, message_sid, error
-}
-```
+## Pending / In Progress
 
-## Key API Endpoints
-- `GET /api/reminders?device_id=<string>` - Fetch reminders for device
-- `POST /api/reminders` - Create reminder (requires device_id)
-- `PUT /api/reminders/:id` - Update reminder
-- `DELETE /api/reminders/:id` - Delete reminder
-- `POST /api/voice/stt` - Speech-to-text for voice commands
-- `POST /api/sync/generate-code` - Generate 6-digit sync code
-- `POST /api/sync/verify-code` - Verify sync code and get device_id
-- `POST /api/sync/contacts` - Sync contacts from mobile
-- `GET /api/sync/contacts/{device_id}` - Get synced contacts
-- `GET /api/web-static/index.html` - Web dashboard
-- `GET /api/twilio/status` - Check Twilio configuration status
-- `POST /api/twilio/configure` - Configure Twilio credentials
-- `POST /api/twilio/send` - Test send SMS/WhatsApp
+### P0 - Critical
+- [ ] v1.6.4 build completing (migration fix) - upload to Play Store when done
 
-## Completed Features
-- [x] Working APK built via EAS
-- [x] Multi-device data separation using device_id
-- [x] Refresh Contacts button
-- [x] Voice command system
-- [x] Dashboard with Quick Actions and Social Media Hub
-- [x] Reminder creation with scheduling
-- [x] Auto-execute toggle for calls/SMS/WhatsApp
-- [x] Notification system
-- [x] Specific notification content - Shows "CALL: John Doe"
-- [x] Back navigation - Uses router.back() properly
-- [x] WhatsApp Business link - Simplified URL scheme
-- [x] **Web Dashboard** - Desktop browser access
-- [x] **Link to Web** - 6-digit sync code system
-- [x] **Contacts sync** - Upload contacts to cloud for web access
-- [x] **Twilio SMS Integration** (2026-03-06) - Auto-send SMS at scheduled time
-- [x] **Twilio WhatsApp Integration** (2026-03-06) - Auto-send WhatsApp at scheduled time
-- [x] **Web Dashboard Meet/Deskwork cards** (2026-03-11) - Added missing stat cards with icons and styling
-- [x] **Improved contact phone filtering** (2026-03-11) - Filter out masked/invalid phone numbers
-- [x] **APK v1.0.2 Released** (2026-03-12) - All reminder display issues fixed, back navigation fixed
+### P1 - High Priority
+- [ ] Twilio WhatsApp/SMS automation (requires Twilio credentials)
+- [ ] Test reminder notifications on edited reminders
 
-## Latest APK
-- **Version**: 1.0.2
-- **Download**: https://expo.dev/artifacts/eas/kXM8kYfnrt4AbRViPKGeYa.apk
-- **Build Date**: 2026-03-12
+### P2 - Medium Priority
+- [ ] Render Free Tier scheduler delays (paid tier or local notifications)
+- [ ] Google Assistant voice commands integration
+- [ ] iOS version
 
-## Fixed Issues (2026-03-11/12)
-1. **Issue 1: Meet/Deskwork missing on web** - Added CSS styling for `.stat-icon.meet` and `.stat-icon.deskwork`, plus proper SVG icons
-2. **Issue 2: Back navigation exits app** - Changed from `router.replace('/')` to `router.back()` in action.tsx and all-items.tsx  
-3. **Issue 3: Phone numbers saving incorrectly** - Removed auto-clear of phone when editing name, added filter for masked (X's) and invalid short numbers
-
-## Pending Testing
-- [ ] Build new APK with Link to Web feature
-- [ ] Test notification shows contact name
-- [ ] Test back swipe returns to home screen
-- [ ] Test web dashboard sync flow
-- [ ] Test Twilio SMS/WhatsApp automation
-
-## Twilio Setup Required
-1. Create Twilio account at https://www.twilio.com/try-twilio
-2. Get Account SID, Auth Token, Phone Number from console
-3. Configure via POST /api/twilio/configure
-
-## Upcoming Tasks (P1)
-- [ ] Guide user through Google Play Store publishing
-- [ ] User to set up Twilio credentials
-
-## Future Tasks (P2+)
-- [ ] iOS version (requires Apple Developer account)
-- [ ] Scalable solution for 36,000+ contacts
-- [ ] Enhanced Google Keep integration
+## Future / Backlog
+- [ ] Email/Password authentication (cross-device sync)
+- [ ] Google Sign-In option
+- [ ] Push notifications improvements
+- [ ] Contact sync improvements on web
 
 ## Key Files
-- `/app/frontend/app/index.tsx` - Dashboard, social hub, Link to Web modal
-- `/app/frontend/app/action.tsx` - Create/edit reminders, notifications
-- `/app/frontend/app/all-items.tsx` - Reminder list view
-- `/app/frontend/app/_layout.tsx` - Navigation stack config
-- `/app/backend/server.py` - API endpoints, sync endpoints, Twilio integration
-- `/app/web/src/App.js` - Web dashboard React app
+- `/app/frontend/app/index.tsx` - Main mobile app screen
+- `/app/frontend/app/action.tsx` - Action/reminder creation
+- `/app/frontend/app/delegation.tsx` - Task delegation
+- `/app/backend/server.py` - FastAPI backend (on Render)
+- `/app/web/` - Web dashboard (GitHub: fusionlounge-cloud/justblr-web)
 
-## Web Dashboard Access
-```
-https://justblr-matrix-1.preview.emergentagent.com/api/web-static/index.html
-```
+## Build Status
+- v1.6.4 building: https://expo.dev/accounts/ananthnarayan/projects/justblr-matrix/builds/88eb13ad-f6a2-4786-b79d-171c14fa3507
 
-## Known Limitations
-- Voice icon inside 3rd party apps (WhatsApp/SMS) is not technically feasible
-- Contact loading for 36,000+ contacts needs optimization
-- Web dashboard requires mobile app to generate sync code first
-- Twilio trial accounts can only send to verified numbers
-- **Web dashboard un-links on app reinstall** (Issue 4) - This is an architectural limitation. The sync relies on a transient `device_id` that changes when the app is reinstalled. A proper fix requires implementing a user account system. Current workaround: User must unlink and re-link with a new sync code after reinstalling the mobile app.
+## Notes
+- Backend is hosted on user's Render account (not Emergent preview)
+- Web dashboard deployed as static site on Render
+- Multi-user fix uses device ID migration to preserve existing user data
