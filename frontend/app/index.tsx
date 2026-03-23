@@ -33,9 +33,16 @@ const WEB_DASHBOARD_URL = 'https://justblr-web.onrender.com';
 const CACHE_KEY_REMINDERS = 'justblr_cached_reminders';
 const CACHE_KEY_TIMESTAMP = 'justblr_cache_timestamp';
 
-// MASTER DEVICE ID - This is the primary user's permanent ID
-// All data will be linked to this ID to prevent data loss on updates
-const MASTER_DEVICE_ID = 'master_justblr_primary_user';
+// Device ID storage key
+const DEVICE_ID_STORAGE_KEY = 'justblr_unique_device_id';
+
+// Generate a unique device ID
+const generateUniqueId = (): string => {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  const randomPart2 = Math.random().toString(36).substring(2, 15);
+  return `device_${timestamp}_${randomPart}${randomPart2}`;
+};
 
 // Helper to save reminders to local cache
 const saveRemindersToCache = async (reminders: any[]) => {
@@ -63,23 +70,26 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
   return [];
 };
 
-// Get STABLE device ID that persists across reinstalls
+// Get UNIQUE device ID - each installation gets its own ID
 const getDeviceId = async (): Promise<string> => {
   try {
-    // ALWAYS use the master device ID for the primary user
-    // This ensures data never vanishes on app updates
-    const storedId = await AsyncStorage.getItem('device_id');
+    // Check if we already have a unique device ID stored
+    const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
     
-    // If this is a fresh install or update, migrate to master ID
-    if (!storedId || storedId !== MASTER_DEVICE_ID) {
-      await AsyncStorage.setItem('device_id', MASTER_DEVICE_ID);
-      console.log('Device ID set to master:', MASTER_DEVICE_ID);
+    if (storedId) {
+      console.log('Using existing device ID:', storedId.substring(0, 20) + '...');
+      return storedId;
     }
     
-    return MASTER_DEVICE_ID;
+    // Generate a new unique ID for this device
+    const newId = generateUniqueId();
+    await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
+    console.log('Generated new device ID:', newId.substring(0, 20) + '...');
+    return newId;
   } catch (e) {
     console.error('Error getting device ID:', e);
-    return MASTER_DEVICE_ID; // Always return master ID
+    // Fallback: generate a temporary ID
+    return generateUniqueId();
   }
 };
 

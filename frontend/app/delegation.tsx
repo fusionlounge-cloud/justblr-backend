@@ -28,20 +28,30 @@ import * as Application from 'expo-application';
 // STABLE RENDER BACKEND URL
 const BACKEND_URL = 'https://justblr-backend.onrender.com';
 
-// MASTER DEVICE ID - This is the primary user's permanent ID
-const MASTER_DEVICE_ID = 'master_justblr_primary_user';
+// Device ID storage key
+const DEVICE_ID_STORAGE_KEY = 'justblr_unique_device_id';
 
-// Get STABLE device ID that persists across reinstalls
+// Generate a unique device ID
+const generateUniqueId = (): string => {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  const randomPart2 = Math.random().toString(36).substring(2, 15);
+  return `device_${timestamp}_${randomPart}${randomPart2}`;
+};
+
+// Get UNIQUE device ID - each installation gets its own ID
 const getDeviceId = async (): Promise<string> => {
   try {
-    const storedId = await AsyncStorage.getItem('device_id');
-    if (!storedId || storedId !== MASTER_DEVICE_ID) {
-      await AsyncStorage.setItem('device_id', MASTER_DEVICE_ID);
+    const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
+    if (storedId) {
+      return storedId;
     }
-    return MASTER_DEVICE_ID;
+    const newId = generateUniqueId();
+    await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
+    return newId;
   } catch (e) {
     console.error('Error getting device ID:', e);
-    return MASTER_DEVICE_ID;
+    return generateUniqueId();
   }
 };
 
