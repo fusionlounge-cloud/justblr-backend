@@ -31,6 +31,8 @@ const BACKEND_URL = 'https://justblr-backend.onrender.com';
 
 // Device ID storage key
 const DEVICE_ID_STORAGE_KEY = 'justblr_unique_device_id';
+const OLD_MASTER_DEVICE_ID = 'master_justblr_primary_user';
+const OLD_DEVICE_ID_KEY = 'device_id';
 
 // Generate a unique device ID
 const generateUniqueId = (): string => {
@@ -40,13 +42,19 @@ const generateUniqueId = (): string => {
   return `device_${timestamp}_${randomPart}${randomPart2}`;
 };
 
-// Get UNIQUE device ID - each installation gets its own ID
+// Get UNIQUE device ID - with migration for existing users
 const getDeviceId = async (): Promise<string> => {
   try {
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
-    if (storedId) {
-      return storedId;
+    if (storedId) return storedId;
+    
+    // MIGRATION: Check if user was using the old master ID
+    const oldStoredId = await AsyncStorage.getItem(OLD_DEVICE_ID_KEY);
+    if (oldStoredId === OLD_MASTER_DEVICE_ID) {
+      await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
+      return OLD_MASTER_DEVICE_ID;
     }
+    
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
     return newId;

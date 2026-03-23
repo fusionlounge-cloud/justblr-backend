@@ -44,6 +44,10 @@ const generateUniqueId = (): string => {
   return `device_${timestamp}_${randomPart}${randomPart2}`;
 };
 
+// Old master ID for migration purposes
+const OLD_MASTER_DEVICE_ID = 'master_justblr_primary_user';
+const OLD_DEVICE_ID_KEY = 'device_id';
+
 // Helper to save reminders to local cache
 const saveRemindersToCache = async (reminders: any[]) => {
   try {
@@ -70,25 +74,32 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
   return [];
 };
 
-// Get UNIQUE device ID - each installation gets its own ID
+// Get UNIQUE device ID - with migration for existing users
 const getDeviceId = async (): Promise<string> => {
   try {
-    // Check if we already have a unique device ID stored
+    // First check if we already have the new unique device ID
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
-    
     if (storedId) {
       console.log('Using existing device ID:', storedId.substring(0, 20) + '...');
       return storedId;
     }
     
-    // Generate a new unique ID for this device
+    // MIGRATION: Check if user was using the old master ID
+    const oldStoredId = await AsyncStorage.getItem(OLD_DEVICE_ID_KEY);
+    if (oldStoredId === OLD_MASTER_DEVICE_ID) {
+      // This is an existing user - keep their master ID to preserve data!
+      await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
+      console.log('Migrated existing user - keeping master ID to preserve reminders');
+      return OLD_MASTER_DEVICE_ID;
+    }
+    
+    // New user - generate a fresh unique ID
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
-    console.log('Generated new device ID:', newId.substring(0, 20) + '...');
+    console.log('New user - generated unique device ID:', newId.substring(0, 20) + '...');
     return newId;
   } catch (e) {
     console.error('Error getting device ID:', e);
-    // Fallback: generate a temporary ID
     return generateUniqueId();
   }
 };
