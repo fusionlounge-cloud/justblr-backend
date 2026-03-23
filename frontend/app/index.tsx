@@ -834,12 +834,6 @@ export default function DashboardScreen() {
               <Ionicons name="laptop-outline" size={22} color="#667eea" />
               <Text style={styles.desktopConnectHeaderText}>Desktop</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.voiceCommandBtn}
-              onPress={startVoiceCommand}
-            >
-              <Ionicons name="mic" size={22} color="#fff" />
-            </TouchableOpacity>
             <Image 
               source={{ uri: JUSTBLR_LOGO }} 
               style={styles.logoImage}
