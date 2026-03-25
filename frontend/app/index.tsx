@@ -24,6 +24,99 @@ import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 import * as Application from 'expo-application';
 
+// Configure notification handler for foreground notifications
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    priority: Notifications.AndroidNotificationPriority.MAX,
+  }),
+});
+
+// Setup notification channels for Android (with alarm sound)
+async function setupNotificationChannels() {
+  if (Platform.OS === 'android') {
+    // High priority alarm channel
+    await Notifications.setNotificationChannelAsync('reminder-alarm', {
+      name: 'Reminder Alarms',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500, 200, 500],
+      lightColor: '#667eea',
+      sound: 'default',
+      enableVibrate: true,
+      enableLights: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: true,
+    });
+    console.log('Notification channel created: reminder-alarm');
+  }
+}
+
+// Schedule local notification for a reminder
+async function scheduleLocalNotification(reminder: any) {
+  try {
+    const scheduledTime = new Date(reminder.scheduled_time);
+    const now = new Date();
+    
+    // Only schedule if in the future
+    if (scheduledTime <= now) {
+      console.log('Reminder time already passed:', reminder.title);
+      return null;
+    }
+    
+    const trigger = scheduledTime;
+    
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: `⏰ ${reminder.reminder_type.toUpperCase()}: ${reminder.title || 'Reminder'}`,
+        body: reminder.contact_name 
+          ? `Contact: ${reminder.contact_name}${reminder.notes ? '\n' + reminder.notes : ''}`
+          : reminder.notes || 'Tap to view',
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.MAX,
+        vibrate: [0, 500, 200, 500, 200, 500],
+        data: { 
+          reminderId: reminder.id,
+          reminderType: reminder.reminder_type,
+          contactPhone: reminder.contact_phone,
+        },
+      },
+      trigger: {
+        date: trigger,
+        channelId: 'reminder-alarm',
+      },
+    });
+    
+    console.log('Scheduled local notification:', notificationId, 'for', scheduledTime.toLocaleString());
+    return notificationId;
+  } catch (error) {
+    console.error('Failed to schedule notification:', error);
+    return null;
+  }
+}
+
+// Cancel all scheduled notifications and reschedule from reminders
+async function syncLocalNotifications(reminders: any[]) {
+  try {
+    // Cancel all existing scheduled notifications
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    console.log('Cancelled all existing notifications');
+    
+    // Schedule new notifications for all future reminders
+    const now = new Date();
+    const futureReminders = reminders.filter(r => new Date(r.scheduled_time) > now);
+    
+    for (const reminder of futureReminders) {
+      await scheduleLocalNotification(reminder);
+    }
+    
+    console.log(`Scheduled ${futureReminders.length} local notifications`);
+  } catch (error) {
+    console.error('Failed to sync notifications:', error);
+  }
+}
+
 // STABLE RENDER BACKEND URL
 const BACKEND_URL = 'https://justblr-backend.onrender.com';
 const JUSTBLR_LOGO = 'https://customer-assets.emergentagent.com/job_4fe0c0dc-be90-49c7-81d6-fef8f0af4f3b/artifacts/fzo9eg6q_Screenshot%202026-02-25%20at%201.15.23%E2%80%AFAM.png';
@@ -145,12 +238,17 @@ export default function DashboardScreen() {
 
   // Handle notification response - open WhatsApp/SMS when user taps notification
   useEffect(() => {
+    // Setup notification channels on app start
+    setupNotificationChannels();
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS === 'web') return;
     
     const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const data = response.notification.request.content.data;
-      const actionType = data?.type;
-      const phone = data?.phone;
+      const actionType = data?.reminderType || data?.type;
+      const phone = data?.contactPhone || data?.phone;
       const notes = data?.notes || '';
       
       if (!phone) return;
@@ -172,18 +270,15 @@ export default function DashboardScreen() {
           if (canOpen) {
             await Linking.openURL(waUrl);
           } else {
-            // Fallback to web WhatsApp
             await Linking.openURL(`https://wa.me/${phoneForWA}?text=${message}`);
           }
         } else if (actionType === 'sms') {
-          // Open SMS app with pre-filled message
           const message = encodeURIComponent(notes || '');
           const smsUrl = Platform.OS === 'ios' 
             ? `sms:${cleanPhone}&body=${message}`
             : `sms:${cleanPhone}?body=${message}`;
           await Linking.openURL(smsUrl);
         } else if (actionType === 'call') {
-          // Open phone dialer
           await Linking.openURL(`tel:${cleanPhone}`);
         }
       } catch (error) {
@@ -242,6 +337,9 @@ export default function DashboardScreen() {
         
         // Save to cache for next time
         await saveRemindersToCache(response.data);
+        
+        // Sync local notifications for exact time alerts
+        await syncLocalNotifications(response.data);
       } else {
         console.error('Invalid response format:', response.data);
       }
