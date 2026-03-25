@@ -1,21 +1,24 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Literal
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import requests
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 from twilio.rest import Client as TwilioClient
+import hashlib
+import secrets
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -233,6 +236,49 @@ def schedule_reminder_execution(reminder_id: str, scheduled_time: datetime, auto
 
 # ===== MODELS =====
 
+# Authentication Models
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: Optional[str] = None
+    device_id: str
+    created_at: datetime
+
+class AuthResponse(BaseModel):
+    user: UserResponse
+    token: str
+    message: str
+
+# Helper functions for auth
+def hash_password(password: str) -> str:
+    """Hash password with salt"""
+    salt = "justblr_matrix_salt_2026"
+    return hashlib.sha256(f"{password}{salt}".encode()).hexdigest()
+
+def generate_token() -> str:
+    """Generate a secure auth token"""
+    return secrets.token_urlsafe(32)
+
+security = HTTPBearer(auto_error=False)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify token and return user"""
+    if not credentials:
+        return None
+    
+    token = credentials.credentials
+    user = await db.users.find_one({"auth_token": token}, {"_id": 0})
+    return user
+
 class STTResponse(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     transcribed_text: str
@@ -358,6 +404,124 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     deadline: Optional[datetime] = None
     is_completed: Optional[bool] = None
+
+# ===== AUTHENTICATION ENDPOINTS =====
+
+@api_router.post("/auth/register", response_model=AuthResponse)
+async def register_user(user_data: UserRegister):
+    """Register a new user with email and password"""
+    try:
+        # Check if email already exists
+        existing_user = await db.users.find_one({"email": user_data.email.lower()})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Create user
+        user_id = str(uuid.uuid4())
+        device_id = f"user_{user_id[:8]}_{secrets.token_hex(4)}"
+        auth_token = generate_token()
+        
+        user_doc = {
+            "id": user_id,
+            "email": user_data.email.lower(),
+            "password_hash": hash_password(user_data.password),
+            "name": user_data.name,
+            "device_id": device_id,
+            "auth_token": auth_token,
+            "created_at": datetime.now(timezone.utc),
+            "is_active": True
+        }
+        
+        await db.users.insert_one(user_doc)
+        
+        # Return user response (without password)
+        user_response = UserResponse(
+            id=user_id,
+            email=user_doc["email"],
+            name=user_doc["name"],
+            device_id=device_id,
+            created_at=user_doc["created_at"]
+        )
+        
+        return AuthResponse(
+            user=user_response,
+            token=auth_token,
+            message="Registration successful"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@api_router.post("/auth/login", response_model=AuthResponse)
+async def login_user(user_data: UserLogin):
+    """Login with email and password"""
+    try:
+        # Find user by email
+        user = await db.users.find_one({"email": user_data.email.lower()}, {"_id": 0})
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Verify password
+        if user["password_hash"] != hash_password(user_data.password):
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Generate new token for this session
+        new_token = generate_token()
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"auth_token": new_token, "last_login": datetime.now(timezone.utc)}}
+        )
+        
+        # Return user response
+        user_response = UserResponse(
+            id=user["id"],
+            email=user["email"],
+            name=user.get("name"),
+            device_id=user["device_id"],
+            created_at=user["created_at"]
+        )
+        
+        return AuthResponse(
+            user=user_response,
+            token=new_token,
+            message="Login successful"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+@api_router.get("/auth/me")
+async def get_current_user_info(user = Depends(get_current_user)):
+    """Get current logged in user info"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    return UserResponse(
+        id=user["id"],
+        email=user["email"],
+        name=user.get("name"),
+        device_id=user["device_id"],
+        created_at=user["created_at"]
+    )
+
+@api_router.post("/auth/logout")
+async def logout_user(user = Depends(get_current_user)):
+    """Logout current user"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Invalidate token
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"auth_token": None}}
+    )
+    
+    return {"message": "Logged out successfully"}
 
 # ===== VOICE ENDPOINTS =====
 

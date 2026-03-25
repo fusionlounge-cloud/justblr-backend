@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 import sys
 
 # Backend URL from environment
-BACKEND_URL = "https://justblr-matrix-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://voice-reminder-app-4.preview.emergentagent.com/api"
 
 def test_specific_requirements():
     """Test the specific requirements from the review request"""

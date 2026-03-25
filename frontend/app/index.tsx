@@ -12,6 +12,7 @@ import {
   Image,
   Modal,
   AppState,
+  Vibration,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,13 +38,13 @@ Notifications.setNotificationHandler({
 // Setup notification channels for Android (with alarm sound)
 async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
-    // High priority alarm channel
+    // High priority alarm channel with custom loud alarm sound
     await Notifications.setNotificationChannelAsync('reminder-alarm', {
       name: 'Reminder Alarms',
       importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 500, 200, 500, 200, 500],
+      vibrationPattern: [0, 500, 200, 500, 200, 500, 200, 500],
       lightColor: '#667eea',
-      sound: 'default',
+      sound: 'alarm',
       enableVibrate: true,
       enableLights: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -73,13 +74,16 @@ async function scheduleLocalNotification(reminder: any) {
         body: reminder.contact_name 
           ? `Contact: ${reminder.contact_name}${reminder.notes ? '\n' + reminder.notes : ''}`
           : reminder.notes || 'Tap to view',
-        sound: true,
+        sound: 'alarm.wav',
         priority: Notifications.AndroidNotificationPriority.MAX,
-        vibrate: [0, 500, 200, 500, 200, 500],
+        vibrate: [0, 500, 200, 500, 200, 500, 200, 500],
         data: { 
           reminderId: reminder.id,
           reminderType: reminder.reminder_type,
           contactPhone: reminder.contact_phone,
+          contactName: reminder.contact_name,
+          title: reminder.title,
+          notes: reminder.notes,
         },
       },
       trigger: {
@@ -236,10 +240,78 @@ export default function DashboardScreen() {
   const [syncCode, setSyncCode] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
 
+  // Foreground alarm states
+  const [alarmActive, setAlarmActive] = useState(false);
+  const [alarmData, setAlarmData] = useState<any>(null);
+  const alarmSoundRef = useRef<any>(null);
+
   // Handle notification response - open WhatsApp/SMS when user taps notification
   useEffect(() => {
     // Setup notification channels on app start
     setupNotificationChannels();
+  }, []);
+
+  // Foreground alarm: play loud sound on loop when notification arrives while app is open
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const startAlarmSound = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+        });
+        const { sound } = await Audio.Sound.createAsync(
+          require('../assets/sounds/alarm.wav'),
+          { isLooping: true, volume: 1.0, shouldPlay: true }
+        );
+        alarmSoundRef.current = sound;
+      } catch (error) {
+        console.error('Failed to play alarm sound:', error);
+      }
+    };
+
+    const stopAlarmSound = async () => {
+      try {
+        if (alarmSoundRef.current) {
+          await alarmSoundRef.current.stopAsync();
+          await alarmSoundRef.current.unloadAsync();
+          alarmSoundRef.current = null;
+        }
+        Vibration.cancel();
+      } catch (error) {
+        console.error('Failed to stop alarm sound:', error);
+      }
+    };
+
+    // Listen for notifications received while app is in foreground
+    const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification.request.content.data;
+      const title = notification.request.content.title || 'Reminder';
+      const body = notification.request.content.body || '';
+
+      console.log('Foreground notification received:', title);
+
+      setAlarmData({
+        title,
+        body,
+        reminderType: data?.reminderType || data?.type,
+        contactPhone: data?.contactPhone || data?.phone,
+        contactName: data?.contactName || data?.contact,
+        notes: data?.notes,
+      });
+      setAlarmActive(true);
+
+      // Start alarm sound loop and vibration
+      startAlarmSound();
+      Vibration.vibrate([0, 500, 200, 500, 200, 500, 200, 500], true);
+    });
+
+    return () => {
+      foregroundSub.remove();
+      stopAlarmSound();
+    };
   }, []);
 
   useEffect(() => {
@@ -517,6 +589,53 @@ export default function DashboardScreen() {
   const openLinkModal = async () => {
     setShowLinkModal(true);
     await generateSyncCode();
+  };
+
+  // Dismiss the foreground alarm
+  const dismissAlarm = async () => {
+    try {
+      if (alarmSoundRef.current) {
+        await alarmSoundRef.current.stopAsync();
+        await alarmSoundRef.current.unloadAsync();
+        alarmSoundRef.current = null;
+      }
+      Vibration.cancel();
+    } catch (e) {
+      console.error('Error stopping alarm:', e);
+    }
+    setAlarmActive(false);
+    setAlarmData(null);
+  };
+
+  // Dismiss alarm and execute the action (call/sms/whatsapp)
+  const dismissAlarmAndAct = async () => {
+    const data = alarmData;
+    await dismissAlarm();
+    if (!data) return;
+
+    const phone = data.contactPhone?.replace(/[^\d+]/g, '') || '';
+    const notes = data.notes || '';
+
+    try {
+      if (data.reminderType === 'call' && phone) {
+        await Linking.openURL(`tel:${phone}`);
+      } else if (data.reminderType === 'sms' && phone) {
+        const url = `sms:${phone}${notes ? `?body=${encodeURIComponent(notes)}` : ''}`;
+        await Linking.openURL(url);
+      } else if (data.reminderType === 'whatsapp' && phone) {
+        const cleanPhone = phone.replace('+', '');
+        const msg = encodeURIComponent(notes || 'Hello!');
+        const waUrl = `whatsapp://send?phone=${cleanPhone}&text=${msg}`;
+        const canOpen = await Linking.canOpenURL(waUrl);
+        if (canOpen) {
+          await Linking.openURL(waUrl);
+        } else {
+          await Linking.openURL(`https://wa.me/${cleanPhone}?text=${msg}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error executing alarm action:', error);
+    }
   };
 
   // Sync contacts to cloud for web dashboard
@@ -976,6 +1095,42 @@ export default function DashboardScreen() {
             />
           </View>
         </View>
+
+        {/* Foreground Alarm Modal - Full screen overlay when alarm fires */}
+        <Modal visible={alarmActive} transparent animationType="fade">
+          <View style={styles.alarmOverlay}>
+            <View style={styles.alarmContent}>
+              <View style={styles.alarmIconPulse}>
+                <Ionicons name="alarm" size={64} color="#fff" />
+              </View>
+              <Text style={styles.alarmTitle}>{alarmData?.title || 'Reminder!'}</Text>
+              {alarmData?.contactName ? (
+                <Text style={styles.alarmContact}>{alarmData.contactName}</Text>
+              ) : null}
+              {alarmData?.body ? (
+                <Text style={styles.alarmBody}>{alarmData.body}</Text>
+              ) : null}
+
+              {/* Action button for call/sms/whatsapp */}
+              {alarmData?.reminderType && ['call', 'sms', 'whatsapp'].includes(alarmData.reminderType) && alarmData?.contactPhone ? (
+                <TouchableOpacity style={styles.alarmActionBtn} onPress={dismissAlarmAndAct}>
+                  <Ionicons 
+                    name={alarmData.reminderType === 'call' ? 'call' : alarmData.reminderType === 'sms' ? 'chatbubble' : 'logo-whatsapp'} 
+                    size={24} 
+                    color="#fff" 
+                  />
+                  <Text style={styles.alarmActionText}>
+                    {alarmData.reminderType === 'call' ? 'Call Now' : alarmData.reminderType === 'sms' ? 'Send SMS' : 'Open WhatsApp'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity style={styles.alarmDismissBtn} onPress={dismissAlarm}>
+                <Text style={styles.alarmDismissText}>DISMISS</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Link to Web Modal */}
         <Modal visible={showLinkModal} transparent animationType="fade">
@@ -1740,5 +1895,80 @@ const styles = StyleSheet.create({
     color: '#667eea',
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // Foreground Alarm styles
+  alarmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(220, 38, 38, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alarmContent: {
+    width: '85%',
+    maxWidth: 360,
+    alignItems: 'center',
+    padding: 32,
+  },
+  alarmIconPulse: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  alarmTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  alarmContact: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  alarmBody: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  alarmActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#22c55e',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    gap: 10,
+    marginBottom: 16,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  alarmActionText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  alarmDismissBtn: {
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    width: '100%',
+    alignItems: 'center',
+  },
+  alarmDismissText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
 });

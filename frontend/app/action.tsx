@@ -64,17 +64,8 @@ const getDeviceId = async (): Promise<string> => {
   }
 };
 
-// Import and setup notifications
+// Import notifications (handler configured in index.tsx)
 import * as Notifications from 'expo-notifications';
-
-// Configure notification handler at module level
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 export default function ActionScreen() {
   const router = useRouter();
@@ -478,7 +469,7 @@ export default function ActionScreen() {
     }
   };
 
-  // Schedule local notification with SPECIFIC details
+  // Schedule local notification with SPECIFIC details and custom alarm sound
   const scheduleNotification = async (reminderTitle: string, reminderTime: Date) => {
     if (Platform.OS === 'web' || !notifyMe) return;
     
@@ -500,15 +491,12 @@ export default function ActionScreen() {
       const triggerDate = new Date(reminderTime);
       const now = new Date();
       
-      // Calculate seconds until the reminder
-      const secondsUntilTrigger = Math.floor((triggerDate.getTime() - now.getTime()) / 1000);
-      
-      // Only schedule if it's in the future (at least 10 seconds for Android reliability)
-      if (secondsUntilTrigger > 10) {
+      // Only schedule if at least 10 seconds in the future
+      if (triggerDate.getTime() - now.getTime() > 10000) {
         // Build SPECIFIC notification title with action type and contact
         const actionLabel = actionName.toUpperCase();
         const contactLabel = contactName ? contactName : (title.trim() || 'Reminder');
-        const notificationTitle = `${actionLabel}: ${contactLabel}`;
+        const notificationTitle = `⏰ ${actionLabel}: ${contactLabel}`;
         
         // Build SPECIFIC notification body with all details
         let bodyParts = [];
@@ -516,7 +504,6 @@ export default function ActionScreen() {
         if (contactPhone) bodyParts.push(`Phone: ${contactPhone}`);
         if (content) bodyParts.push(`Notes: ${content}`);
         
-        // If no contact info, use a helpful message
         const notificationBody = bodyParts.length > 0 
           ? bodyParts.join('\n') 
           : `Time for your scheduled ${actionName.toLowerCase()}!`;
@@ -527,28 +514,34 @@ export default function ActionScreen() {
             body: notificationBody,
             data: { 
               type: actionType, 
+              reminderType: actionType,
               actionName: actionName,
+              contactName: contactName,
+              contactPhone: contactPhone,
               contact: contactName, 
               phone: contactPhone,
               notes: content 
             },
-            sound: 'default',
+            sound: 'alarm.wav',
+            priority: Notifications.AndroidNotificationPriority.MAX,
+            vibrate: [0, 500, 200, 500, 200, 500, 200, 500],
           },
           trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: secondsUntilTrigger,
-            repeats: false,
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+            channelId: 'reminder-alarm',
           },
         });
-        console.log('Notification scheduled:', notificationId, 'Title:', notificationTitle, 'in', secondsUntilTrigger, 'seconds');
+        console.log('Alarm notification scheduled:', notificationId, 'Title:', notificationTitle, 'at', triggerDate.toLocaleString());
         
-        Alert.alert('Reminder Set', `You will be notified: "${notificationTitle}" in ${Math.round(secondsUntilTrigger / 60)} minutes`);
+        const minutesUntil = Math.round((triggerDate.getTime() - now.getTime()) / 60000);
+        Alert.alert('Alarm Set', `"${notificationTitle}" alarm will ring in ${minutesUntil} minutes`);
       } else {
         Alert.alert('Time Too Soon', 'Please set reminder for at least 1 minute from now.');
       }
     } catch (error) {
       console.log('Notification scheduling error:', error);
-      Alert.alert('Notification Error', 'Could not schedule notification: ' + String(error));
+      Alert.alert('Notification Error', 'Could not schedule alarm: ' + String(error));
     }
   };
 
@@ -987,21 +980,21 @@ export default function ActionScreen() {
             </View>
           )}
 
-          {/* Notification Toggle */}
+          {/* Alarm Notification Toggle */}
           <View style={styles.section}>
             <View style={styles.toggleRow}>
               <View style={styles.toggleInfo}>
-                <Ionicons name="notifications" size={22} color="#667eea" />
+                <Ionicons name="alarm" size={22} color="#dc2626" />
                 <View style={styles.toggleTextContainer}>
-                  <Text style={styles.toggleLabel}>Notify Me</Text>
-                  <Text style={styles.toggleHint}>Get a notification at scheduled time</Text>
+                  <Text style={styles.toggleLabel}>Alarm Me</Text>
+                  <Text style={styles.toggleHint}>Loud alarm rings at scheduled time until dismissed</Text>
                 </View>
               </View>
               <Switch
                 value={notifyMe}
                 onValueChange={setNotifyMe}
-                trackColor={{ false: '#e9ecef', true: '#667eea60' }}
-                thumbColor={notifyMe ? '#667eea' : '#f4f3f4'}
+                trackColor={{ false: '#e9ecef', true: '#dc262660' }}
+                thumbColor={notifyMe ? '#dc2626' : '#f4f3f4'}
               />
             </View>
           </View>

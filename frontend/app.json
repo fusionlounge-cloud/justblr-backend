@@ -2,7 +2,7 @@
   "expo": {
     "name": "Justblr Matrix",
     "slug": "justblr-matrix",
-    "version": "1.6.4",
+    "version": "1.7.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "justblr-matrix",
@@ -30,9 +30,11 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.SCHEDULE_EXACT_ALARM"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.WAKE_LOCK"
       ],
-      "versionCode": 27
+      "versionCode": 28
     },
     "web": {
       "bundler": "metro",
@@ -48,7 +50,7 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#667eea",
-          "sounds": []
+          "sounds": ["./assets/sounds/alarm.wav"]
         }
       ]
     ],
