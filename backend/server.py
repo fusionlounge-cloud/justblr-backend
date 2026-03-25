@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -1587,3 +1587,70 @@ async def shutdown_event():
     scheduler.shutdown()
     logger.info("Scheduler stopped")
     client.close()
+
+
+# ============ DATA DELETION PAGE (Google Play Requirement) ============
+
+@app.get("/api/delete-account", response_class=HTMLResponse)
+async def data_deletion_page():
+    """Data deletion request page for Google Play compliance"""
+    return """<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Delete Account - Justblr Matrix</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f0f23;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#1a1a2e;border-radius:16px;padding:40px;max-width:500px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+h1{font-size:24px;margin-bottom:8px;color:#fff}p.sub{color:#94a3b8;margin-bottom:24px;font-size:14px;line-height:1.6}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#cbd5e1}
+input{width:100%;padding:12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:15px;margin-bottom:16px}
+input:focus{outline:none;border-color:#667eea}
+button{width:100%;padding:14px;border-radius:10px;border:none;background:#dc2626;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+button:hover{background:#b91c1c}
+.success{background:#065f4620;border:1px solid #065f46;border-radius:8px;padding:16px;color:#6ee7b7;display:none;text-align:center;margin-top:16px}
+.warn{background:#78350f20;border:1px solid #78350f;border-radius:8px;padding:12px;color:#fbbf24;font-size:13px;margin-bottom:20px;line-height:1.5}
+</style></head><body><div class="card">
+<h1>Delete Your Account</h1>
+<p class="sub">Justblr Matrix - Account & Data Deletion Request</p>
+<div class="warn">This will permanently delete your account, all reminders, tasks, and associated data. This action cannot be undone.</div>
+<form id="deleteForm">
+<label>Email Address</label><input type="email" id="email" placeholder="Enter your registered email" required>
+<label>4-Digit PIN</label><input type="password" id="pin" maxlength="4" placeholder="Enter your PIN" required>
+<button type="submit">Delete My Account & Data</button>
+</form>
+<div class="success" id="success">Your account and all associated data have been permanently deleted.</div>
+</div>
+<script>
+document.getElementById('deleteForm').addEventListener('submit',async function(e){
+e.preventDefault();
+const email=document.getElementById('email').value;
+const pin=document.getElementById('pin').value;
+if(!confirm('Are you sure? ALL your data will be permanently deleted.'))return;
+try{
+const r=await fetch('/api/auth/delete-account',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pin})});
+const d=await r.json();
+if(r.ok){document.getElementById('deleteForm').style.display='none';document.getElementById('success').style.display='block';}
+else{alert(d.detail||'Failed to delete account. Check your email and PIN.');}
+}catch(err){alert('Network error. Please try again.');}
+});
+</script></body></html>"""
+
+@api_router.post("/auth/delete-account")
+async def delete_account(data: UserLogin):
+    """Delete user account and all associated data"""
+    user = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
+    password_hash = hashlib.sha256(f"{data.password}_justblr_salt".encode()).hexdigest()
+    if user.get("password_hash") != password_hash:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    device_id = user.get("device_id", "")
+    
+    # Delete all user data
+    await db.reminders.delete_many({"device_id": device_id})
+    await db.tasks.delete_many({"device_id": device_id})
+    await db.employees.delete_many({"device_id": device_id})
+    await db.contacts.delete_many({"device_id": device_id})
+    await db.users.delete_one({"email": data.email})
+    
+    logger.info(f"Account deleted: {data.email}, device_id: {device_id}")
+    return {"message": "Account and all data permanently deleted"}
