@@ -1639,7 +1639,7 @@ async def delete_account(data: UserLogin):
     if not user:
         raise HTTPException(status_code=404, detail="Account not found")
     
-    password_hash = hashlib.sha256(f"{data.password}_justblr_salt".encode()).hexdigest()
+    password_hash = hash_password(data.password)
     if user.get("password_hash") != password_hash:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
