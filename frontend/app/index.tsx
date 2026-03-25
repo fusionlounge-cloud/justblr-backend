@@ -13,6 +13,7 @@ import {
   Modal,
   AppState,
   Vibration,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import axios from 'axios';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveAuthData, loadAuthData, clearAuthData, getCurrentDeviceId, AuthUser } from '../utils/auth';
 // Constants removed - not needed
 import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
@@ -244,6 +246,17 @@ export default function DashboardScreen() {
   const [alarmActive, setAlarmActive] = useState(false);
   const [alarmData, setAlarmData] = useState<any>(null);
   const alarmSoundRef = useRef<any>(null);
+
+  // Auth states
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPin, setAuthPin] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   // Handle notification response - open WhatsApp/SMS when user taps notification
   useEffect(() => {
@@ -636,6 +649,129 @@ export default function DashboardScreen() {
     } catch (error) {
       console.error('Error executing alarm action:', error);
     }
+  };
+
+  // ===== AUTH FUNCTIONS =====
+
+  // Check if user is logged in on app start
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authData = await loadAuthData();
+      if (authData) {
+        setIsLoggedIn(true);
+        setAuthUser(authData.user);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  // Handle login or register
+  const handleAuth = async () => {
+    if (!authEmail.trim()) {
+      setAuthError('Please enter your email');
+      return;
+    }
+    if (authPin.length !== 4) {
+      setAuthError('Please enter a 4-digit PIN');
+      return;
+    }
+    if (authMode === 'register' && !authName.trim()) {
+      setAuthError('Please enter your name');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+      const body: any = {
+        email: authEmail.trim().toLowerCase(),
+        password: authPin,
+      };
+      if (authMode === 'register') {
+        body.name = authName.trim();
+      }
+
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAuthError(data.detail || 'Something went wrong');
+        setAuthLoading(false);
+        return;
+      }
+
+      // Save auth data
+      const user: AuthUser = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        device_id: data.user.device_id,
+      };
+      await saveAuthData(data.token, user);
+
+      // Migrate current device's data to the account's device_id
+      const oldDeviceId = deviceId;
+      if (oldDeviceId && oldDeviceId !== user.device_id) {
+        try {
+          await fetch(`${BACKEND_URL}/api/reminders/migrate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from_device_ids: [oldDeviceId],
+              to_device_id: user.device_id,
+            }),
+          });
+          console.log(`Migrated data from ${oldDeviceId} to ${user.device_id}`);
+        } catch (migErr) {
+          console.error('Migration error:', migErr);
+        }
+      }
+
+      // Update local device ID to account's device_id
+      setDeviceId(user.device_id);
+      setIsLoggedIn(true);
+      setAuthUser(user);
+      setShowAuthModal(false);
+      setAuthEmail('');
+      setAuthPin('');
+      setAuthName('');
+
+      // Refresh reminders with new device ID
+      fetchReminders();
+
+      Alert.alert('Success', authMode === 'register' 
+        ? 'Account created! Your data will sync across devices.' 
+        : 'Logged in! Your data is now synced.');
+
+    } catch (error: any) {
+      console.error('Auth error:', error);
+      setAuthError('Network error. Please check your connection.');
+    }
+    setAuthLoading(false);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Your data stays safe. You can sign in again anytime.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await clearAuthData();
+          setIsLoggedIn(false);
+          setAuthUser(null);
+          // Keep using current device_id for local access
+        },
+      },
+    ]);
   };
 
   // Sync contacts to cloud for web dashboard
@@ -1081,6 +1217,15 @@ export default function DashboardScreen() {
             <Text style={styles.subtitle}>Assistant ({reminders.length} reminders)</Text>
           </View>
           <View style={styles.headerRight}>
+            {isLoggedIn ? (
+              <TouchableOpacity style={styles.authHeaderBtn} onPress={handleLogout}>
+                <Ionicons name="person-circle" size={26} color="#22c55e" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.authHeaderBtn} onPress={() => setShowAuthModal(true)}>
+                <Ionicons name="person-circle-outline" size={26} color="#667eea" />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity 
               style={styles.desktopConnectHeaderBtn}
               onPress={openLinkModal}
@@ -1177,6 +1322,112 @@ export default function DashboardScreen() {
               <TouchableOpacity style={[styles.linkRefreshBtn, {marginTop: 12, backgroundColor: '#22c55e20'}]} onPress={syncContactsToCloud}>
                 <Ionicons name="cloud-upload" size={18} color="#22c55e" />
                 <Text style={[styles.linkRefreshText, {color: '#22c55e'}]}>Sync Contacts to Cloud</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Auth Modal - Sign In / Create Account */}
+        <Modal visible={showAuthModal} transparent animationType="slide">
+          <View style={styles.voiceModalOverlay}>
+            <View style={[styles.voiceModalContent, { maxHeight: '80%' }]}>
+              <TouchableOpacity style={styles.voiceModalClose} onPress={() => { setShowAuthModal(false); setAuthError(''); }}>
+                <Ionicons name="close" size={24} color="#6c757d" />
+              </TouchableOpacity>
+
+              <View style={styles.authIconContainer}>
+                <Ionicons name={authMode === 'login' ? 'lock-open' : 'person-add'} size={40} color="#667eea" />
+              </View>
+              <Text style={styles.voiceModalTitle}>
+                {authMode === 'login' ? 'Sign In' : 'Create Account'}
+              </Text>
+              <Text style={styles.authSubtitle}>
+                {authMode === 'login' 
+                  ? 'Access your reminders across all devices' 
+                  : 'Sync your data between mobile & desktop'}
+              </Text>
+
+              {authError ? (
+                <View style={styles.authErrorBox}>
+                  <Ionicons name="alert-circle" size={16} color="#dc2626" />
+                  <Text style={styles.authErrorText}>{authError}</Text>
+                </View>
+              ) : null}
+
+              {authMode === 'register' ? (
+                <View style={styles.authInputGroup}>
+                  <Text style={styles.authLabel}>Your Name</Text>
+                  <View style={styles.authInputRow}>
+                    <Ionicons name="person-outline" size={20} color="#adb5bd" />
+                    <TextInput
+                      style={styles.authInput}
+                      placeholder="Enter your name"
+                      placeholderTextColor="#adb5bd"
+                      value={authName}
+                      onChangeText={setAuthName}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={styles.authInputGroup}>
+                <Text style={styles.authLabel}>Email</Text>
+                <View style={styles.authInputRow}>
+                  <Ionicons name="mail-outline" size={20} color="#adb5bd" />
+                  <TextInput
+                    style={styles.authInput}
+                    placeholder="your@email.com"
+                    placeholderTextColor="#adb5bd"
+                    value={authEmail}
+                    onChangeText={setAuthEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.authInputGroup}>
+                <Text style={styles.authLabel}>4-Digit PIN (easy to remember!)</Text>
+                <View style={styles.authInputRow}>
+                  <Ionicons name="keypad-outline" size={20} color="#adb5bd" />
+                  <TextInput
+                    style={styles.authInput}
+                    placeholder="1234"
+                    placeholderTextColor="#adb5bd"
+                    value={authPin}
+                    onChangeText={(t) => setAuthPin(t.replace(/[^0-9]/g, '').slice(0, 4))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    secureTextEntry
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.authSubmitBtn, authLoading && { opacity: 0.6 }]} 
+                onPress={handleAuth} 
+                disabled={authLoading}
+              >
+                {authLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.authSubmitText}>
+                    {authMode === 'login' ? 'Sign In' : 'Create Account'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
+                style={styles.authToggle}
+              >
+                <Text style={styles.authToggleText}>
+                  {authMode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                  <Text style={{ color: '#667eea', fontWeight: '700' }}>
+                    {authMode === 'login' ? 'Create one' : 'Sign In'}
+                  </Text>
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1970,5 +2221,89 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 2,
+  },
+  // Auth styles
+  authHeaderBtn: {
+    padding: 4,
+    marginRight: 8,
+  },
+  authIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#667eea15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  authSubtitle: {
+    fontSize: 13,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  authErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dc262615',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+    marginBottom: 12,
+    width: '100%',
+  },
+  authErrorText: {
+    color: '#dc2626',
+    fontSize: 13,
+    flex: 1,
+  },
+  authInputGroup: {
+    width: '100%',
+    marginBottom: 14,
+  },
+  authLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#343a40',
+    marginBottom: 6,
+  },
+  authInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    paddingHorizontal: 12,
+    height: 48,
+    gap: 10,
+  },
+  authInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#212529',
+  },
+  authSubmitBtn: {
+    backgroundColor: '#667eea',
+    paddingVertical: 14,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  authSubmitText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  authToggle: {
+    paddingVertical: 8,
+  },
+  authToggleText: {
+    fontSize: 13,
+    color: '#6c757d',
+    textAlign: 'center',
   },
 });

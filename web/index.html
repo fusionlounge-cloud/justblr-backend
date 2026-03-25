@@ -123,13 +123,74 @@
       document.getElementById('app').innerHTML = `
         <div class="link-screen"><div class="link-card">
           <div class="link-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-          <h2 class="link-title">Link Your Mobile</h2>
-          <p class="link-subtitle">Enter the 6-digit code from your Justblr Matrix mobile app</p>
+          <h2 class="link-title">Welcome to Justblr Matrix</h2>
+          <p class="link-subtitle">Sign in to access your reminders, or link with mobile app</p>
+          
+          <div id="authView">
+            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="authEmail" placeholder="your@email.com"></div>
+            <div class="form-group"><label class="form-label">4-Digit PIN</label><input type="password" class="form-input" id="authPin" placeholder="1234" maxlength="4" inputmode="numeric"></div>
+            <div class="form-group hidden" id="authNameGroup"><label class="form-label">Your Name</label><input type="text" class="form-input" id="authName" placeholder="Your name"></div>
+            <button class="link-button" id="authBtn" style="margin-bottom:12px">Sign In</button>
+            <p style="font-size:13px;color:#71717a;cursor:pointer;text-align:center" id="authToggle">Don't have an account? <span style="color:#667eea;font-weight:600">Create one</span></p>
+            <p class="link-error hidden" id="authError"></p>
+          </div>
+
+          <div style="margin:24px 0;display:flex;align-items:center;gap:12px"><div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div><span style="font-size:12px;color:#71717a">OR</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+
+          <p style="font-size:13px;color:#a1a1aa;margin-bottom:12px">Link with mobile app code:</p>
           <div class="code-input-group">${[0,1,2,3,4,5].map(i=>`<input type="text" class="code-input" maxlength="1" data-index="${i}" inputmode="numeric">`).join('')}</div>
-          <button class="link-button" id="linkBtn" disabled>Link Device</button>
+          <button class="link-button" id="linkBtn" disabled style="background:rgba(255,255,255,0.1)">Link Device</button>
           <p class="link-error hidden" id="linkError"></p>
-          <div class="link-instructions"><h4>How to get the code:</h4><ol><li>Open Justblr Matrix app on your phone</li><li>Tap "Desktop" icon in the top-right</li><li>Enter the 6-digit code shown here</li></ol></div>
         </div></div>`;
+
+      // Auth form logic
+      let authMode = 'login';
+      const authBtn = document.getElementById('authBtn'), authError = document.getElementById('authError');
+      const authToggle = document.getElementById('authToggle'), authNameGroup = document.getElementById('authNameGroup');
+      
+      authToggle.addEventListener('click', () => {
+        authMode = authMode === 'login' ? 'register' : 'login';
+        authBtn.textContent = authMode === 'login' ? 'Sign In' : 'Create Account';
+        authToggle.innerHTML = authMode === 'login' 
+          ? "Don't have an account? <span style='color:#667eea;font-weight:600'>Create one</span>"
+          : "Already have an account? <span style='color:#667eea;font-weight:600'>Sign In</span>";
+        authNameGroup.classList.toggle('hidden', authMode === 'login');
+        authError.classList.add('hidden');
+      });
+
+      authBtn.addEventListener('click', async () => {
+        const email = document.getElementById('authEmail').value.trim();
+        const pin = document.getElementById('authPin').value.trim();
+        const name = document.getElementById('authName').value.trim();
+        authError.classList.add('hidden');
+        
+        if (!email) { authError.textContent = 'Please enter your email'; authError.classList.remove('hidden'); return; }
+        if (pin.length !== 4) { authError.textContent = 'Please enter a 4-digit PIN'; authError.classList.remove('hidden'); return; }
+        if (authMode === 'register' && !name) { authError.textContent = 'Please enter your name'; authError.classList.remove('hidden'); return; }
+        
+        authBtn.disabled = true; authBtn.textContent = 'Please wait...';
+        try {
+          const endpoint = authMode === 'register' ? '/auth/register' : '/auth/login';
+          const body = { email: email.toLowerCase(), password: pin };
+          if (authMode === 'register') body.name = name;
+          
+          const res = await fetch(`${API_URL}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          const data = await res.json();
+          
+          if (!res.ok) throw new Error(data.detail || 'Something went wrong');
+          
+          deviceId = data.user.device_id;
+          localStorage.setItem('justblr_device_id', deviceId);
+          localStorage.setItem('justblr_auth_token', data.token);
+          localStorage.setItem('justblr_auth_user', JSON.stringify(data.user));
+          render();
+        } catch (err) {
+          authError.textContent = err.message; authError.classList.remove('hidden');
+          authBtn.disabled = false; authBtn.textContent = authMode === 'login' ? 'Sign In' : 'Create Account';
+        }
+      });
+
+      // Link code logic (existing)
       const inputs = document.querySelectorAll('.code-input'), linkBtn = document.getElementById('linkBtn'), linkError = document.getElementById('linkError');
       inputs.forEach((input,idx)=>{
         input.addEventListener('input',e=>{e.target.value=e.target.value.replace(/[^0-9]/g,'');if(e.target.value&&idx<5)inputs[idx+1].focus();linkBtn.disabled=Array.from(inputs).map(i=>i.value).join('').length!==6;});
@@ -143,12 +204,14 @@
     }
 
     async function showDashboard() {
+      const authUser = JSON.parse(localStorage.getItem('justblr_auth_user') || 'null');
+      const userLabel = authUser ? `Signed in as ${authUser.name || authUser.email}` : 'Linked via code';
       document.getElementById('app').innerHTML = `
         <div class="dashboard">
-          <div class="header"><div><h1>Justblr Matrix</h1><p>Web Dashboard</p></div>
+          <div class="header"><div><h1>Justblr Matrix</h1><p>${userLabel}</p></div>
             <div class="header-actions">
               <button class="btn btn-secondary" id="refreshBtn">Refresh</button>
-              <button class="btn btn-secondary" id="unlinkBtn">Unlink</button>
+              <button class="btn btn-secondary" id="unlinkBtn">${authUser ? 'Sign Out' : 'Unlink'}</button>
             </div>
           </div>
           <div class="tabs">
@@ -158,7 +221,7 @@
           <div id="tabContent"></div>
         </div><div id="modalContainer"></div>`;
       document.getElementById('refreshBtn').onclick=()=>{loadAll();};
-      document.getElementById('unlinkBtn').onclick=()=>{if(confirm('Unlink?')){localStorage.removeItem('justblr_device_id');deviceId=null;render();}};
+      document.getElementById('unlinkBtn').onclick=()=>{if(confirm(authUser ? 'Sign out?' : 'Unlink?')){localStorage.removeItem('justblr_device_id');localStorage.removeItem('justblr_auth_token');localStorage.removeItem('justblr_auth_user');deviceId=null;render();}};
       document.querySelectorAll('.tab').forEach(tab=>{
         tab.onclick=()=>{
           document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
