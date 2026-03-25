@@ -111,7 +111,7 @@ const QUICK_ACTIONS = [
   { type: 'sms', name: 'SMS', icon: 'chatbubble', color: '#95E1D3' },
   { type: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366' },
   { type: 'deskwork', name: 'Deskwork', icon: 'laptop', color: '#A78BFA' },
-  { type: 'keepnotes', name: 'Notes', icon: 'create', color: '#FBBF24' },
+  { type: 'keepnotes', name: 'Notes', icon: 'create', color: '#FBBF24', subtitle: '(Download Google Keep)' },
 ];
 
 // Reminder categories - 5 (no Notes)
@@ -609,11 +609,10 @@ export default function DashboardScreen() {
 
   const openSocialApp = async (appName) => {
     try {
+      // Handle WhatsApp Business
       if (appName === 'whatsapp') {
-        // Open WhatsApp Business app directly using package URL
         if (Platform.OS === 'android') {
           try {
-            // Use market intent to open WhatsApp Business
             const waBusinessUrl = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end';
             const canOpen = await Linking.canOpenURL(waBusinessUrl);
             if (canOpen) {
@@ -624,7 +623,26 @@ export default function DashboardScreen() {
             console.log('WhatsApp Business intent failed:', e);
           }
           
-          // Fallback: try launching with package
+          try {
+            await Linking.openURL('whatsapp-business://send');
+            return;
+          } catch (e) {
+            console.log('WhatsApp Business URL scheme failed');
+          }
+        }
+        
+        if (Platform.OS === 'ios') {
+          await Linking.openURL('whatsapp-business://');
+          return;
+        }
+        
+        await Linking.openURL('https://business.whatsapp.com');
+        return;
+      }
+
+      // Handle Normal WhatsApp (Personal)
+      if (appName === 'whatsapp-personal') {
+        if (Platform.OS === 'android') {
           try {
             await Linking.openURL('whatsapp://send');
             return;
@@ -632,7 +650,6 @@ export default function DashboardScreen() {
             console.log('WhatsApp URL scheme failed');
           }
           
-          // Final fallback: open WhatsApp (regular)
           try {
             await Linking.openURL('https://wa.me/');
             return;
@@ -641,13 +658,11 @@ export default function DashboardScreen() {
           }
         }
         
-        // iOS
         if (Platform.OS === 'ios') {
           await Linking.openURL('whatsapp://');
           return;
         }
         
-        // Web fallback
         await Linking.openURL('https://web.whatsapp.com');
         return;
       }
@@ -687,10 +702,11 @@ export default function DashboardScreen() {
   };
 
   const socialApps = [
+    { name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', key: 'whatsapp-personal' },
+    { name: 'WA Business', icon: 'logo-whatsapp', color: '#128C7E', key: 'whatsapp' },
     { name: 'Instagram', icon: 'logo-instagram', color: '#E4405F', key: 'instagram' },
     { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', key: 'facebook' },
     { name: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', key: 'linkedin' },
-    { name: 'WA Business', icon: 'logo-whatsapp', color: '#25D366', key: 'whatsapp' },
     { name: 'WeChat', icon: 'chatbubbles', color: '#09B83E', key: 'wechat' },
     { name: 'Alibaba', icon: 'storefront', color: '#FF6A00', key: 'alibaba' },
   ];
@@ -966,6 +982,7 @@ export default function DashboardScreen() {
                   <Ionicons name={item.icon} size={22} color={item.color} />
                 </View>
                 <Text style={styles.quickActionText}>{item.name}</Text>
+                {item.subtitle && <Text style={styles.quickActionSubtitle}>{item.subtitle}</Text>}
               </TouchableOpacity>
             ))}
           </View>
@@ -1006,14 +1023,14 @@ export default function DashboardScreen() {
           <Ionicons name="chevron-forward" size={24} color="#667eea" />
         </TouchableOpacity>
 
-        {/* Social Media Hub - Scrollable */}
+        {/* Social Media Hub - 2 Rows Grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Social Media Hub</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.socialScroll}>
+          <View style={styles.socialGrid}>
             {socialApps.map((app, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.socialItem}
+                style={styles.socialGridItem}
                 onPress={() => openSocialApp(app.key)}
               >
                 <View style={[styles.socialIcon, { backgroundColor: app.color }]}>
@@ -1022,21 +1039,8 @@ export default function DashboardScreen() {
                 <Text style={styles.socialText}>{app.name}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
-        </View>
-
-        {/* Desktop Connect - Opens the same modal */}
-        <TouchableOpacity 
-          style={styles.desktopConnectBtn}
-          onPress={openLinkModal}
-        >
-          <Ionicons name="desktop-outline" size={24} color="#667eea" />
-          <View style={styles.desktopConnectTextContainer}>
-            <Text style={styles.desktopConnectTitle}>Desktop Connect</Text>
-            <Text style={styles.desktopConnectSubtitle}>Tap to get sync code & website</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#adb5bd" />
-        </TouchableOpacity>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -1205,6 +1209,12 @@ const styles = StyleSheet.create({
     color: '#495057',
     fontWeight: '500',
   },
+  quickActionSubtitle: {
+    fontSize: 8,
+    color: '#868e96',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   // Reminder Grid - 5 icons
   reminderGrid: {
     flexDirection: 'row',
@@ -1274,7 +1284,18 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     marginTop: 2,
   },
-  // Social Media Scroll
+  // Social Media Grid (2 rows)
+  socialGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  socialGridItem: {
+    width: '25%',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   socialScroll: {
     marginLeft: -4,
   },
@@ -1294,6 +1315,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#495057',
     fontWeight: '500',
+    textAlign: 'center',
   },
   // Desktop Connect
   desktopConnectBtn: {

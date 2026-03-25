@@ -11,8 +11,6 @@
     .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
     .spinner { width: 40px; height: 40px; border: 3px solid rgba(102,126,234,0.2); border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    
-    /* Link Screen */
     .link-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
     .link-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 48px; max-width: 420px; width: 100%; text-align: center; }
     .link-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
@@ -28,15 +26,11 @@
     .link-instructions h4 { font-size: 14px; color: #a1a1aa; margin-bottom: 12px; }
     .link-instructions ol { font-size: 13px; color: #71717a; padding-left: 20px; }
     .link-instructions li { margin-bottom: 8px; }
-    
-    /* Dashboard */
     .dashboard { padding: 24px; max-width: 1200px; margin: 0 auto; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
     .header h1 { font-size: 28px; font-weight: 700; color: #fff; }
     .header p { font-size: 14px; color: #71717a; }
-    .header-actions { display: flex; gap: 12px; }
-    
-    /* Buttons */
+    .header-actions { display: flex; gap: 12px; flex-wrap: wrap; }
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
     .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(102,126,234,0.3); }
@@ -45,505 +39,310 @@
     .btn-danger { background: rgba(239,68,68,0.1); color: #ef4444; padding: 8px 12px; }
     .btn-danger:hover { background: rgba(239,68,68,0.2); }
     .btn-success { background: rgba(34,197,94,0.15); color: #22c55e; }
-    
-    /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 32px; }
-    .stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; }
+    .tab { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; color: #a1a1aa; background: transparent; border: none; }
+    .tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .tab.active { color: #fff; background: rgba(102,126,234,0.2); border: 1px solid #667eea; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.2s; text-align: center; }
     .stat-card:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
     .stat-card.active { border-color: #667eea; background: rgba(102,126,234,0.1); }
-    .stat-card h3 { font-size: 28px; color: #fff; font-weight: 700; }
-    .stat-card p { font-size: 13px; color: #71717a; margin-top: 4px; }
-    
-    /* Section */
-    .section-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 24px; }
+    .stat-card h3 { font-size: 24px; color: #fff; font-weight: 700; }
+    .stat-card p { font-size: 11px; color: #71717a; margin-top: 4px; }
+    .section-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 24px; margin-bottom: 24px; }
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
     .section-title { font-size: 18px; font-weight: 600; color: #fff; }
-    
-    /* Reminder List */
-    .reminder-list { display: flex; flex-direction: column; gap: 12px; max-height: 600px; overflow-y: auto; }
-    .reminder-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 16px; transition: all 0.2s; }
-    .reminder-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
-    .reminder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .reminder-actions { display: flex; gap: 8px; }
-    
-    /* Type Badge */
+    .contact-count { font-size: 12px; color: #667eea; margin-left: 8px; }
+    .reminder-list, .task-list, .employee-list { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; }
+    .reminder-card, .task-card, .employee-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 16px; transition: all 0.2s; }
+    .reminder-card:hover, .task-card:hover, .employee-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+    .reminder-header, .task-header, .employee-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .reminder-actions, .task-actions, .employee-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .type-badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
     .type-badge.call { background: rgba(34,197,94,0.15); color: #22c55e; }
     .type-badge.sms { background: rgba(59,130,246,0.15); color: #3b82f6; }
     .type-badge.whatsapp { background: rgba(37,211,102,0.15); color: #25d366; }
     .type-badge.meet { background: rgba(168,85,247,0.15); color: #a855f7; }
     .type-badge.deskwork { background: rgba(249,115,22,0.15); color: #f97316; }
-    
-    .reminder-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px; }
-    .reminder-meta { font-size: 12px; color: #71717a; margin-bottom: 4px; }
-    .reminder-notes { font-size: 13px; color: #a1a1aa; margin-top: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; }
-    
-    /* Empty State */
+    .type-badge.keepnotes { background: rgba(234,179,8,0.15); color: #eab308; }
+    .type-badge.pending { background: rgba(234,179,8,0.15); color: #eab308; }
+    .type-badge.completed { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .reminder-title, .task-title, .employee-name { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .reminder-meta, .task-meta, .employee-meta { font-size: 12px; color: #71717a; margin-bottom: 4px; }
+    .reminder-notes, .task-notes { font-size: 13px; color: #a1a1aa; margin-top: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; }
     .empty-state { text-align: center; padding: 48px; color: #71717a; }
-    .empty-state svg { margin-bottom: 16px; opacity: 0.5; }
-    .empty-state h3 { font-size: 18px; color: #a1a1aa; margin-bottom: 8px; }
-    
-    /* Modal */
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
     .modal-content { background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .modal-title { font-size: 20px; font-weight: 700; color: #fff; }
     .modal-close { background: none; border: none; color: #71717a; cursor: pointer; font-size: 24px; }
-    
-    /* Form */
     .form-group { margin-bottom: 20px; }
     .form-label { display: block; font-size: 13px; font-weight: 500; color: #a1a1aa; margin-bottom: 8px; }
     .form-input, .form-select, .form-textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #fff; outline: none; }
     .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #667eea; }
     .form-textarea { resize: vertical; min-height: 80px; }
-    .form-select { cursor: pointer; }
-    
-    /* Type Selector */
-    .type-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .type-option { padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: transparent; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .type-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .type-option { padding: 12px 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: transparent; cursor: pointer; text-align: center; transition: all 0.2s; color: #fff; }
     .type-option:hover { background: rgba(255,255,255,0.05); }
     .type-option.selected { border-color: #667eea; background: rgba(102,126,234,0.1); }
-    .type-option span { display: block; font-size: 11px; color: #a1a1aa; margin-top: 4px; }
-    
-    /* Contact Search */
+    .type-option .icon { font-size: 20px; margin-bottom: 4px; }
+    .type-option span { display: block; font-size: 11px; color: #a1a1aa; }
     .contact-picker { position: relative; }
     .contact-results { position: absolute; top: 100%; left: 0; right: 0; background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 10; }
     .contact-item { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .contact-item:hover { background: rgba(255,255,255,0.05); }
-    .contact-item:last-child { border-bottom: none; }
     .contact-name { font-size: 14px; color: #fff; }
     .contact-phone { font-size: 12px; color: #71717a; }
-    
+    .time-hint { font-size: 11px; color: #667eea; margin-top: 4px; }
     .hidden { display: none !important; }
-    
-    @media (max-width: 600px) {
-      .type-selector { grid-template-columns: repeat(3, 1fr); }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    }
+    .checkbox-group { display: flex; align-items: center; gap: 8px; }
+    .checkbox-group input { width: 18px; height: 18px; }
+    @media (max-width: 600px) { .type-selector { grid-template-columns: repeat(2, 1fr); } .stats-grid { grid-template-columns: repeat(3, 1fr); } }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div class="loading"><div class="spinner"></div></div>
-  </div>
-
+  <div id="app"><div class="loading"><div class="spinner"></div></div></div>
   <script>
     const API_URL = 'https://justblr-backend.onrender.com/api';
     let deviceId = localStorage.getItem('justblr_device_id');
-    let reminders = [];
-    let contacts = [];
-    let filterType = null;
-    let editingReminder = null;
+    let reminders = [], contacts = [], employees = [], tasks = [];
+    let filterType = null, currentTab = 'reminders';
 
-    // Icons
-    const icons = {
-      link: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
-      trash: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>',
-      edit: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
-      plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-      refresh: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>',
-      logout: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
-      phone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>',
-      whatsapp: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>',
-      inbox: '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>'
-    };
-
-    function render() {
-      if (deviceId) {
-        showDashboard();
-      } else {
-        showLinkScreen();
-      }
+    function getDefaultTime() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const day = String(tomorrow.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}T16:30`;
     }
+
+    function render() { deviceId ? showDashboard() : showLinkScreen(); }
 
     function showLinkScreen() {
       document.getElementById('app').innerHTML = `
-        <div class="link-screen">
-          <div class="link-card">
-            <div class="link-icon">${icons.link}</div>
-            <h2 class="link-title">Link Your Mobile</h2>
-            <p class="link-subtitle">Enter the 6-digit code from your Justblr Matrix mobile app</p>
-            <div class="code-input-group">
-              ${[0,1,2,3,4,5].map(i => `<input type="text" class="code-input" maxlength="1" data-index="${i}" inputmode="numeric">`).join('')}
-            </div>
-            <button class="link-button" id="linkBtn" disabled>Link Device</button>
-            <p class="link-error hidden" id="linkError"></p>
-            <div class="link-instructions">
-              <h4>How to get the code:</h4>
-              <ol>
-                <li>Open Justblr Matrix app on your phone</li>
-                <li>Tap the laptop icon in the top-right</li>
-                <li>Or tap "Desktop Connect" at the bottom</li>
-                <li>Enter the 6-digit code shown here</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      `;
-
-      const inputs = document.querySelectorAll('.code-input');
-      const linkBtn = document.getElementById('linkBtn');
-      const linkError = document.getElementById('linkError');
-
-      inputs.forEach((input, idx) => {
-        input.addEventListener('input', (e) => {
-          const val = e.target.value.replace(/[^0-9]/g, '');
-          e.target.value = val;
-          if (val && idx < 5) inputs[idx + 1].focus();
-          checkCode();
-        });
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !e.target.value && idx > 0) {
-            inputs[idx - 1].focus();
-          }
-        });
+        <div class="link-screen"><div class="link-card">
+          <div class="link-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <h2 class="link-title">Link Your Mobile</h2>
+          <p class="link-subtitle">Enter the 6-digit code from your Justblr Matrix mobile app</p>
+          <div class="code-input-group">${[0,1,2,3,4,5].map(i=>`<input type="text" class="code-input" maxlength="1" data-index="${i}" inputmode="numeric">`).join('')}</div>
+          <button class="link-button" id="linkBtn" disabled>Link Device</button>
+          <p class="link-error hidden" id="linkError"></p>
+          <div class="link-instructions"><h4>How to get the code:</h4><ol><li>Open Justblr Matrix app on your phone</li><li>Tap "Desktop" icon in the top-right</li><li>Enter the 6-digit code shown here</li></ol></div>
+        </div></div>`;
+      const inputs = document.querySelectorAll('.code-input'), linkBtn = document.getElementById('linkBtn'), linkError = document.getElementById('linkError');
+      inputs.forEach((input,idx)=>{
+        input.addEventListener('input',e=>{e.target.value=e.target.value.replace(/[^0-9]/g,'');if(e.target.value&&idx<5)inputs[idx+1].focus();linkBtn.disabled=Array.from(inputs).map(i=>i.value).join('').length!==6;});
+        input.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!e.target.value&&idx>0)inputs[idx-1].focus();});
       });
-
-      function checkCode() {
-        const code = Array.from(inputs).map(i => i.value).join('');
-        linkBtn.disabled = code.length !== 6;
-      }
-
-      linkBtn.addEventListener('click', async () => {
-        const code = Array.from(inputs).map(i => i.value).join('');
-        linkBtn.disabled = true;
-        linkBtn.textContent = 'Verifying...';
-        linkError.classList.add('hidden');
-
-        try {
-          const res = await fetch(`${API_URL}/sync/verify-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sync_code: code })
-          });
-          const data = await res.json();
-          if (data.device_id) {
-            deviceId = data.device_id;
-            localStorage.setItem('justblr_device_id', deviceId);
-            render();
-          } else {
-            throw new Error(data.detail || 'Invalid code');
-          }
-        } catch (err) {
-          linkError.textContent = err.message || 'Invalid or expired code';
-          linkError.classList.remove('hidden');
-          linkBtn.disabled = false;
-          linkBtn.textContent = 'Link Device';
-        }
+      linkBtn.addEventListener('click',async()=>{
+        const code=Array.from(inputs).map(i=>i.value).join('');linkBtn.disabled=true;linkBtn.textContent='Verifying...';linkError.classList.add('hidden');
+        try{const res=await fetch(`${API_URL}/sync/verify-code`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sync_code:code})});const data=await res.json();if(data.device_id){deviceId=data.device_id;localStorage.setItem('justblr_device_id',deviceId);render();}else throw new Error(data.detail||'Invalid code');}
+        catch(err){linkError.textContent=err.message||'Invalid or expired code';linkError.classList.remove('hidden');linkBtn.disabled=false;linkBtn.textContent='Link Device';}
       });
     }
 
     async function showDashboard() {
       document.getElementById('app').innerHTML = `
         <div class="dashboard">
-          <div class="header">
-            <div>
-              <h1>Justblr Matrix</h1>
-              <p>Web Dashboard - Synced with mobile</p>
-            </div>
+          <div class="header"><div><h1>Justblr Matrix</h1><p>Web Dashboard</p></div>
             <div class="header-actions">
-              <button class="btn btn-primary" id="addBtn">${icons.plus} New Reminder</button>
-              <button class="btn btn-secondary" id="refreshBtn">${icons.refresh} Refresh</button>
-              <button class="btn btn-secondary" id="unlinkBtn">${icons.logout} Unlink</button>
+              <button class="btn btn-secondary" id="refreshBtn">Refresh</button>
+              <button class="btn btn-secondary" id="unlinkBtn">Unlink</button>
             </div>
           </div>
-          <div class="stats-grid" id="stats"></div>
-          <div class="section-card">
-            <div class="section-header">
-              <h2 class="section-title">Your Reminders</h2>
-              <div id="filterInfo"></div>
-            </div>
-            <div id="reminderList"><div class="loading"><div class="spinner"></div></div></div>
+          <div class="tabs">
+            <button class="tab active" data-tab="reminders">Reminders</button>
+            <button class="tab" data-tab="delegation">Delegation</button>
           </div>
-        </div>
-        <div id="modalContainer"></div>
-      `;
-
-      document.getElementById('addBtn').onclick = () => openReminderModal();
-      document.getElementById('refreshBtn').onclick = () => loadReminders();
-      document.getElementById('unlinkBtn').onclick = () => {
-        if (confirm('Unlink this device?')) {
-          localStorage.removeItem('justblr_device_id');
-          deviceId = null;
-          render();
-        }
-      };
-
-      await loadReminders();
-      await loadContacts();
-    }
-
-    async function loadContacts() {
-      try {
-        const res = await fetch(`${API_URL}/sync/contacts/${deviceId}`);
-        const data = await res.json();
-        contacts = data.contacts || [];
-      } catch (err) {
-        console.error('Error loading contacts:', err);
-        contacts = [];
-      }
-    }
-
-    async function loadReminders() {
-      try {
-        const res = await fetch(`${API_URL}/reminders?device_id=${deviceId}`);
-        reminders = await res.json();
-        renderStats();
-        renderReminders();
-      } catch (err) {
-        document.getElementById('reminderList').innerHTML = `<div class="empty-state"><p>Error loading reminders</p></div>`;
-      }
-    }
-
-    function renderStats() {
-      const stats = {
-        total: reminders.length,
-        call: reminders.filter(r => r.reminder_type === 'call').length,
-        sms: reminders.filter(r => r.reminder_type === 'sms').length,
-        whatsapp: reminders.filter(r => r.reminder_type === 'whatsapp').length,
-        meet: reminders.filter(r => r.reminder_type === 'meet').length,
-        deskwork: reminders.filter(r => r.reminder_type === 'deskwork').length
-      };
-
-      document.getElementById('stats').innerHTML = `
-        <div class="stat-card ${filterType === null ? 'active' : ''}" onclick="setFilter(null)"><h3>${stats.total}</h3><p>Total</p></div>
-        <div class="stat-card ${filterType === 'call' ? 'active' : ''}" onclick="setFilter('call')"><h3>${stats.call}</h3><p>Calls</p></div>
-        <div class="stat-card ${filterType === 'sms' ? 'active' : ''}" onclick="setFilter('sms')"><h3>${stats.sms}</h3><p>SMS</p></div>
-        <div class="stat-card ${filterType === 'whatsapp' ? 'active' : ''}" onclick="setFilter('whatsapp')"><h3>${stats.whatsapp}</h3><p>WhatsApp</p></div>
-        <div class="stat-card ${filterType === 'meet' ? 'active' : ''}" onclick="setFilter('meet')"><h3>${stats.meet}</h3><p>Meetings</p></div>
-        <div class="stat-card ${filterType === 'deskwork' ? 'active' : ''}" onclick="setFilter('deskwork')"><h3>${stats.deskwork}</h3><p>Deskwork</p></div>
-      `;
-    }
-
-    function setFilter(type) {
-      filterType = type;
-      renderStats();
-      renderReminders();
-    }
-
-    function renderReminders() {
-      const filtered = filterType ? reminders.filter(r => r.reminder_type === filterType) : reminders;
-      
-      const filterInfo = document.getElementById('filterInfo');
-      if (filterType) {
-        filterInfo.innerHTML = `<button class="btn btn-secondary" onclick="setFilter(null)">Clear filter: ${filterType.toUpperCase()}</button>`;
-      } else {
-        filterInfo.innerHTML = '';
-      }
-
-      if (filtered.length === 0) {
-        document.getElementById('reminderList').innerHTML = `
-          <div class="empty-state">
-            ${icons.inbox}
-            <h3>No reminders${filterType ? ` for ${filterType}` : ''}</h3>
-            <p>Create your first reminder using the button above</p>
-          </div>
-        `;
-        return;
-      }
-
-      document.getElementById('reminderList').innerHTML = `
-        <div class="reminder-list">
-          ${filtered.map(r => `
-            <div class="reminder-card">
-              <div class="reminder-header">
-                <span class="type-badge ${r.reminder_type}">${r.reminder_type}</span>
-                <div class="reminder-actions">
-                  ${r.reminder_type === 'whatsapp' && r.contact_phone ? `<button class="btn btn-success" onclick="openWhatsApp('${r.contact_phone}', '${(r.notes || '').replace(/'/g, "\\'")}')">Send WA</button>` : ''}
-                  ${r.reminder_type === 'call' && r.contact_phone ? `<button class="btn btn-success" onclick="makeCall('${r.contact_phone}')">Call</button>` : ''}
-                  <button class="btn btn-secondary" onclick="editReminder('${r.id}')">${icons.edit} Edit</button>
-                  <button class="btn btn-danger" onclick="deleteReminder('${r.id}')">${icons.trash}</button>
-                </div>
-              </div>
-              <div class="reminder-title">${r.title || 'Untitled'}</div>
-              ${r.contact_name ? `<div class="reminder-meta">Contact: ${r.contact_name}${r.contact_phone ? ' • ' + r.contact_phone : ''}</div>` : ''}
-              <div class="reminder-meta">Scheduled: ${new Date(r.scheduled_time).toLocaleString()}</div>
-              ${r.notes ? `<div class="reminder-notes">${r.notes}</div>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    function openWhatsApp(phone, message) {
-      let cleanPhone = phone.replace(/[^0-9]/g, '');
-      if (!cleanPhone.startsWith('91') && cleanPhone.length === 10) {
-        cleanPhone = '91' + cleanPhone;
-      }
-      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message || 'Hello!')}`;
-      window.open(url, '_blank');
-    }
-
-    function makeCall(phone) {
-      window.location.href = `tel:${phone}`;
-    }
-
-    function editReminder(id) {
-      const reminder = reminders.find(r => r.id === id);
-      if (reminder) {
-        editingReminder = reminder;
-        openReminderModal(reminder);
-      }
-    }
-
-    async function deleteReminder(id) {
-      if (!confirm('Delete this reminder?')) return;
-      try {
-        await fetch(`${API_URL}/reminders/${id}`, { method: 'DELETE' });
-        loadReminders();
-      } catch (err) {
-        alert('Failed to delete');
-      }
-    }
-
-    function openReminderModal(existing = null) {
-      const isEdit = !!existing;
-      const scheduledTime = existing?.scheduled_time ? new Date(existing.scheduled_time).toISOString().slice(0, 16) : '';
-      
-      document.getElementById('modalContainer').innerHTML = `
-        <div class="modal-overlay" onclick="closeModal(event)">
-          <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-header">
-              <h2 class="modal-title">${isEdit ? 'Edit Reminder' : 'New Reminder'}</h2>
-              <button class="modal-close" onclick="closeModal()">&times;</button>
-            </div>
-            <form id="reminderForm">
-              <div class="form-group">
-                <label class="form-label">Type</label>
-                <div class="type-selector">
-                  ${['call', 'sms', 'whatsapp', 'meet', 'deskwork'].map(type => `
-                    <div class="type-option ${existing?.reminder_type === type || (!existing && type === 'call') ? 'selected' : ''}" onclick="selectType('${type}')">
-                      <span style="font-size: 18px;">${type === 'call' ? '📞' : type === 'sms' ? '💬' : type === 'whatsapp' ? '📱' : type === 'meet' ? '👥' : '💻'}</span>
-                      <span>${type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                    </div>
-                  `).join('')}
-                </div>
-                <input type="hidden" id="reminderType" value="${existing?.reminder_type || 'call'}">
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Title</label>
-                <input type="text" class="form-input" id="reminderTitle" placeholder="e.g., Call John about project" value="${existing?.title || ''}" required>
-              </div>
-              
-              <div class="form-group contact-picker">
-                <label class="form-label">Contact (search or type)</label>
-                <input type="text" class="form-input" id="contactSearch" placeholder="Search contacts..." value="${existing?.contact_name || ''}" autocomplete="off">
-                <div class="contact-results hidden" id="contactResults"></div>
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Phone Number</label>
-                <input type="tel" class="form-input" id="contactPhone" placeholder="+91 98765 43210" value="${existing?.contact_phone || ''}">
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Schedule Date & Time</label>
-                <input type="datetime-local" class="form-input" id="scheduledTime" value="${scheduledTime}" required>
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Notes (optional)</label>
-                <textarea class="form-textarea" id="reminderNotes" placeholder="Add notes or message content...">${existing?.notes || ''}</textarea>
-              </div>
-              
-              <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">${isEdit ? 'Update Reminder' : 'Create Reminder'}</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      `;
-
-      // Contact search functionality
-      const contactSearch = document.getElementById('contactSearch');
-      const contactResults = document.getElementById('contactResults');
-      const contactPhone = document.getElementById('contactPhone');
-
-      contactSearch.addEventListener('input', () => {
-        const query = contactSearch.value.toLowerCase();
-        if (query.length < 1) {
-          contactResults.classList.add('hidden');
-          return;
-        }
-        const filtered = contacts.filter(c => 
-          c.name.toLowerCase().includes(query) || c.phone.includes(query)
-        ).slice(0, 10);
-        
-        if (filtered.length > 0) {
-          contactResults.innerHTML = filtered.map(c => `
-            <div class="contact-item" onclick="selectContact('${c.name.replace(/'/g, "\\'")}', '${c.phone}')">
-              <div class="contact-name">${c.name}</div>
-              <div class="contact-phone">${c.phone}</div>
-            </div>
-          `).join('');
-          contactResults.classList.remove('hidden');
-        } else {
-          contactResults.classList.add('hidden');
-        }
-      });
-
-      contactSearch.addEventListener('blur', () => {
-        setTimeout(() => contactResults.classList.add('hidden'), 200);
-      });
-
-      // Form submission
-      document.getElementById('reminderForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const formData = {
-          title: document.getElementById('reminderTitle').value,
-          reminder_type: document.getElementById('reminderType').value,
-          contact_name: document.getElementById('contactSearch').value,
-          contact_phone: document.getElementById('contactPhone').value,
-          scheduled_time: document.getElementById('scheduledTime').value,
-          notes: document.getElementById('reminderNotes').value,
-          device_id: deviceId,
-          auto_execute: false
+          <div id="tabContent"></div>
+        </div><div id="modalContainer"></div>`;
+      document.getElementById('refreshBtn').onclick=()=>{loadAll();};
+      document.getElementById('unlinkBtn').onclick=()=>{if(confirm('Unlink?')){localStorage.removeItem('justblr_device_id');deviceId=null;render();}};
+      document.querySelectorAll('.tab').forEach(tab=>{
+        tab.onclick=()=>{
+          document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+          tab.classList.add('active');
+          currentTab=tab.dataset.tab;
+          renderTabContent();
         };
-
-        try {
-          if (isEdit) {
-            await fetch(`${API_URL}/reminders/${existing.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(formData)
-            });
-          } else {
-            await fetch(`${API_URL}/reminders`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(formData)
-            });
-          }
-          closeModal();
-          loadReminders();
-        } catch (err) {
-          alert('Failed to save reminder');
-        }
       });
+      await loadAll();
     }
 
-    function selectType(type) {
-      document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
-      document.getElementById('reminderType').value = type;
+    async function loadAll() {
+      await Promise.all([loadContacts(), loadReminders(), loadEmployees(), loadTasks()]);
+      renderTabContent();
     }
 
-    function selectContact(name, phone) {
-      document.getElementById('contactSearch').value = name;
-      document.getElementById('contactPhone').value = phone;
-      document.getElementById('contactResults').classList.add('hidden');
+    function renderTabContent() {
+      if(currentTab==='reminders') renderRemindersTab();
+      else renderDelegationTab();
     }
 
-    function closeModal(e) {
-      if (e && e.target !== e.currentTarget) return;
-      document.getElementById('modalContainer').innerHTML = '';
-      editingReminder = null;
+    async function loadContacts(){try{const res=await fetch(`${API_URL}/sync/contacts/${deviceId}`);const data=await res.json();contacts=data.contacts||data||[];}catch(e){contacts=[];}}
+    async function loadReminders(){try{const res=await fetch(`${API_URL}/reminders?device_id=${deviceId}`);reminders=await res.json();}catch(e){reminders=[];}}
+    async function loadEmployees(){try{const res=await fetch(`${API_URL}/employees?device_id=${deviceId}`);employees=await res.json();}catch(e){employees=[];}}
+    async function loadTasks(){try{const res=await fetch(`${API_URL}/tasks?device_id=${deviceId}`);tasks=await res.json();}catch(e){tasks=[];}}
+
+    function renderRemindersTab() {
+      const types=['call','sms','whatsapp','meet','deskwork','keepnotes'],stats={total:reminders.length};
+      types.forEach(t=>stats[t]=reminders.filter(r=>r.reminder_type===t).length);
+      const filtered=filterType?reminders.filter(r=>r.reminder_type===filterType):reminders;
+      document.getElementById('tabContent').innerHTML=`
+        <div class="section-card">
+          <div class="section-header"><button class="btn btn-primary" onclick="openReminderModal()">+ New Reminder</button></div>
+          <div class="stats-grid">
+            <div class="stat-card ${filterType===null?'active':''}" onclick="setFilter(null)"><h3>${stats.total}</h3><p>Total</p></div>
+            ${types.map(t=>`<div class="stat-card ${filterType===t?'active':''}" onclick="setFilter('${t}')"><h3>${stats[t]}</h3><p>${t}</p></div>`).join('')}
+          </div>
+          ${filterType?`<button class="btn btn-secondary" onclick="setFilter(null)" style="margin-bottom:16px">Clear: ${filterType.toUpperCase()}</button>`:''}
+          <div class="reminder-list">
+            ${filtered.length?filtered.map(r=>`
+              <div class="reminder-card"><div class="reminder-header"><span class="type-badge ${r.reminder_type}">${r.reminder_type}</span>
+                <div class="reminder-actions">
+                  ${r.reminder_type==='whatsapp'&&r.contact_phone?`<button class="btn btn-success" onclick="openWhatsApp('${r.contact_phone}','${encodeURIComponent(r.notes||'')}')">WA</button>`:''}
+                  <button class="btn btn-secondary" onclick="openReminderModal('${r.id}')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteReminder('${r.id}')">Del</button>
+                </div></div>
+                <div class="reminder-title">${r.title||'Untitled'}</div>
+                ${r.contact_name?`<div class="reminder-meta">Contact: ${r.contact_name}${r.contact_phone?' • '+r.contact_phone:''}</div>`:''}
+                <div class="reminder-meta">Scheduled: ${new Date(r.scheduled_time).toLocaleString()}</div>
+                ${r.notes?`<div class="reminder-notes">${r.notes}</div>`:''}
+              </div>`).join(''):'<div class="empty-state">No reminders</div>'}
+          </div>
+        </div>`;
     }
 
-    // Start the app
+    function renderDelegationTab() {
+      const activeEmployees=employees.filter(e=>e.is_active!==false);
+      const pendingTasks=tasks.filter(t=>!t.is_completed);
+      const completedTasks=tasks.filter(t=>t.is_completed);
+      document.getElementById('tabContent').innerHTML=`
+        <div class="section-card">
+          <div class="section-header"><h2 class="section-title">Employees (${activeEmployees.length})</h2><button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button></div>
+          <div class="employee-list">
+            ${activeEmployees.length?activeEmployees.map(e=>`
+              <div class="employee-card"><div class="employee-header">
+                <div class="employee-name">${e.name}</div>
+                <div class="employee-actions">
+                  <button class="btn btn-secondary" onclick="openEmployeeModal('${e.id}')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteEmployee('${e.id}')">Del</button>
+                </div></div>
+                <div class="employee-meta">${e.phone||'No phone'}</div>
+              </div>`).join(''):'<div class="empty-state">No employees</div>'}
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-header"><h2 class="section-title">Tasks (${pendingTasks.length} pending)</h2><button class="btn btn-primary" onclick="openTaskModal()">+ Assign Task</button></div>
+          <div class="task-list">
+            ${pendingTasks.length?pendingTasks.map(t=>`
+              <div class="task-card"><div class="task-header">
+                <span class="type-badge pending">Pending</span>
+                <div class="task-actions">
+                  <button class="btn btn-success" onclick="completeTask('${t.id}')">Complete</button>
+                  <button class="btn btn-secondary" onclick="openTaskModal('${t.id}')">Edit</button>
+                  <button class="btn btn-danger" onclick="deleteTask('${t.id}')">Del</button>
+                </div></div>
+                <div class="task-title">${t.description||'No description'}</div>
+                <div class="task-meta">Assigned to: ${t.employee_name||'Unknown'}</div>
+                ${t.deadline?`<div class="task-meta">Deadline: ${new Date(t.deadline).toLocaleString()}</div>`:''}
+              </div>`).join(''):'<div class="empty-state">No pending tasks</div>'}
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-header"><h2 class="section-title">Completed (${completedTasks.length})</h2></div>
+          <div class="task-list">
+            ${completedTasks.slice(0,10).map(t=>`
+              <div class="task-card"><div class="task-header">
+                <span class="type-badge completed">Done</span>
+                <div class="task-actions">
+                  <button class="btn btn-danger" onclick="deleteTask('${t.id}')">Del</button>
+                </div></div>
+                <div class="task-title">${t.description||'No description'}</div>
+                <div class="task-meta">Completed by: ${t.employee_name||'Unknown'}</div>
+              </div>`).join('')||'<div class="empty-state">No completed tasks</div>'}
+          </div>
+        </div>`;
+    }
+
+    function setFilter(type){filterType=type;renderRemindersTab();}
+    function openWhatsApp(phone,msg){let p=phone.replace(/[^0-9]/g,'');if(!p.startsWith('91')&&p.length===10)p='91'+p;let m=msg;try{m=decodeURIComponent(msg);}catch(e){}window.location.href=`whatsapp://send?phone=${p}&text=${encodeURIComponent(m||'Hello!')}`;}
+    async function deleteReminder(id){if(!confirm('Delete?'))return;try{await fetch(`${API_URL}/reminders/${id}`,{method:'DELETE'});await loadReminders();renderRemindersTab();}catch(e){alert('Failed');}}
+    async function deleteEmployee(id){if(!confirm('Delete employee?'))return;try{await fetch(`${API_URL}/employees/${id}`,{method:'DELETE'});await loadEmployees();renderDelegationTab();}catch(e){alert('Failed');}}
+    async function deleteTask(id){if(!confirm('Delete task?'))return;try{await fetch(`${API_URL}/tasks/${id}`,{method:'DELETE'});await loadTasks();renderDelegationTab();}catch(e){alert('Failed');}}
+    async function completeTask(id){try{await fetch(`${API_URL}/tasks/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({is_completed:true})});await loadTasks();renderDelegationTab();}catch(e){alert('Failed');}}
+
+    function openReminderModal(editId){
+      const r=editId?reminders.find(x=>x.id===editId):null;
+      const time=r?.scheduled_time?new Date(r.scheduled_time).toISOString().slice(0,16):getDefaultTime();
+      const opts=[{type:'call',icon:'📞',label:'Call'},{type:'sms',icon:'💬',label:'SMS'},{type:'whatsapp',icon:'📱',label:'WhatsApp'},{type:'meet',icon:'👥',label:'Meeting'},{type:'deskwork',icon:'💻',label:'Deskwork'},{type:'keepnotes',icon:'📝',label:'Notes'}];
+      document.getElementById('modalContainer').innerHTML=`
+        <div class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" onclick="event.stopPropagation()">
+          <div class="modal-header"><h2 class="modal-title">${r?'Edit':'New'} Reminder</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+          <form id="reminderForm">
+            <div class="form-group"><label class="form-label">Type</label>
+              <div class="type-selector">${opts.map(t=>`<div class="type-option ${(r?.reminder_type||'call')===t.type?'selected':''}" onclick="selType(this,'${t.type}')"><div class="icon">${t.icon}</div><span>${t.label}</span></div>`).join('')}</div>
+              <input type="hidden" id="rType" value="${r?.reminder_type||'call'}">
+            </div>
+            <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="rTitle" value="${r?.title||''}" placeholder="e.g. Call John"></div>
+            <div class="form-group contact-picker"><label class="form-label">Contact</label><input class="form-input" id="rContact" value="${r?.contact_name||''}" placeholder="Search..." autocomplete="off"><div class="contact-results hidden" id="cResults"></div></div>
+            <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="rPhone" value="${r?.contact_phone||''}"></div>
+            <div class="form-group"><label class="form-label">Schedule</label><input type="datetime-local" class="form-input" id="rTime" value="${time}" required><div class="time-hint">Default: Tomorrow 4:30 PM</div></div>
+            <div class="form-group"><label class="form-label">Notes</label><textarea class="form-textarea" id="rNotes">${r?.notes||''}</textarea></div>
+            <div style="display:flex;gap:12px;margin-top:24px"><button type="submit" class="btn btn-primary" style="flex:1">${r?'Update':'Create'}</button><button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button></div>
+          </form>
+        </div></div>`;
+      setupContactSearch();
+      document.getElementById('reminderForm').onsubmit=async(e)=>{e.preventDefault();const data={title:document.getElementById('rTitle').value,reminder_type:document.getElementById('rType').value,contact_name:document.getElementById('rContact').value,contact_phone:document.getElementById('rPhone').value,scheduled_time:document.getElementById('rTime').value,notes:document.getElementById('rNotes').value,device_id:deviceId,auto_execute:false};try{await fetch(r?`${API_URL}/reminders/${r.id}`:`${API_URL}/reminders`,{method:r?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});closeModal();await loadReminders();renderRemindersTab();}catch(e){alert('Failed');}};
+    }
+
+    function openEmployeeModal(editId){
+      const e=editId?employees.find(x=>x.id===editId):null;
+      document.getElementById('modalContainer').innerHTML=`
+        <div class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" onclick="event.stopPropagation()">
+          <div class="modal-header"><h2 class="modal-title">${e?'Edit':'Add'} Employee</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+          <form id="employeeForm">
+            <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="eName" value="${e?.name||''}" required></div>
+            <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ePhone" value="${e?.phone||''}"></div>
+            <div style="display:flex;gap:12px;margin-top:24px"><button type="submit" class="btn btn-primary" style="flex:1">${e?'Update':'Add'}</button><button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button></div>
+          </form>
+        </div></div>`;
+      document.getElementById('employeeForm').onsubmit=async(ev)=>{ev.preventDefault();const data={name:document.getElementById('eName').value,phone:document.getElementById('ePhone').value,device_id:deviceId,is_active:true};try{await fetch(e?`${API_URL}/employees/${e.id}`:`${API_URL}/employees`,{method:e?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});closeModal();await loadEmployees();renderDelegationTab();}catch(e){alert('Failed');}};
+    }
+
+    function openTaskModal(editId){
+      const t=editId?tasks.find(x=>x.id===editId):null;
+      const activeEmps=employees.filter(e=>e.is_active!==false);
+      const deadline=t?.deadline?new Date(t.deadline).toISOString().slice(0,16):getDefaultTime();
+      document.getElementById('modalContainer').innerHTML=`
+        <div class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" onclick="event.stopPropagation()">
+          <div class="modal-header"><h2 class="modal-title">${t?'Edit':'Assign'} Task</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+          <form id="taskForm">
+            <div class="form-group"><label class="form-label">Assign To</label>
+              <select class="form-select" id="tEmployee" required>
+                <option value="">Select employee</option>
+                ${activeEmps.map(e=>`<option value="${e.id}" ${t?.employee_id===e.id?'selected':''}>${e.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Task Description</label><textarea class="form-textarea" id="tDesc" required>${t?.description||''}</textarea></div>
+            <div class="form-group"><label class="form-label">Deadline</label><input type="datetime-local" class="form-input" id="tDeadline" value="${deadline}"></div>
+            <div style="display:flex;gap:12px;margin-top:24px"><button type="submit" class="btn btn-primary" style="flex:1">${t?'Update':'Assign'}</button><button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button></div>
+          </form>
+        </div></div>`;
+      document.getElementById('taskForm').onsubmit=async(ev)=>{ev.preventDefault();const empId=document.getElementById('tEmployee').value;const emp=employees.find(e=>e.id===empId);const data={employee_id:empId,employee_name:emp?.name||'',description:document.getElementById('tDesc').value,deadline:document.getElementById('tDeadline').value||null,device_id:deviceId,is_completed:t?.is_completed||false};try{await fetch(t?`${API_URL}/tasks/${t.id}`:`${API_URL}/tasks`,{method:t?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});closeModal();await loadTasks();renderDelegationTab();}catch(e){alert('Failed');}};
+    }
+
+    function setupContactSearch(){
+      const cInput=document.getElementById('rContact'),cRes=document.getElementById('cResults'),pInput=document.getElementById('rPhone');
+      cInput.addEventListener('input',function(){const q=this.value.toLowerCase().trim();if(q.length<1){cRes.classList.add('hidden');return;}const f=contacts.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q)).slice(0,10);if(f.length>0){cRes.innerHTML=f.map(c=>`<div class="contact-item" onmousedown="pickContact('${(c.name||'').replace(/'/g,"\\'")}','${c.phone||''}')">${c.name||'Unknown'}<br><small>${c.phone||''}</small></div>`).join('');cRes.classList.remove('hidden');}else{cRes.classList.add('hidden');}});
+      cInput.addEventListener('blur',function(){setTimeout(()=>cRes.classList.add('hidden'),300);});
+    }
+
+    function selType(el,t){document.querySelectorAll('.type-option').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');document.getElementById('rType').value=t;}
+    function pickContact(n,p){document.getElementById('rContact').value=n;document.getElementById('rPhone').value=p;document.getElementById('cResults').classList.add('hidden');}
+    function closeModal(e){if(e&&e.target!==e.currentTarget)return;document.getElementById('modalContainer').innerHTML='';}
+
     render();
   </script>
 </body>
