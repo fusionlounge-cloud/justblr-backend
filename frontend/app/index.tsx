@@ -40,77 +40,39 @@ Notifications.setNotificationHandler({
 // Setup notification channels for Android (with alarm sound)
 async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
-    // Use a fresh channel with default system sound (custom sound channels can break)
-    await Notifications.setNotificationChannelAsync('justblr-alarm-v2', {
-      name: 'Justblr Reminders',
+    // Create fresh channel with custom alarm sound
+    // Channel IDs are immutable after creation - use new ID for sound changes
+    await Notifications.setNotificationChannelAsync('justblr-alarm-v3', {
+      name: 'Justblr Alarm Reminders',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500, 200, 500, 200, 500],
       lightColor: '#667eea',
-      sound: 'default',
+      sound: 'alarm.wav',
       enableVibrate: true,
       enableLights: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       bypassDnd: true,
     });
-    console.log('Notification channel created: reminder-alarm');
+    console.log('Notification channel created: justblr-alarm-v3 with alarm.wav sound');
+
+    // Clean up old channels
+    try {
+      await Notifications.deleteNotificationChannelAsync('justblr-alarm-v2');
+      await Notifications.deleteNotificationChannelAsync('reminder-alarm');
+    } catch (e) { /* old channels may not exist */ }
   }
 }
 
-// Schedule local notification for a reminder
-async function scheduleLocalNotification(reminder: any) {
-  try {
-    const scheduledTime = new Date(reminder.scheduled_time);
-    const now = new Date();
-    
-    // Only schedule if at least 2 minutes in the future (prevents instant firing for near-past reminders)
-    if (scheduledTime.getTime() - now.getTime() < 120000) {
-      console.log('Reminder too soon or past, skipping alarm:', reminder.title);
-      return null;
-    }
-    
-    const trigger = scheduledTime;
-    
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `⏰ ${reminder.reminder_type.toUpperCase()}: ${reminder.title || 'Reminder'}`,
-        body: reminder.contact_name 
-          ? `Contact: ${reminder.contact_name}${reminder.notes ? '\n' + reminder.notes : ''}`
-          : reminder.notes || 'Tap to view',
-        sound: 'alarm.wav',
-        priority: Notifications.AndroidNotificationPriority.MAX,
-        vibrate: [0, 500, 200, 500, 200, 500, 200, 500],
-        data: { 
-          reminderId: reminder.id,
-          reminderType: reminder.reminder_type,
-          contactPhone: reminder.contact_phone,
-          contactName: reminder.contact_name,
-          title: reminder.title,
-          notes: reminder.notes,
-        },
-      },
-      trigger: {
-        date: trigger,
-        channelId: 'reminder-alarm',
-      },
-    });
-    
-    console.log('Scheduled local notification:', notificationId, 'for', scheduledTime.toLocaleString());
-    return notificationId;
-  } catch (error) {
-    console.error('Failed to schedule notification:', error);
-    return null;
-  }
-}
-
-// Cancel all scheduled notifications and reschedule from reminders
+// syncLocalNotifications: NO-OP. Alarms are scheduled in action.tsx when created.
+// Previously this function called cancelAllScheduledNotificationsAsync() which
+// destroyed all alarms every time the dashboard loaded. NEVER cancel alarms here.
 async function syncLocalNotifications(reminders: any[]) {
+  // Log scheduled notifications for debugging only
   try {
-    // Cancel ALL existing scheduled notifications on app open
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    await Notifications.dismissAllNotificationsAsync();
-    console.log('Cleared all notifications on app open - only new reminders will alarm');
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log('Currently scheduled alarms:', scheduled.length);
   } catch (error) {
-    console.error('Failed to clear notifications:', error);
+    console.log('Could not check scheduled notifications');
   }
 }
 
@@ -283,6 +245,56 @@ export default function DashboardScreen() {
       foregroundSub.remove();
     };
   }, []);
+
+  // Play continuous alarm sound when alarm is active
+  useEffect(() => {
+    if (!alarmActive || Platform.OS === 'web') return;
+
+    let isMounted = true;
+
+    const playAlarmLoop = async () => {
+      try {
+        // Set audio mode to play even in silent mode
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: false,
+        });
+
+        const { sound } = await Audio.Sound.createAsync(
+          require('../assets/sounds/alarm.wav'),
+          { isLooping: true, volume: 1.0, shouldPlay: true }
+        );
+        
+        if (isMounted) {
+          alarmSoundRef.current = sound;
+          console.log('Alarm sound playing in loop');
+        } else {
+          await sound.unloadAsync();
+        }
+
+        // Start continuous vibration pattern
+        Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
+      } catch (error) {
+        console.error('Failed to play alarm sound:', error);
+        // Fallback to vibration only
+        Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
+      }
+    };
+
+    playAlarmLoop();
+
+    return () => {
+      isMounted = false;
+      // Cleanup sound on unmount
+      if (alarmSoundRef.current) {
+        alarmSoundRef.current.stopAsync().then(() => alarmSoundRef.current?.unloadAsync()).catch(() => {});
+        alarmSoundRef.current = null;
+      }
+      Vibration.cancel();
+    };
+  }, [alarmActive]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -561,15 +573,33 @@ export default function DashboardScreen() {
     await generateSyncCode();
   };
 
-  // Dismiss the foreground alarm
+  // Dismiss the foreground alarm - stop sound and vibration
   const dismissAlarm = async () => {
+    // Stop the looping alarm sound first
+    try {
+      if (alarmSoundRef.current) {
+        await alarmSoundRef.current.stopAsync();
+        await alarmSoundRef.current.unloadAsync();
+        alarmSoundRef.current = null;
+        console.log('Alarm sound stopped');
+      }
+    } catch (e) {
+      console.error('Error stopping alarm sound:', e);
+      alarmSoundRef.current = null;
+    }
+
+    // Stop vibration
+    Vibration.cancel();
+
+    // Clear alarm state
     setAlarmActive(false);
     setAlarmData(null);
+
+    // Dismiss delivered notifications (not scheduled ones)
     try {
       await Notifications.dismissAllNotificationsAsync();
-      Vibration.cancel();
     } catch (e) {
-      console.error('Error dismissing:', e);
+      console.error('Error dismissing notifications:', e);
     }
   };
 

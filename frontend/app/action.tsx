@@ -525,7 +525,7 @@ export default function ActionScreen() {
               phone: contactPhone,
               notes: content 
             },
-            sound: 'default',
+            sound: 'alarm.wav',
             priority: Notifications.AndroidNotificationPriority.MAX,
             vibrate: [0, 500, 200, 500, 200, 500, 200, 500],
           },
@@ -533,7 +533,7 @@ export default function ActionScreen() {
             type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
             seconds: Math.max(10, Math.floor((triggerDate.getTime() - now.getTime()) / 1000)),
             repeats: false,
-            channelId: 'justblr-alarm-v2',
+            channelId: 'justblr-alarm-v3',
           },
         });
         console.log('Alarm notification scheduled:', notificationId, 'Title:', notificationTitle, 'at', triggerDate.toLocaleString());
