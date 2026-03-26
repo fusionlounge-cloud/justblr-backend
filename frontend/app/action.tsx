@@ -515,6 +515,7 @@ export default function ActionScreen() {
           content: {
             title: notificationTitle,
             body: notificationBody,
+            categoryIdentifier: 'alarm-reminder',
             data: { 
               type: actionType, 
               reminderType: actionType,
@@ -595,8 +596,13 @@ export default function ActionScreen() {
         console.log('Update response status:', response.status);
         console.log('Update response data:', JSON.stringify(response.data));
         
+        // Schedule alarm notification for edited reminder too
+        if (notifyMe) {
+          await scheduleNotification(reminderTitle, scheduledTime);
+        }
+        
         setIsSaving(false);
-        Alert.alert('Updated!', `${actionName} reminder updated`, [
+        Alert.alert('Updated!', `${actionName} reminder updated${notifyMe ? ' — alarm rescheduled' : ''}`, [
           { text: 'OK', onPress: () => router.back() },
         ]);
       } else {

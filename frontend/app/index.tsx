@@ -37,6 +37,23 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Setup notification categories with action buttons (Dismiss on notification)
+async function setupNotificationCategories() {
+  await Notifications.setNotificationCategoryAsync('alarm-reminder', [
+    {
+      identifier: 'dismiss',
+      buttonTitle: 'STOP ALARM',
+      options: { opensAppToForeground: false },
+    },
+    {
+      identifier: 'open',
+      buttonTitle: 'Open App',
+      options: { opensAppToForeground: true },
+    },
+  ]);
+  console.log('Notification category created: alarm-reminder');
+}
+
 // Setup notification channels for Android (with alarm sound)
 async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
@@ -214,8 +231,9 @@ export default function DashboardScreen() {
 
   // Handle notification response - open WhatsApp/SMS when user taps notification
   useEffect(() => {
-    // Setup notification channels on app start
+    // Setup notification channels and categories on app start
     setupNotificationChannels();
+    setupNotificationCategories();
   }, []);
 
   // Foreground alarm: show modal when notification arrives while app is open
@@ -300,10 +318,29 @@ export default function DashboardScreen() {
     if (Platform.OS === 'web') return;
     
     const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const actionId = response.actionIdentifier;
       const data = response.notification.request.content.data;
       const actionType = data?.reminderType || data?.type;
       const phone = data?.contactPhone || data?.phone;
       const notes = data?.notes || '';
+
+      // Handle "STOP ALARM" button press from notification
+      if (actionId === 'dismiss') {
+        console.log('User pressed STOP ALARM on notification');
+        await Notifications.dismissAllNotificationsAsync();
+        Vibration.cancel();
+        // Also stop foreground alarm if active
+        if (alarmSoundRef.current) {
+          try {
+            await alarmSoundRef.current.stopAsync();
+            await alarmSoundRef.current.unloadAsync();
+          } catch (e) {}
+          alarmSoundRef.current = null;
+        }
+        setAlarmActive(false);
+        setAlarmData(null);
+        return;
+      }
       
       if (!phone) return;
       
