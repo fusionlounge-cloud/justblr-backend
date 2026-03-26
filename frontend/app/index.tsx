@@ -192,6 +192,19 @@ const getDeviceId = async (): Promise<string> => {
       return OLD_MASTER_DEVICE_ID;
     }
     
+    // RECOVERY: Check if server has data under master ID (handles app reinstall)
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
+      const reminders = await response.json();
+      if (Array.isArray(reminders) && reminders.length > 0) {
+        await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
+        console.log('Recovery: Found existing reminders - restoring master ID');
+        return OLD_MASTER_DEVICE_ID;
+      }
+    } catch (e) {
+      console.log('Recovery check failed, proceeding with new ID');
+    }
+    
     // New user - generate a fresh unique ID
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
@@ -613,6 +626,8 @@ export default function DashboardScreen() {
         alarmSoundRef.current = null;
       }
       Vibration.cancel();
+      // Dismiss system notification too
+      await Notifications.dismissAllNotificationsAsync();
     } catch (e) {
       console.error('Error stopping alarm:', e);
     }

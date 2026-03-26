@@ -527,8 +527,9 @@ export default function ActionScreen() {
             vibrate: [0, 500, 200, 500, 200, 500, 200, 500],
           },
           trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: triggerDate,
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: Math.max(10, Math.floor((triggerDate.getTime() - now.getTime()) / 1000)),
+            repeats: false,
             channelId: 'reminder-alarm',
           },
         });
