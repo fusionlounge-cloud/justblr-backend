@@ -40,13 +40,13 @@ Notifications.setNotificationHandler({
 // Setup notification channels for Android (with alarm sound)
 async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
-    // High priority alarm channel with custom loud alarm sound
-    await Notifications.setNotificationChannelAsync('reminder-alarm', {
-      name: 'Reminder Alarms',
+    // Use a fresh channel with default system sound (custom sound channels can break)
+    await Notifications.setNotificationChannelAsync('justblr-alarm-v2', {
+      name: 'Justblr Reminders',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500, 200, 500, 200, 500],
       lightColor: '#667eea',
-      sound: 'alarm',
+      sound: 'default',
       enableVibrate: true,
       enableLights: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,

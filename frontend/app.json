@@ -34,7 +34,7 @@
         "android.permission.USE_FULL_SCREEN_INTENT",
         "android.permission.WAKE_LOCK"
       ],
-      "versionCode": 33
+      "versionCode": 34
     },
     "web": {
       "bundler": "metro",
