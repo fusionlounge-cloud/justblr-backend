@@ -9,7 +9,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://voice-reminder-app-4.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://alarm-dash-preview.preview.emergentagent.com').rstrip('/')
 
 
 class TestHealthCheck:

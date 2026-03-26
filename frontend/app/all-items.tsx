@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Constants from 'expo-constants';
 
 // HARDCODED URL to ensure it works
-const BACKEND_URL = 'https://voice-reminder-app-4.preview.emergentagent.com';
+const BACKEND_URL = 'https://alarm-dash-preview.preview.emergentagent.com';
 
 // Get or create device ID
 const getDeviceId = async (): Promise<string> => {
