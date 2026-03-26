@@ -991,20 +991,20 @@ export default function DashboardScreen() {
       // Handle WhatsApp Business
       if (appName === 'whatsapp') {
         if (Platform.OS === 'android') {
-          // Just try to open directly - canOpenURL is unreliable on Android 11+
-          try {
-            await Linking.openURL('whatsapp-business://');
-            return;
-          } catch (e) {
-            console.log('whatsapp-business:// failed, trying intent:', e);
-          }
+          // Try intent URL first - most reliable for targeting specific package
           try {
             await Linking.openURL('intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end');
             return;
           } catch (e) {
-            console.log('WA Business intent also failed:', e);
+            console.log('WA Business intent failed:', e);
           }
-          Alert.alert('WhatsApp Business', 'Could not open WhatsApp Business. Is it installed?');
+          // Fallback to URL scheme with /send path
+          try {
+            await Linking.openURL('whatsapp-business://send');
+            return;
+          } catch (e) {
+            console.log('whatsapp-business://send failed:', e);
+          }
           return;
         }
         
