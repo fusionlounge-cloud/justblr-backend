@@ -30,8 +30,8 @@ import * as Application from 'expo-application';
 // Configure notification handler for foreground notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: false,
-    shouldPlaySound: false,
+    shouldShowAlert: true,
+    shouldPlaySound: true,
     shouldSetBadge: true,
     priority: Notifications.AndroidNotificationPriority.MAX,
   }),
