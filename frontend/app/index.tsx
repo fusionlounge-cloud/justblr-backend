@@ -30,8 +30,8 @@ import * as Application from 'expo-application';
 // Configure notification handler for foreground notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
+    shouldShowAlert: false,
+    shouldPlaySound: false,
     shouldSetBadge: true,
     priority: Notifications.AndroidNotificationPriority.MAX,
   }),
@@ -62,9 +62,9 @@ async function scheduleLocalNotification(reminder: any) {
     const scheduledTime = new Date(reminder.scheduled_time);
     const now = new Date();
     
-    // Only schedule if in the future
-    if (scheduledTime <= now) {
-      console.log('Reminder time already passed:', reminder.title);
+    // Only schedule if at least 2 minutes in the future (prevents instant firing for near-past reminders)
+    if (scheduledTime.getTime() - now.getTime() < 120000) {
+      console.log('Reminder too soon or past, skipping alarm:', reminder.title);
       return null;
     }
     
