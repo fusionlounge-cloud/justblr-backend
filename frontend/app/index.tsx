@@ -716,7 +716,7 @@ export default function DashboardScreen() {
       };
       await saveAuthData(data.token, user);
 
-      // Migrate current device's data to the account's device_id
+      // Migrate current device's data AND old master data to the account's device_id
       const oldDeviceId = deviceId;
       if (oldDeviceId && oldDeviceId !== user.device_id) {
         try {
@@ -724,11 +724,11 @@ export default function DashboardScreen() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from_device_ids: [oldDeviceId],
+              from_device_ids: [oldDeviceId, 'master_justblr_primary_user'],
               to_device_id: user.device_id,
             }),
           });
-          console.log(`Migrated data from ${oldDeviceId} to ${user.device_id}`);
+          console.log(`Migrated data from ${oldDeviceId} + master to ${user.device_id}`);
         } catch (migErr) {
           console.error('Migration error:', migErr);
         }
