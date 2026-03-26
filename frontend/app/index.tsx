@@ -423,8 +423,12 @@ export default function DashboardScreen() {
       
       // Validate and update data
       if (response.data && Array.isArray(response.data)) {
-        console.log('Updating with fresh data:', response.data.length, 'reminders');
-        setReminders(response.data);
+        // Sort by scheduled_time descending (newest/latest on top)
+        const sorted = response.data.sort((a, b) => 
+          new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime()
+        );
+        console.log('Updating with fresh data:', sorted.length, 'reminders (sorted newest first)');
+        setReminders(sorted);
         
         // Save to cache for next time
         await saveRemindersToCache(response.data);
@@ -890,7 +894,9 @@ export default function DashboardScreen() {
   };
 
   const getCategoryReminders = (type) => {
-    return reminders.filter(r => r.reminder_type === type);
+    return reminders
+      .filter(r => r.reminder_type === type)
+      .sort((a, b) => new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime());
   };
 
   const deleteReminder = async (id) => {
@@ -985,22 +991,32 @@ export default function DashboardScreen() {
       // Handle WhatsApp Business
       if (appName === 'whatsapp') {
         if (Platform.OS === 'android') {
-          try {
-            const waBusinessUrl = 'intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end';
-            const canOpen = await Linking.canOpenURL(waBusinessUrl);
-            if (canOpen) {
-              await Linking.openURL(waBusinessUrl);
-              return;
+          // Try direct launch intent for WhatsApp Business
+          const launchIntents = [
+            'intent://#Intent;package=com.whatsapp.w4b;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end',
+            'whatsapp-business://launch',
+            'intent://#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end',
+          ];
+          
+          for (const url of launchIntents) {
+            try {
+              const canOpen = await Linking.canOpenURL(url);
+              if (canOpen) {
+                await Linking.openURL(url);
+                return;
+              }
+            } catch (e) {
+              console.log('WA Business intent failed:', url, e);
             }
-          } catch (e) {
-            console.log('WhatsApp Business intent failed:', e);
           }
           
+          // Last resort: try Play Store deep link
           try {
-            await Linking.openURL('whatsapp-business://send');
+            await Linking.openURL('market://details?id=com.whatsapp.w4b');
             return;
           } catch (e) {
-            console.log('WhatsApp Business URL scheme failed');
+            await Linking.openURL('https://play.google.com/store/apps/details?id=com.whatsapp.w4b');
+            return;
           }
         }
         
