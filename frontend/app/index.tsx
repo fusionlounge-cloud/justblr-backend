@@ -167,42 +167,30 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
 // Get UNIQUE device ID - with migration for existing users
 const getDeviceId = async (): Promise<string> => {
   try {
-    // First check if we already have the new unique device ID
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
-    if (storedId) {
-      console.log('Using existing device ID:', storedId.substring(0, 20) + '...');
-      return storedId;
-    }
     
-    // MIGRATION: Check if user was using the old master ID
-    const oldStoredId = await AsyncStorage.getItem(OLD_DEVICE_ID_KEY);
-    if (oldStoredId === OLD_MASTER_DEVICE_ID) {
-      // This is an existing user - keep their master ID to preserve data!
-      await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
-      console.log('Migrated existing user - keeping master ID to preserve reminders');
-      return OLD_MASTER_DEVICE_ID;
-    }
+    // If already using master ID, done
+    if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
     
-    // RECOVERY: Check if server has data under master ID (handles app reinstall)
+    // ALWAYS check if master ID has data (handles reinstalls / wrong stored ID)
     try {
-      const response = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
-      const reminders = await response.json();
-      if (Array.isArray(reminders) && reminders.length > 0) {
+      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
         await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
-        console.log('Recovery: Found existing reminders - restoring master ID');
+        console.log('Recovered master device ID with', data.length, 'reminders');
         return OLD_MASTER_DEVICE_ID;
       }
     } catch (e) {
-      console.log('Recovery check failed, proceeding with new ID');
+      console.log('Master check failed');
     }
     
-    // New user - generate a fresh unique ID
+    // Use stored ID if exists, otherwise generate new
+    if (storedId) return storedId;
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
-    console.log('New user - generated unique device ID:', newId.substring(0, 20) + '...');
     return newId;
   } catch (e) {
-    console.error('Error getting device ID:', e);
     return generateUniqueId();
   }
 };
@@ -986,6 +974,8 @@ export default function DashboardScreen() {
       }
 
       const appUrls = {
+        'whatsapp-personal': { ios: 'whatsapp://', android: 'com.whatsapp', web: 'https://wa.me' },
+        'whatsapp': { ios: 'whatsapp-business://', android: 'com.whatsapp.w4b', web: 'https://business.whatsapp.com' },
         instagram: { ios: 'instagram://', android: 'com.instagram.android', web: 'https://instagram.com' },
         facebook: { ios: 'fb://', android: 'com.facebook.katana', web: 'https://facebook.com' },
         linkedin: { ios: 'linkedin://', android: 'com.linkedin.android', web: 'https://linkedin.com' },

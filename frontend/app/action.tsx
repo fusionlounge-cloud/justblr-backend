@@ -46,20 +46,23 @@ const generateUniqueId = (): string => {
 const getDeviceId = async (): Promise<string> => {
   try {
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
+    if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
+    
+    // Check master ID for primary user recovery
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
+        return OLD_MASTER_DEVICE_ID;
+      }
+    } catch (e) { }
+    
     if (storedId) return storedId;
-    
-    // MIGRATION: Check if user was using the old master ID
-    const oldStoredId = await AsyncStorage.getItem(OLD_DEVICE_ID_KEY);
-    if (oldStoredId === OLD_MASTER_DEVICE_ID) {
-      await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
-      return OLD_MASTER_DEVICE_ID;
-    }
-    
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
     return newId;
   } catch (e) {
-    console.error('Error getting device ID:', e);
     return generateUniqueId();
   }
 };
