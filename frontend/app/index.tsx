@@ -105,21 +105,12 @@ async function scheduleLocalNotification(reminder: any) {
 // Cancel all scheduled notifications and reschedule from reminders
 async function syncLocalNotifications(reminders: any[]) {
   try {
-    // Cancel all existing scheduled notifications
+    // Cancel ALL existing scheduled notifications on app open
     await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log('Cancelled all existing notifications');
-    
-    // Schedule new notifications for all future reminders
-    const now = new Date();
-    const futureReminders = reminders.filter(r => new Date(r.scheduled_time) > now);
-    
-    for (const reminder of futureReminders) {
-      await scheduleLocalNotification(reminder);
-    }
-    
-    console.log(`Scheduled ${futureReminders.length} local notifications`);
+    await Notifications.dismissAllNotificationsAsync();
+    console.log('Cleared all notifications on app open - only new reminders will alarm');
   } catch (error) {
-    console.error('Failed to sync notifications:', error);
+    console.error('Failed to clear notifications:', error);
   }
 }
 
@@ -277,39 +268,9 @@ export default function DashboardScreen() {
     setupNotificationChannels();
   }, []);
 
-  // Foreground alarm: play loud sound on loop when notification arrives while app is open
+  // Foreground alarm: show modal when notification arrives while app is open
   useEffect(() => {
     if (Platform.OS === 'web') return;
-
-    const startAlarmSound = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-        });
-        const { sound } = await Audio.Sound.createAsync(
-          require('../assets/sounds/alarm.wav'),
-          { isLooping: true, volume: 1.0, shouldPlay: true }
-        );
-        alarmSoundRef.current = sound;
-      } catch (error) {
-        console.error('Failed to play alarm sound:', error);
-      }
-    };
-
-    const stopAlarmSound = async () => {
-      try {
-        if (alarmSoundRef.current) {
-          await alarmSoundRef.current.stopAsync();
-          await alarmSoundRef.current.unloadAsync();
-          alarmSoundRef.current = null;
-        }
-        Vibration.cancel();
-      } catch (error) {
-        console.error('Failed to stop alarm sound:', error);
-      }
-    };
 
     // Listen for notifications received while app is in foreground
     const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
@@ -328,15 +289,10 @@ export default function DashboardScreen() {
         notes: data?.notes,
       });
       setAlarmActive(true);
-
-      // Start alarm sound loop and vibration
-      startAlarmSound();
-      Vibration.vibrate([0, 500, 200, 500, 200, 500, 200, 500], true);
     });
 
     return () => {
       foregroundSub.remove();
-      stopAlarmSound();
     };
   }, []);
 
@@ -619,20 +575,14 @@ export default function DashboardScreen() {
 
   // Dismiss the foreground alarm
   const dismissAlarm = async () => {
-    try {
-      if (alarmSoundRef.current) {
-        await alarmSoundRef.current.stopAsync();
-        await alarmSoundRef.current.unloadAsync();
-        alarmSoundRef.current = null;
-      }
-      Vibration.cancel();
-      // Dismiss system notification too
-      await Notifications.dismissAllNotificationsAsync();
-    } catch (e) {
-      console.error('Error stopping alarm:', e);
-    }
     setAlarmActive(false);
     setAlarmData(null);
+    try {
+      await Notifications.dismissAllNotificationsAsync();
+      Vibration.cancel();
+    } catch (e) {
+      console.error('Error dismissing:', e);
+    }
   };
 
   // Dismiss alarm and execute the action (call/sms/whatsapp)
