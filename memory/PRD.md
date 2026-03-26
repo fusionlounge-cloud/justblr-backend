@@ -35,7 +35,7 @@ Voice-first mobile productivity application ("Justblr Matrix assistant") with a 
 - [x] **Edited reminders now get alarms (v36)** — scheduleNotification() called for both new and edited reminders
 - [x] **"STOP ALARM" button on notifications (v36)** — Notification category with Dismiss action button
 - [x] **Reminders sorted newest first (v37)** — Sorted by scheduled_time descending
-- [x] **WhatsApp Business fix (v37)** — Updated intent URL format with LAUNCHER action for Android
+- [x] **WhatsApp Business fix (v37→v39)** — Reverted to simple `whatsapp-business://` direct open (no canOpenURL check which breaks on Android 11+)
 
 ### In Progress / Pending
 - [x] **Home Screen Launcher (v38)** — Added HOME intent filter so user can set Justblr as default Android home screen

@@ -991,33 +991,21 @@ export default function DashboardScreen() {
       // Handle WhatsApp Business
       if (appName === 'whatsapp') {
         if (Platform.OS === 'android') {
-          // Try direct launch intent for WhatsApp Business
-          const launchIntents = [
-            'intent://#Intent;package=com.whatsapp.w4b;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end',
-            'whatsapp-business://launch',
-            'intent://#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end',
-          ];
-          
-          for (const url of launchIntents) {
-            try {
-              const canOpen = await Linking.canOpenURL(url);
-              if (canOpen) {
-                await Linking.openURL(url);
-                return;
-              }
-            } catch (e) {
-              console.log('WA Business intent failed:', url, e);
-            }
-          }
-          
-          // Last resort: try Play Store deep link
+          // Just try to open directly - canOpenURL is unreliable on Android 11+
           try {
-            await Linking.openURL('market://details?id=com.whatsapp.w4b');
+            await Linking.openURL('whatsapp-business://');
             return;
           } catch (e) {
-            await Linking.openURL('https://play.google.com/store/apps/details?id=com.whatsapp.w4b');
-            return;
+            console.log('whatsapp-business:// failed, trying intent:', e);
           }
+          try {
+            await Linking.openURL('intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end');
+            return;
+          } catch (e) {
+            console.log('WA Business intent also failed:', e);
+          }
+          Alert.alert('WhatsApp Business', 'Could not open WhatsApp Business. Is it installed?');
+          return;
         }
         
         if (Platform.OS === 'ios') {
