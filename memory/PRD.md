@@ -38,7 +38,7 @@ Voice-first mobile productivity application ("Justblr Matrix assistant") with a 
 - [x] **WhatsApp Business fix (v37)** — Updated intent URL format with LAUNCHER action for Android
 
 ### In Progress / Pending
-- [ ] **Home screen/launcher feature** — User wants Justblr as default Android home screen (requires native launcher config or user guidance)
+- [x] **Home Screen Launcher (v38)** — Added HOME intent filter so user can set Justblr as default Android home screen
 
 ### Backlog
 - [ ] Push Notifications for Delegated Tasks (notify employee when task is assigned)

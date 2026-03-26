@@ -2,7 +2,7 @@
   "expo": {
     "name": "Justblr Matrix",
     "slug": "justblr-matrix",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "justblr-matrix",
@@ -34,7 +34,13 @@
         "android.permission.USE_FULL_SCREEN_INTENT",
         "android.permission.WAKE_LOCK"
       ],
-      "versionCode": 37
+      "intentFilters": [
+        {
+          "action": "MAIN",
+          "category": ["HOME", "DEFAULT"]
+        }
+      ],
+      "versionCode": 38
     },
     "web": {
       "bundler": "metro",
@@ -66,5 +72,5 @@
       }
     }
   },
-  "version": "1.7.0"
+  "version": "1.8.0"
 }
