@@ -1,127 +1,126 @@
-<analysis>**original_problem_statement**: The user is building a voice-first mobile productivity application (Justblr Matrix assistant) with a central dashboard, reminders, task delegation, and a web dashboard. The application is actively being tested via Google Play Closed Testing.
-**PRODUCT REQUIREMENTS**: Mobile app (Expo), Web Dashboard (Standalone HTML/JS), FastAPI backend, MongoDB Atlas, Task Delegation, automated SMS/WhatsApp (Twilio), and multi-user privacy isolation. 
+<analysis>original_problem_statement: Voice-first mobile productivity application (Justblr Matrix assistant) with central dashboard, reminders, task delegation, and web dashboard. 
+PRODUCT REQUIREMENTS: Mobile app (Expo), Web Dashboard (Standalone HTML/JS), FastAPI backend, MongoDB Atlas, Task Delegation, automated SMS/WhatsApp (Twilio), multi-user privacy isolation, continuous loud alarms for reminders, Android Home Screen Launcher capability, and Email + PIN authentication for cross-device sync.
 
 **User's preferred language**: English
 *(INSTRUCT next agent to respond in English only)*
 
 **what currently exists?** 
-A React Native (Expo) mobile app currently in Play Store testing (up to v27) with local caching, local notifications, multi-tenant unique device IDs, and a 2-row social media hub. A Web Dashboard is live on Render (using a monolithic  file) featuring full CRUD for reminders and task delegation. The Backend (FastAPI) and Database (MongoDB Atlas) are hosted externally on the user's Render and Atlas accounts respectively.
+A React Native (Expo) mobile app currently at v46 (Alpha Testing on Play Store) and a FastAPI backend deployed on Render. The mobile app features working continuous custom alarms, Android Home Screen Launcher support, and data isolated by . The web dashboard is a standalone HTML file that syncs with the mobile app for task delegation and contact management.
 
 **Last working item**:
-    - **Last item agent was working**: Adding Email Authentication (Registration & Login) backend endpoints (, ) to  to allow free email registration, replacing the reliance on device IDs alone. 
-    - **Status**: IN PROGRESS
-    - **Agent Testing Done**: N
-    - **Which testing method agent to use?** backend testing via curl or python -c (locally on the container first), then manual frontend verification. 
+    - **Last item agent was working**: Fixing the Web Dashboard's Task Delegation (Employee) Contact Picker and forcing Render to deploy it. Because Render's free tier was extremely slow/failing to serve the updated static , the agent hardcoded the entire HTML string directly into  (served at ) and added a  endpoint to track when the deployment goes live.
+    - **Status**: USER VERIFICATION PENDING (Waiting for Render to finish deploying the user's latest GitHub push).
+    - **Agent Testing Done**: N (Tried to test via bash but Render deployment was still pending).
+    - **Which testing method agent to use?** backend manual testing by curl (Check  and ).
     - **User Testing Done**: N
 
-**All Pending/In progress Issue list**:
-  - **Issue 1: Continuous Alarm Notification (P0)** 
-     - *Attempted fixes*: Agent added high-priority local push notifications with vibration and DND bypass.
-     - *Next debug checklist*: The user specifically requested an alarm that *rings continuously until manually stopped* (like an alarm clock). Check  limitations. This often requires a foreground service or a specialized alarm library in React Native. Plan this carefully and communicate technical constraints to the user.
-     - *Why fix this issue?*: Critical user requirement for task reminders.
-     - *Status*: NOT STARTED
-     - *Is recurring issue?*: N
-     - *Should Test frontend/backend/both after fix?*: Frontend
+**All Pending/In progress Issue list**: 
+  - **Issue 1: Web Dashboard Render Deployment Lag / Contact Picker (P0)** 
+     - *Attempted fixes*: Agent tried updating , then moving it to , and finally embedded the raw HTML string into  to bypass static file serving issues completely.
+     - *Next debug checklist*: curl the backend  endpoint. It should return . If it does, the deployment succeeded and the user can check the Employee Contact Picker on the web dashboard.
+     - *Why fix this issue and what will be achieved with the fix?*: User needs to select contacts when delegating tasks to employees on the desktop dashboard.
+     - *Status*: USER VERIFICATION PENDING
+     - *Is recurring issue?*: Y (Render deployment lag caused major confusion).
+     - *Should Test frontend/backend/both after fix?*: Backend (verify endpoint), then Web Frontend.
      - *Blocked on other issue*: None
-  - **Issue 2: Backend Auth Deployment to Render (P0)**
-     - *Attempted fixes*: Agent edited  in the Emergent container.
-     - *Next debug checklist*: The user's live app points to their Render backend. The container's backend code changes mean *nothing* until the user updates their GitHub repo (). The next agent MUST provide the updated  code to the user to push to GitHub.
-     - *Why fix this issue?*: Auth will fail on production if the Render server isn't updated.
-     - *Status*: BLOCKED (Needs User Action to update GitHub)
-     - *Is recurring issue?*: Y (Agent keeps editing local backend without reminding user to push to GitHub).
-     - *Should Test frontend/backend/both after fix?*: Backend
+
+  - **Issue 2: Mobile App WhatsApp & WA Business Launching (P1)** 
+     - *Attempted fixes*: Agent tried URL schemes (), which resulted in invalid chat link. Agent finally switched to  using  and .
+     - *Next debug checklist*: Await user confirmation on the v46 APK. Ensure tapping the Green WhatsApp icon and Teal Briefcase icon opens the respective apps directly without error.
+     - *Why fix this issue and what will be achieved with the fix?*: Core functionality of the Social Media Hub.
+     - *Status*: USER VERIFICATION PENDING
+     - *Is recurring issue?*: Y
+     - *Should Test frontend/backend/both after fix?*: Frontend.
 
 **In progress Task List**:
-  - **Task 1: Email Registration UI Integration (P1)** 
-     - *Where to resume*: After backend auth is deployed to Render, update the Mobile App () and Web Dashboard () to include Login/Registration screens instead of just auto-generating device IDs.
-     - *What will be achieved with this?*: Fulfills user request for an email-based free tier.
-     - *Status*: NOT STARTED
-     - *Should Test frontend/backend/both after fix?*: Both
-     - *Blocked on something*: Issue 2 (Backend Deployment).
+  - **Task 1: Confirm Web Dashboard Contact Syncing (P1)**
+     - *Where to resume*: Once Render is live, ensure the  function in the web dashboard successfully merges synced mobile contacts, reminder contacts, and employee contacts into the search dropdown.
+     - *What will be achieved with this?*: Allows the user to easily pick numbers for task delegation.
+     - *Status*: TESTING PENDING
+     - *Should Test frontend/backend/both after fix?*: Web Frontend.
+     - *Blocked on something*: Render deployment completion.
 
 **Upcoming and Future Tasks**
-  - P1: Twilio WhatsApp/SMS automation (Backend logic exists, but needs Twilio credentials from the user).
+  - P1: Push Notifications for Delegated Tasks (Notify employee when a task is assigned).
+  - P1: Twilio WhatsApp/SMS automation (Backend logic exists, needs user credentials).
   - P2: Google Assistant Voice Commands integration (Hey Google, open Justblr...).
   - P2: iOS version build.
 
 **Completed work in this session**
-  - Completely rewrote Web Dashboard into a monolithic  to bypass Render React build failures (DONE)
-  - Added Full CRUD + Delegation features to Web Dashboard (DONE)
-  - Fixed Multi-Tenant Data Leak by generating Unique Device IDs and migrating the primary user's data (DONE)
-  - Removed Desktop Connect bottom UI, updated Social Media Hub to 7 icons / 2 rows (DONE)
-  - Added local caching for instant reminder loading on Mobile (DONE)
-  - Generated multiple EAS builds (up to v27) and guided user through Play Console submission (DONE)
+  - Removed destructive  allowing alarms to work reliably (DONE)
+  - Added continuous looping  sound and proper dismiss logic (DONE)
+  - Fixed edited reminders so they now correctly schedule alarms (DONE)
+  - Added STOP ALARM action buttons to background notifications (DONE)
+  - Sorted reminders newest-first on the mobile dashboard (DONE)
+  - Configured  intent filters to allow the app to be used as an Android Home Screen Launcher (DONE)
+  - Reordered UI layout (Task Delegation moved above View All Reminders, 5 icons fitted into one row) (DONE)
+  - Rewrote Web Dashboard contact fetching to merge 13,000+ local app contacts for the web dropdowns (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1: Pause In-App Purchases**  
-   - *Debug checklist*: User asked to pause the 499 paid version. Agent provided written instructions to do this in the Google Play Console. Need to confirm with the user if they successfully deactivated the product.
-   - *Why to solve this issue?*: Prevents users from paying for an app still in beta testing.
-   - *Should Test frontend/backend/both after fix*: NA (Play Console configuration)
-   - *Is recurring issue?*: N
+   - None explicitly pending, but the **User is highly frustrated by regressions**. (you do one and mess up old one which was working properly). *Do not modify working code to implement new features.*
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: Data sharing/Multi-tenant leak via hardcoded .
-  - Recurrence count: 1
-  - Status: RESOLVED (Replaced with unique ID generator  using AsyncStorage, with a migration path for the master user).
+  - **Issue recurrence in previous fork**: Render external deployment confusion.
+  - **Recurrence count**: 5+
+  - **Status**: IN PROGRESS
+  - *Note*: The backend lives externally on Render, tied to the user's GitHub. *Changes to backend files in the container do nothing for the live app.* You MUST instruct the user to click **Save to Github** for the backend changes to deploy. Render free tier takes 3-5 minutes to update.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Mobile**: Expo,  (local scheduling), AsyncStorage (local caching).
-- **Web**: Plain HTML/JS/CSS within a single  file (no build step, hosted on Render static site).
-- **Backend**: FastAPI, PyMongo.
+- **Mobile**: Expo,  (custom channels for sounds),  (for opening WhatsApp by package name).
+- **Backend**: FastAPI, PyMongo. Hosted on Render. 
+- **Web**: Standalone HTML/JS with inline CSS, now served directly from memory by FastAPI () to avoid file path/deployment sync issues.
 
 **key DB schema**
--  (New): { email, password_hash, device_id, is_active }
-- : { id, title, scheduled_time, reminder_type, device_id }
-- : { id, description, employee_id, is_completed, device_id }
+- : { email, pin_hash, device_id, name }
+- : { id, title, scheduled_time, reminder_type, device_id, contact_phone, contact_name }
 
 **changes in tech stack**
-- The React Web dashboard was entirely scrapped in favor of a single  file to bypass NPM/Yarn build issues on Render Free Tier.
+- Added  to  for Android package launching.
+- Embedded  string directly into  to bypass Render static file serving delays.
 
 **All files of reference**
-- : Added user authentication models and endpoints. 
-- : Updated with local notifications and unique ID generation.
-- : Contains the entire web application logic.
+- : Contains API endpoints, embedded web dashboard HTML, and  check.
+- : Contains  (using IntentLauncher), UI layout, and notification response handlers.
+- : Updated with Android intent filters for Home Screen Launcher.
 
 **Areas that need refactoring**
-- : It is currently a massive 500+ line monolithic file mixing HTML, CSS, and complex fetch logic. It functions well but is highly prone to syntax errors during search/replace.
-- Continuous Alarms: React Native  does not natively support ringing continuously until dismissed on iOS/Android without custom native code or foreground services. This needs careful architectural planning.
+- The Web Dashboard being hardcoded as an HTML string inside  is a hack to get around Render's slow deployment pipeline. Eventually, this should be split back out or migrated to the React  build.
 
 **key api endpoints**
--  (Newly added)
--  (Newly added)
+-  (Serves the web dashboard HTML)
+-  (Returns )
+-  (Mobile app pushing contacts to backend)
 
 **Critical Info for New Agent**
-1. **EXTERNAL DEPLOYMENT WARNING**: The user's live mobile app and web app point to a Render backend (). Modifying  in the container does nothing for the live app. **You MUST instruct the user to copy/paste the updated backend code to their GitHub repository** so Render can deploy it.
-2. **React Native Alarm Limitations**: The user expects a reminder to ring continuously like an alarm clock. Standard local push notifications only play a short sound. You need to investigate and clearly communicate the limitations of Expo regarding continuous alarms, or implement a specialized package.
+1. **EXTERNAL DEPLOYMENT / GITHUB**: You cannot restart Render. The user MUST click Save to Github. Always check  to confirm if the user's Render instance has actually updated before telling them a backend fix is ready.
+2. **USER FRUSTRATION**: The user is experiencing deployment fatigue. Do not send APKs unless you are 100% sure the intent/logic is correct. Do not touch working features (like Alarms or Home Screen) when adding new ones.
+3. **WHATSAPP INTENTS**: Do not use  or . The app now uses  which is the most reliable native Android method. Leave it as is.
+4. **PRIVACY CONCERNS**: The user repeatedly asks if testers will see their contacts. Reassure the user that all data is strictly partitioned by  generated per phone.
 
 **documents and test reports created in this job**
--  (Updated)
+-  updated with v46 changes.
 
-**Last 10 User Messages and any pending HUMAN messages**
-- User: where do i stop monetization [Sent screenshot]
-- Agent: Provided instructions to deactivate in Play Console.
-- User: i want these two also. after that lets build the final version for play store (Referring to Continuous alarm and Email registration).
-- Agent: Started editing  to add Auth endpoints.
-- *Pending Human Action*: User is waiting for the Email Registration to be implemented and instructions on how to get the continuous alarm working, followed by a final Play Store build.
+**Last 10 User Messages and any pending HUMAN messages** 
+ - User: how many times do i do the same. done now *(Context: User pushed to GitHub to deploy the embedded Web Dashboard fix. They are waiting for confirmation that it works).*
 
 **Project Health Check:**
-- **Mocked**: Standard push notifications are currently acting as alarms, but don't fulfill the user's exact requirement of ringing continuously until stopped.
+- Mobile App: Mostly Stable (v46 compiled and shared).
+- Backend Deployment: Lagging (Pending Render deployment update).
 
 **3rd Party Integrations**
-- MongoDB Atlas — requires User Credentials (External)
-- Render (Hosting) — requires User Account (External)
-- Google Play Console — requires User Account (External)
-- Expo EAS — requires User Account (External)
-- Twilio — Setup pending (Requires user keys)
+- MongoDB Atlas — requires User Credentials
+- Render (Hosting) — requires User Account (Deployed via GitHub)
+- Google Play Console — requires User Account
+- Expo EAS — requires User Account (Session is cached in container)
 
 **Testing status**
-- Testing agent used after significant changes: NO (Fast iteration loops directly with user Play Store uploads).
-- Troubleshoot agent used after agent stuck in loop: NO
-- Test files created: []
-- Known regressions: None currently, but backend auth is out of sync with Render production.
+- Testing agent used after significant changes: NO (Context was heavily focused on rapid-fire EAS builds and live debugging).
+- Troubleshoot agent used after agent stuck in loop: NO.
+- Test files created: None.
+- Known regressions: Previous WhatsApp deep links failed (fixed in v46). React  web dashboard is orphaned; user relies entirely on the HTML version.
 
 **What agent forgot to execute**
-- The agent started coding backend authentication but failed to warn the user that these changes need to be pushed to their GitHub repository () to take effect on the Render server. If the agent moves straight to editing the frontend mobile code, the API calls will fail with a 404.</analysis>
+- Agent ran out of context while waiting for Render to finish deploying the final  update. The next agent must verify the live Render endpoint is functioning.</analysis>
