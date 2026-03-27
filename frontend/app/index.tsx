@@ -26,6 +26,7 @@ import { saveAuthData, loadAuthData, clearAuthData, getCurrentDeviceId, AuthUser
 import * as Notifications from 'expo-notifications';
 import * as Contacts from 'expo-contacts';
 import * as Application from 'expo-application';
+import * as IntentLauncher from 'expo-intent-launcher';
 
 // Configure notification handler for foreground notifications
 Notifications.setNotificationHandler({
@@ -988,53 +989,41 @@ export default function DashboardScreen() {
 
   const openSocialApp = async (appName) => {
     try {
-      // Handle WhatsApp Business - just OPEN the app, no /send
+      // Handle WhatsApp Business - use IntentLauncher for reliable package launch
       if (appName === 'whatsapp') {
         if (Platform.OS === 'android') {
           try {
-            await Linking.openURL('intent://#Intent;package=com.whatsapp.w4b;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end');
+            await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
+              packageName: 'com.whatsapp.w4b',
+              category: 'android.intent.category.LAUNCHER',
+            });
             return;
           } catch (e) {
-            console.log('WA Business launcher intent failed:', e);
+            console.log('WA Business IntentLauncher failed:', e);
           }
-          try {
-            await Linking.openURL('whatsapp-business://');
-            return;
-          } catch (e) {
-            console.log('whatsapp-business:// failed:', e);
-          }
-          return;
         }
         if (Platform.OS === 'ios') {
-          await Linking.openURL('whatsapp-business://');
-          return;
+          try { await Linking.openURL('whatsapp-business://'); return; } catch (e) {}
         }
-        await Linking.openURL('https://business.whatsapp.com');
         return;
       }
 
-      // Handle Normal WhatsApp - just OPEN the app, no /send
+      // Handle Normal WhatsApp - use IntentLauncher for reliable package launch
       if (appName === 'whatsapp-personal') {
         if (Platform.OS === 'android') {
           try {
-            await Linking.openURL('intent://#Intent;package=com.whatsapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end');
+            await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
+              packageName: 'com.whatsapp',
+              category: 'android.intent.category.LAUNCHER',
+            });
             return;
           } catch (e) {
-            console.log('WhatsApp launcher intent failed:', e);
+            console.log('WhatsApp IntentLauncher failed:', e);
           }
-          try {
-            await Linking.openURL('whatsapp://');
-            return;
-          } catch (e) {
-            console.log('whatsapp:// failed:', e);
-          }
-          return;
         }
         if (Platform.OS === 'ios') {
-          await Linking.openURL('whatsapp://');
-          return;
+          try { await Linking.openURL('whatsapp://'); return; } catch (e) {}
         }
-        await Linking.openURL('https://web.whatsapp.com');
         return;
       }
 
