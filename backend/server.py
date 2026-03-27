@@ -1438,6 +1438,10 @@ async def scan_qr():
     from fastapi.responses import HTMLResponse
     return HTMLResponse(content=html)
 
+@api_router.get("/version")
+async def get_version():
+    return {"version": "1.8.0-v46", "dashboard": "standalone" if _dashboard_html else "react"}
+
 # Serve web dashboard
 DASHBOARD_FILE = ROOT_DIR / "dashboard.html"
 WEB_BUILD_DIR = ROOT_DIR.parent / "web" / "build"
