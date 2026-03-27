@@ -989,16 +989,14 @@ export default function DashboardScreen() {
 
   const openSocialApp = async (appName) => {
     try {
-      // Handle WhatsApp Business - use IntentLauncher with correct componentName
+      // Handle WhatsApp Business - direct package launch
       if (appName === 'whatsapp') {
         if (Platform.OS === 'android') {
           try {
-            await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
-              componentName: 'com.whatsapp.w4b',
-            });
+            IntentLauncher.openApplication('com.whatsapp.w4b');
             return;
           } catch (e) {
-            console.log('WA Business IntentLauncher failed:', e);
+            console.log('WA Business open failed:', e);
           }
         }
         if (Platform.OS === 'ios') {
@@ -1007,16 +1005,14 @@ export default function DashboardScreen() {
         return;
       }
 
-      // Handle Normal WhatsApp - use IntentLauncher with correct componentName
+      // Handle Normal WhatsApp - direct package launch
       if (appName === 'whatsapp-personal') {
         if (Platform.OS === 'android') {
           try {
-            await IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
-              componentName: 'com.whatsapp',
-            });
+            IntentLauncher.openApplication('com.whatsapp');
             return;
           } catch (e) {
-            console.log('WhatsApp IntentLauncher failed:', e);
+            console.log('WhatsApp open failed:', e);
           }
         }
         if (Platform.OS === 'ios') {
