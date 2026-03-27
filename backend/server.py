@@ -1442,11 +1442,18 @@ async def scan_qr():
 DASHBOARD_FILE = ROOT_DIR / "dashboard.html"
 WEB_BUILD_DIR = ROOT_DIR.parent / "web" / "build"
 
+# Pre-load dashboard HTML at startup for reliability
+_dashboard_html = None
+for path in [DASHBOARD_FILE, ROOT_DIR.parent / "web" / "index.html"]:
+    if path.exists():
+        _dashboard_html = path.read_text(encoding='utf-8')
+        break
+
 @api_router.get("/dashboard")
 async def serve_dashboard():
-    """Serve the web dashboard - standalone dashboard.html with full features"""
-    if DASHBOARD_FILE.exists():
-        return FileResponse(str(DASHBOARD_FILE))
+    """Serve the web dashboard with delegation + contact picker"""
+    if _dashboard_html:
+        return HTMLResponse(content=_dashboard_html)
     # Fallback to React build
     index_path = WEB_BUILD_DIR / "index.html"
     if index_path.exists():
