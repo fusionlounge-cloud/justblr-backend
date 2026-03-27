@@ -234,7 +234,8 @@
     }
 
     async function loadAll() {
-      await Promise.all([loadContacts(), loadReminders(), loadEmployees(), loadTasks()]);
+      await Promise.all([loadReminders(), loadEmployees(), loadTasks()]);
+      await loadContacts();
       renderTabContent();
     }
 
@@ -243,7 +244,30 @@
       else renderDelegationTab();
     }
 
-    async function loadContacts(){try{const res=await fetch(`${API_URL}/sync/contacts/${deviceId}`);const data=await res.json();contacts=data.contacts||data||[];}catch(e){contacts=[];}}
+    async function loadContacts(){
+      try{
+        const res=await fetch(`${API_URL}/sync/contacts/${deviceId}`);
+        const data=await res.json();
+        contacts=data.contacts||data||[];
+      }catch(e){contacts=[];}
+      // Also extract contacts from existing reminders (name+phone pairs)
+      const reminderContacts = reminders
+        .filter(r => r.contact_name || r.contact_phone)
+        .map(r => ({ name: r.contact_name || '', phone: r.contact_phone || '' }));
+      // Also extract from employees
+      const empContacts = employees
+        .filter(e => e.name || e.phone)
+        .map(e => ({ name: e.name || '', phone: e.phone || '' }));
+      // Merge all, deduplicate by name+phone
+      const allContacts = [...contacts, ...reminderContacts, ...empContacts];
+      const seen = new Set();
+      contacts = allContacts.filter(c => {
+        const key = (c.name||'').toLowerCase() + '|' + (c.phone||'');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
     async function loadReminders(){try{const res=await fetch(`${API_URL}/reminders?device_id=${deviceId}`);reminders=await res.json();}catch(e){reminders=[];}}
     async function loadEmployees(){try{const res=await fetch(`${API_URL}/employees?device_id=${deviceId}`);employees=await res.json();}catch(e){employees=[];}}
     async function loadTasks(){try{const res=await fetch(`${API_URL}/tasks?device_id=${deviceId}`);tasks=await res.json();}catch(e){tasks=[];}}
@@ -366,11 +390,23 @@
         <div class="modal-overlay" onclick="closeModal(event)"><div class="modal-content" onclick="event.stopPropagation()">
           <div class="modal-header"><h2 class="modal-title">${e?'Edit':'Add'} Employee</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
           <form id="employeeForm">
-            <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="eName" value="${e?.name||''}" required></div>
+            <div class="form-group contact-picker"><label class="form-label">Name</label><input class="form-input" id="eName" value="${e?.name||''}" required autocomplete="off"><div class="contact-results hidden" id="empContactResults"></div></div>
             <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="ePhone" value="${e?.phone||''}"></div>
             <div style="display:flex;gap:12px;margin-top:24px"><button type="submit" class="btn btn-primary" style="flex:1">${e?'Update':'Add'}</button><button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button></div>
           </form>
         </div></div>`;
+      // Contact search for employee name field
+      const nameInput=document.getElementById('eName'),empRes=document.getElementById('empContactResults'),phoneInput=document.getElementById('ePhone');
+      nameInput.addEventListener('input',function(){
+        const q=this.value.toLowerCase().trim();
+        if(q.length<1){empRes.classList.add('hidden');return;}
+        const f=contacts.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q)).slice(0,10);
+        if(f.length>0){
+          empRes.innerHTML=f.map(c=>`<div class="contact-item" onmousedown="document.getElementById('eName').value='${(c.name||'').replace(/'/g,"\\'")}';document.getElementById('ePhone').value='${c.phone||''}';document.getElementById('empContactResults').classList.add('hidden')"><div class="contact-name">${c.name||'Unknown'}</div><div class="contact-phone">${c.phone||''}</div></div>`).join('');
+          empRes.classList.remove('hidden');
+        }else{empRes.classList.add('hidden');}
+      });
+      nameInput.addEventListener('blur',function(){setTimeout(()=>empRes.classList.add('hidden'),300);});
       document.getElementById('employeeForm').onsubmit=async(ev)=>{ev.preventDefault();const data={name:document.getElementById('eName').value,phone:document.getElementById('ePhone').value,device_id:deviceId,is_active:true};try{await fetch(e?`${API_URL}/employees/${e.id}`:`${API_URL}/employees`,{method:e?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});closeModal();await loadEmployees();renderDelegationTab();}catch(e){alert('Failed');}};
     }
 
