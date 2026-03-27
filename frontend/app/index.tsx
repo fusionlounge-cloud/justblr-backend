@@ -988,58 +988,52 @@ export default function DashboardScreen() {
 
   const openSocialApp = async (appName) => {
     try {
-      // Handle WhatsApp Business
+      // Handle WhatsApp Business - just OPEN the app, no /send
       if (appName === 'whatsapp') {
         if (Platform.OS === 'android') {
-          // Try intent URL first - most reliable for targeting specific package
           try {
-            await Linking.openURL('intent://send/#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end');
+            await Linking.openURL('intent://#Intent;package=com.whatsapp.w4b;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end');
             return;
           } catch (e) {
-            console.log('WA Business intent failed:', e);
+            console.log('WA Business launcher intent failed:', e);
           }
-          // Fallback to URL scheme with /send path
           try {
-            await Linking.openURL('whatsapp-business://send');
+            await Linking.openURL('whatsapp-business://');
             return;
           } catch (e) {
-            console.log('whatsapp-business://send failed:', e);
+            console.log('whatsapp-business:// failed:', e);
           }
           return;
         }
-        
         if (Platform.OS === 'ios') {
           await Linking.openURL('whatsapp-business://');
           return;
         }
-        
         await Linking.openURL('https://business.whatsapp.com');
         return;
       }
 
-      // Handle Normal WhatsApp (Personal)
+      // Handle Normal WhatsApp - just OPEN the app, no /send
       if (appName === 'whatsapp-personal') {
         if (Platform.OS === 'android') {
           try {
-            await Linking.openURL('whatsapp://send');
+            await Linking.openURL('intent://#Intent;package=com.whatsapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end');
             return;
           } catch (e) {
-            console.log('WhatsApp URL scheme failed');
+            console.log('WhatsApp launcher intent failed:', e);
           }
-          
           try {
-            await Linking.openURL('https://wa.me/');
+            await Linking.openURL('whatsapp://');
             return;
           } catch (e) {
-            console.log('wa.me failed');
+            console.log('whatsapp:// failed:', e);
           }
+          return;
         }
-        
         if (Platform.OS === 'ios') {
           await Linking.openURL('whatsapp://');
           return;
         }
-        
         await Linking.openURL('https://web.whatsapp.com');
         return;
       }
