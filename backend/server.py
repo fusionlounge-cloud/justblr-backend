@@ -1440,10 +1440,15 @@ async def scan_qr():
 
 # Serve web dashboard static files
 WEB_BUILD_DIR = ROOT_DIR.parent / "web" / "build"
+WEB_INDEX_FILE = ROOT_DIR.parent / "web" / "index.html"
 
 @api_router.get("/dashboard")
 async def serve_dashboard():
-    """Serve the web dashboard"""
+    """Serve the web dashboard - standalone index.html with full features"""
+    # Prefer standalone index.html (has delegation + contact picker)
+    if WEB_INDEX_FILE.exists():
+        return FileResponse(str(WEB_INDEX_FILE))
+    # Fallback to React build
     index_path = WEB_BUILD_DIR / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
