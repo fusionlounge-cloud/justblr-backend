@@ -1082,7 +1082,7 @@ export default function DashboardScreen() {
 
   const socialApps = [
     { name: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', key: 'whatsapp-personal' },
-    { name: 'WA Business', icon: 'logo-whatsapp', color: '#128C7E', key: 'whatsapp' },
+    { name: 'WA Biz', icon: 'briefcase', color: '#128C7E', key: 'whatsapp' },
     { name: 'Instagram', icon: 'logo-instagram', color: '#E4405F', key: 'instagram' },
     { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', key: 'facebook' },
     { name: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', key: 'linkedin' },
@@ -1707,13 +1707,13 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#212529',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   // Quick Actions Grid
   quickActionsGrid: {
@@ -1748,24 +1748,24 @@ const styles = StyleSheet.create({
   // Reminder Grid - 5 icons
   reminderGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 6,
   },
   reminderGridItem: {
-    width: '18%',
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
   },
   reminderGridIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   reminderGridName: {
     fontSize: 9,
@@ -1783,8 +1783,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
+    marginBottom: 8,
+    padding: 12,
     borderRadius: 16,
     shadowColor: '#667eea',
     shadowOffset: { width: 0, height: 4 },
