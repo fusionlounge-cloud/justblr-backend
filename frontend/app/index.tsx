@@ -1518,6 +1518,21 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Delegation Section */}
+        <TouchableOpacity 
+          style={styles.delegationCard}
+          onPress={() => router.push('/delegation')}
+        >
+          <View style={styles.delegationIconWrap}>
+            <Ionicons name="people" size={28} color="#fff" />
+          </View>
+          <View style={styles.delegationContent}>
+            <Text style={styles.delegationTitle}>Task Delegation</Text>
+            <Text style={styles.delegationSubtitle}>Assign & track employee tasks</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#667eea" />
+        </TouchableOpacity>
+
         {/* View All Reminders - 5 icons grid (no Notes) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>View All Reminders</Text>
@@ -1537,21 +1552,6 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
-
-        {/* Delegation Section */}
-        <TouchableOpacity 
-          style={styles.delegationCard}
-          onPress={() => router.push('/delegation')}
-        >
-          <View style={styles.delegationIconWrap}>
-            <Ionicons name="people" size={28} color="#fff" />
-          </View>
-          <View style={styles.delegationContent}>
-            <Text style={styles.delegationTitle}>Task Delegation</Text>
-            <Text style={styles.delegationSubtitle}>Assign & track employee tasks</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#667eea" />
-        </TouchableOpacity>
 
         {/* Social Media Hub - 2 Rows Grid */}
         <View style={styles.section}>
