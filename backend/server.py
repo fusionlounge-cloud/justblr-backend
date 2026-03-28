@@ -909,6 +909,20 @@ async def sync_contacts(request: ContactsSyncRequest):
         logger.error(f"Sync contacts error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/sync/contact-sources")
+async def get_contact_sources():
+    """Get all device_ids that have synced contacts, with counts"""
+    try:
+        pipeline = [
+            {"$group": {"_id": "$device_id", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]
+        sources = await db.contacts.aggregate(pipeline).to_list(100)
+        return [{"device_id": s["_id"], "count": s["count"]} for s in sources]
+    except Exception as e:
+        logger.error(f"Get contact sources error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.get("/sync/contacts/{device_id}")
 async def get_synced_contacts(device_id: str, search: Optional[str] = None, limit: int = 50000):
     """Get synced contacts for a device"""
@@ -1456,8 +1470,11 @@ for path in [DASHBOARD_FILE, ROOT_DIR.parent / "web" / "index.html"]:
 @api_router.get("/dashboard")
 async def serve_dashboard():
     """Serve the web dashboard with delegation + contact picker"""
-    if _dashboard_html:
-        return HTMLResponse(content=_dashboard_html)
+    # Always read fresh from disk to pick up changes
+    for path in [DASHBOARD_FILE, ROOT_DIR.parent / "web" / "index.html"]:
+        if path.exists():
+            html = path.read_text(encoding='utf-8')
+            return HTMLResponse(content=html)
     # Fallback to React build
     index_path = WEB_BUILD_DIR / "index.html"
     if index_path.exists():
