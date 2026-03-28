@@ -13,7 +13,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_BACKEND_URL": "https://smart-productivity-12.preview.emergentagent.com"
+        "EXPO_PUBLIC_BACKEND_URL": "https://justblr-backend.onrender.com"
       }
     },
     "production": {
