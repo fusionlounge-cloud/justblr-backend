@@ -146,39 +146,27 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
 };
 
 // Get UNIQUE device ID - with migration for existing users
-// Always checks master device ID until confirmed
-const DEVICE_ID_RESOLVED_KEY = 'justblr_device_id_resolved';
-
 const getDeviceId = async (): Promise<string> => {
   try {
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
     
-    // If already using master ID, done immediately (fast path)
+    // If already using master ID, done
     if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
     
-    // Always check master ID if we're NOT already using it
-    // This handles: fresh installs, upgrades from broken v49, and reinstalls
+    // ALWAYS check if master ID has data (handles reinstalls / wrong stored ID)
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
+      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        // Master has data - use it
         await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
-        console.log('Using master device ID with', data.length, 'reminders');
+        console.log('Recovered master device ID with', data.length, 'reminders');
         return OLD_MASTER_DEVICE_ID;
       }
     } catch (e) {
-      console.log('Master check failed, will retry next launch');
-      // On failure, return stored ID if exists (app still usable)
-      if (storedId) return storedId;
+      console.log('Master check failed');
     }
     
-    // No master data found - use stored ID or generate new
+    // Use stored ID if exists, otherwise generate new
     if (storedId) return storedId;
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
@@ -775,7 +763,6 @@ export default function DashboardScreen() {
 
       // Update local device ID to account's device_id
       await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, user.device_id);
-      await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
       setIsLoggedIn(true);
       setAuthUser(user);
       setShowAuthModal(false);
