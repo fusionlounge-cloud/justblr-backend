@@ -146,43 +146,39 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
 };
 
 // Get UNIQUE device ID - with migration for existing users
-// Checks master device on every fresh launch until successful
+// Always checks master device ID until confirmed
 const DEVICE_ID_RESOLVED_KEY = 'justblr_device_id_resolved';
 
 const getDeviceId = async (): Promise<string> => {
   try {
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
     
-    // If already using master ID, done
+    // If already using master ID, done immediately (fast path)
     if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
     
-    // Check if we've already SUCCESSFULLY resolved the device ID
-    const resolved = await AsyncStorage.getItem(DEVICE_ID_RESOLVED_KEY);
-    if (resolved === 'true' && storedId) return storedId;
-    
-    // Check if master ID has data (handles reinstalls)
+    // Always check master ID if we're NOT already using it
+    // This handles: fresh installs, upgrades from broken v49, and reinstalls
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for cold starts
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`, {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
+        // Master has data - use it
         await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
-        await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
-        console.log('Recovered master device ID with', data.length, 'reminders');
+        console.log('Using master device ID with', data.length, 'reminders');
         return OLD_MASTER_DEVICE_ID;
       }
-      // API succeeded but no master data found - safe to mark as resolved
-      await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
     } catch (e) {
-      // Network/timeout failed - do NOT mark as resolved, will retry next launch
-      console.log('Master check failed (will retry next launch):', e);
+      console.log('Master check failed, will retry next launch');
+      // On failure, return stored ID if exists (app still usable)
+      if (storedId) return storedId;
     }
     
-    // Use stored ID if exists, otherwise generate new
+    // No master data found - use stored ID or generate new
     if (storedId) return storedId;
     const newId = generateUniqueId();
     await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, newId);
