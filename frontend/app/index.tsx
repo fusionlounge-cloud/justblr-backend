@@ -760,7 +760,7 @@ export default function DashboardScreen() {
       await saveAuthData(data.token, user);
 
       // Migrate current device's data AND old master data to the account's device_id
-      const oldDeviceId = deviceId;
+      const oldDeviceId = await getDeviceId();
       if (oldDeviceId && oldDeviceId !== user.device_id) {
         try {
           await fetch(`${BACKEND_URL}/api/reminders/migrate`, {
@@ -778,7 +778,8 @@ export default function DashboardScreen() {
       }
 
       // Update local device ID to account's device_id
-      setDeviceId(user.device_id);
+      await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, user.device_id);
+      await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
       setIsLoggedIn(true);
       setAuthUser(user);
       setShowAuthModal(false);
