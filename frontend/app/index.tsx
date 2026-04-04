@@ -328,6 +328,8 @@ export default function DashboardScreen() {
     const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const actionId = response.actionIdentifier;
       const data = response.notification.request.content.data;
+      const title = response.notification.request.content.title || 'Reminder';
+      const body = response.notification.request.content.body || '';
       const actionType = data?.reminderType || data?.type;
       const phone = data?.contactPhone || data?.phone;
       const notes = data?.notes || '';
@@ -350,40 +352,18 @@ export default function DashboardScreen() {
         return;
       }
       
-      if (!phone) return;
-      
-      // Clean phone number
-      let cleanPhone = phone.replace(/[^0-9+]/g, '');
-      if (!cleanPhone.startsWith('+')) {
-        cleanPhone = '+91' + cleanPhone;
-      }
-      
-      try {
-        if (actionType === 'whatsapp') {
-          // Open WhatsApp with pre-filled message
-          const message = encodeURIComponent(notes || 'Hello!');
-          const phoneForWA = cleanPhone.replace('+', '');
-          const waUrl = `whatsapp://send?phone=${phoneForWA}&text=${message}`;
-          
-          const canOpen = await Linking.canOpenURL(waUrl);
-          if (canOpen) {
-            await Linking.openURL(waUrl);
-          } else {
-            await Linking.openURL(`https://wa.me/${phoneForWA}?text=${message}`);
-          }
-        } else if (actionType === 'sms') {
-          const message = encodeURIComponent(notes || '');
-          const smsUrl = Platform.OS === 'ios' 
-            ? `sms:${cleanPhone}&body=${message}`
-            : `sms:${cleanPhone}?body=${message}`;
-          await Linking.openURL(smsUrl);
-        } else if (actionType === 'call') {
-          await Linking.openURL(`tel:${cleanPhone}`);
-        }
-      } catch (error) {
-        console.log('Error opening app:', error);
-        Alert.alert('Error', 'Could not open the app');
-      }
+      // User tapped the notification (from background/killed state)
+      // Show full-screen alarm modal with continuous sound so user must explicitly dismiss
+      console.log('User tapped notification - showing alarm modal');
+      setAlarmData({
+        title,
+        body,
+        reminderType: actionType,
+        contactPhone: phone,
+        contactName: data?.contactName || data?.contact,
+        notes: notes,
+      });
+      setAlarmActive(true);
     });
     
     return () => subscription.remove();
@@ -1211,14 +1191,19 @@ export default function DashboardScreen() {
                   {/* Contact name + priority badge */}
                   <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Text style={styles.compactName} numberOfLines={1}>{displayName}</Text>
+                    {(!reminder.priority || reminder.priority === 'normal') && (
+                      <View style={{ backgroundColor: '#dcfce7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#166534' }}>NORMAL</Text>
+                      </View>
+                    )}
                     {reminder.priority === 'urgent' && (
-                      <View style={{ backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#f59e0b' }}>URGENT</Text>
+                      <View style={{ backgroundColor: '#dbeafe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#1e40af' }}>URGENT</Text>
                       </View>
                     )}
                     {reminder.priority === 'critical' && (
-                      <View style={{ backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#ef4444' }}>CRITICAL</Text>
+                      <View style={{ backgroundColor: '#fee2e2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#991b1b' }}>CRITICAL</Text>
                       </View>
                     )}
                   </View>
@@ -1270,8 +1255,8 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.title}>Justblr Matrix</Text>
-            <Text style={styles.subtitle}>Task Management ({reminders.length} reminders)</Text>
+            <Text style={styles.title}>Justblr Matrix Task Management</Text>
+            <Text style={styles.subtitle}>({reminders.length} reminders)</Text>
           </View>
           <View style={styles.headerRight}>
             {isLoggedIn ? (
@@ -1745,6 +1730,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#212529',
     marginBottom: 8,
+    textAlign: 'left',
   },
   // Quick Actions Grid
   quickActionsGrid: {

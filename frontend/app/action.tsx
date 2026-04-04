@@ -495,6 +495,9 @@ export default function ActionScreen() {
       }
       
       const triggerDate = new Date(reminderTime);
+      // Ensure exact minute precision - zero out seconds/ms
+      triggerDate.setSeconds(0);
+      triggerDate.setMilliseconds(0);
       const now = new Date();
       
       // Only schedule if at least 10 seconds in the future
@@ -712,6 +715,8 @@ export default function ActionScreen() {
         newDate.setFullYear(selectedDate.getFullYear());
         newDate.setMonth(selectedDate.getMonth());
         newDate.setDate(selectedDate.getDate());
+        newDate.setSeconds(0);
+        newDate.setMilliseconds(0);
         setScheduledTime(newDate);
         
         if (Platform.OS === 'android') {
@@ -719,10 +724,12 @@ export default function ActionScreen() {
           setPickerMode('time');
         }
       } else {
-        // Time selected
+        // Time selected - set exact minute, zero seconds
         const newDate = new Date(scheduledTime);
         newDate.setHours(selectedDate.getHours());
         newDate.setMinutes(selectedDate.getMinutes());
+        newDate.setSeconds(0);
+        newDate.setMilliseconds(0);
         setScheduledTime(newDate);
         setShowDatePicker(false);
       }
@@ -1027,9 +1034,9 @@ export default function ActionScreen() {
             <Text style={styles.label}>Priority (Optional)</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {[
-                { key: 'normal', label: 'Normal', color: '#6c757d', bg: '#f8f9fa' },
-                { key: 'urgent', label: 'Urgent', color: '#f59e0b', bg: '#fef3c7' },
-                { key: 'critical', label: 'Critical', color: '#ef4444', bg: '#fef2f2' },
+                { key: 'normal', label: 'Normal', color: '#166534', bg: '#dcfce7' },
+                { key: 'urgent', label: 'Urgent', color: '#1e40af', bg: '#dbeafe' },
+                { key: 'critical', label: 'Critical', color: '#991b1b', bg: '#fee2e2' },
               ].map(p => (
                 <TouchableOpacity
                   key={p.key}
