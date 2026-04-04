@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://smart-productivity-12.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://reminder-hub-182.preview.emergentagent.com')
 
 class TestContactSources:
     """Tests for GET /api/sync/contact-sources endpoint"""

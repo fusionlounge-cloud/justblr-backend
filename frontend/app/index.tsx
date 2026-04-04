@@ -1271,7 +1271,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>Justblr Matrix</Text>
-            <Text style={styles.subtitle}>Assistant ({reminders.length} reminders)</Text>
+            <Text style={styles.subtitle}>Task Management ({reminders.length} reminders)</Text>
           </View>
           <View style={styles.headerRight}>
             {isLoggedIn ? (
@@ -1529,9 +1529,9 @@ export default function DashboardScreen() {
           </View>
         </Modal>
 
-        {/* Quick Actions - 6 icons */}
+        {/* 1) Quick Actions - 6 icons */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>1) Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             {QUICK_ACTIONS.map((item) => (
               <TouchableOpacity
@@ -1549,7 +1549,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Delegation Section */}
+        {/* 2) Task Delegation with Reports */}
         <TouchableOpacity 
           style={styles.delegationCard}
           onPress={() => router.push('/delegation')}
@@ -1558,15 +1558,15 @@ export default function DashboardScreen() {
             <Ionicons name="people" size={28} color="#fff" />
           </View>
           <View style={styles.delegationContent}>
-            <Text style={styles.delegationTitle}>Task Delegation</Text>
+            <Text style={styles.delegationTitle}>2) Task Delegation with Reports</Text>
             <Text style={styles.delegationSubtitle}>Assign & track employee tasks</Text>
           </View>
           <Ionicons name="chevron-forward" size={24} color="#667eea" />
         </TouchableOpacity>
 
-        {/* View All Reminders - 5 icons grid (no Notes) */}
+        {/* 3) View All Reminders - 5 icons grid (no Notes) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>View All Reminders</Text>
+          <Text style={styles.sectionTitle}>3) View All Reminders</Text>
           <View style={styles.reminderGrid}>
             {REMINDER_CATEGORIES.map((cat) => (
               <TouchableOpacity
@@ -1584,9 +1584,9 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Social Media Hub - 2 Rows Grid */}
+        {/* 4) Social Media Hub - 2 Rows Grid */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Social Media Hub</Text>
+          <Text style={styles.sectionTitle}>4) Social Media Hub</Text>
           <View style={styles.socialGrid}>
             {socialApps.map((app, index) => (
               <TouchableOpacity

@@ -6,7 +6,7 @@
 - Name: Dashboard Tester
 
 ## Dashboard URL
-- Container: https://smart-productivity-12.preview.emergentagent.com/api/dashboard
+- Container: https://reminder-hub-182.preview.emergentagent.com/api/dashboard
 - Production (Render): https://justblr-backend.onrender.com/api/dashboard
 
 ## Known Device IDs
