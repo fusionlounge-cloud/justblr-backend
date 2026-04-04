@@ -146,7 +146,7 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
 };
 
 // Get UNIQUE device ID - with migration for existing users
-// Uses a cached flag to avoid network calls on every app open
+// Checks master device on every fresh launch until successful
 const DEVICE_ID_RESOLVED_KEY = 'justblr_device_id_resolved';
 
 const getDeviceId = async (): Promise<string> => {
@@ -156,14 +156,14 @@ const getDeviceId = async (): Promise<string> => {
     // If already using master ID, done
     if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
     
-    // Check if we've already resolved the device ID (skip network call)
+    // Check if we've already SUCCESSFULLY resolved the device ID
     const resolved = await AsyncStorage.getItem(DEVICE_ID_RESOLVED_KEY);
     if (resolved === 'true' && storedId) return storedId;
     
-    // First-time check: see if master ID has data (handles reinstalls)
+    // Check if master ID has data (handles reinstalls)
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for cold starts
       const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`, {
         signal: controller.signal
       });
@@ -175,12 +175,12 @@ const getDeviceId = async (): Promise<string> => {
         console.log('Recovered master device ID with', data.length, 'reminders');
         return OLD_MASTER_DEVICE_ID;
       }
+      // API succeeded but no master data found - safe to mark as resolved
+      await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
     } catch (e) {
-      console.log('Master check failed (timeout or network)');
+      // Network/timeout failed - do NOT mark as resolved, will retry next launch
+      console.log('Master check failed (will retry next launch):', e);
     }
-    
-    // Mark as resolved so we don't check network again
-    await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
     
     // Use stored ID if exists, otherwise generate new
     if (storedId) return storedId;
