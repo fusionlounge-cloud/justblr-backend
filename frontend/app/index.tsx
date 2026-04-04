@@ -154,8 +154,14 @@ const getDeviceId = async (): Promise<string> => {
     if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
     
     // ALWAYS check if master ID has data (handles reinstalls / wrong stored ID)
+    // Use 120s timeout because Render free tier cold starts take 30-60 seconds
     try {
-      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
@@ -412,9 +418,9 @@ export default function DashboardScreen() {
       const url = `${BACKEND_URL}/api/reminders?device_id=${deviceId}`;
       console.log('Fetching fresh data from:', url);
       
-      // Make request with timeout
+      // Make request with timeout (120s for Render free tier cold starts)
       const response = await axios.get(url, { 
-        timeout: 30000, // 30 seconds timeout
+        timeout: 120000,
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
