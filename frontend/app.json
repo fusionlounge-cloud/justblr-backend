@@ -40,7 +40,7 @@
           "category": ["HOME", "DEFAULT"]
         }
       ],
-      "versionCode": 54
+      "versionCode": 55
     },
     "web": {
       "bundler": "metro",

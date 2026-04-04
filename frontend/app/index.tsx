@@ -1536,17 +1536,11 @@ export default function DashboardScreen() {
 
         {/* 2) Task Delegation with Reports */}
         <TouchableOpacity 
-          style={styles.delegationCard}
+          style={styles.section}
           onPress={() => router.push('/delegation')}
         >
-          <View style={styles.delegationIconWrap}>
-            <Ionicons name="people" size={28} color="#fff" />
-          </View>
-          <View style={styles.delegationContent}>
-            <Text style={styles.delegationTitle}>2) Task Delegation with Reports</Text>
-            <Text style={styles.delegationSubtitle}>Assign & track employee tasks</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="#667eea" />
+          <Text style={styles.sectionTitle}>2) Task Delegation with Reports</Text>
+          <Text style={{ fontSize: 13, color: '#6c757d', marginTop: -4 }}>Assign & track employee tasks</Text>
         </TouchableOpacity>
 
         {/* 3) View All Reminders - 5 icons grid (no Notes) */}
