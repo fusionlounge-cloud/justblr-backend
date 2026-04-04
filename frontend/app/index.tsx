@@ -60,7 +60,7 @@ async function setupNotificationChannels() {
   if (Platform.OS === 'android') {
     // Create fresh channel with custom alarm sound
     // Channel IDs are immutable after creation - use new ID for sound changes
-    await Notifications.setNotificationChannelAsync('justblr-alarm-v3', {
+    await Notifications.setNotificationChannelAsync('justblr-alarm-v4', {
       name: 'Justblr Alarm Reminders',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 500, 200, 500, 200, 500, 200, 500],
@@ -71,10 +71,11 @@ async function setupNotificationChannels() {
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       bypassDnd: true,
     });
-    console.log('Notification channel created: justblr-alarm-v3 with alarm.wav sound');
+    console.log('Notification channel created: justblr-alarm-v4 with soothing bell sound');
 
     // Clean up old channels
     try {
+      await Notifications.deleteNotificationChannelAsync('justblr-alarm-v3');
       await Notifications.deleteNotificationChannelAsync('justblr-alarm-v2');
       await Notifications.deleteNotificationChannelAsync('reminder-alarm');
     } catch (e) { /* old channels may not exist */ }
@@ -145,6 +146,9 @@ const loadRemindersFromCache = async (): Promise<any[]> => {
 };
 
 // Get UNIQUE device ID - with migration for existing users
+// Uses a cached flag to avoid network calls on every app open
+const DEVICE_ID_RESOLVED_KEY = 'justblr_device_id_resolved';
+
 const getDeviceId = async (): Promise<string> => {
   try {
     const storedId = await AsyncStorage.getItem(DEVICE_ID_STORAGE_KEY);
@@ -152,18 +156,31 @@ const getDeviceId = async (): Promise<string> => {
     // If already using master ID, done
     if (storedId === OLD_MASTER_DEVICE_ID) return storedId;
     
-    // ALWAYS check if master ID has data (handles reinstalls / wrong stored ID)
+    // Check if we've already resolved the device ID (skip network call)
+    const resolved = await AsyncStorage.getItem(DEVICE_ID_RESOLVED_KEY);
+    if (resolved === 'true' && storedId) return storedId;
+    
+    // First-time check: see if master ID has data (handles reinstalls)
     try {
-      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+      const res = await fetch(`${BACKEND_URL}/api/reminders?device_id=${OLD_MASTER_DEVICE_ID}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         await AsyncStorage.setItem(DEVICE_ID_STORAGE_KEY, OLD_MASTER_DEVICE_ID);
+        await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
         console.log('Recovered master device ID with', data.length, 'reminders');
         return OLD_MASTER_DEVICE_ID;
       }
     } catch (e) {
-      console.log('Master check failed');
+      console.log('Master check failed (timeout or network)');
     }
+    
+    // Mark as resolved so we don't check network again
+    await AsyncStorage.setItem(DEVICE_ID_RESOLVED_KEY, 'true');
     
     // Use stored ID if exists, otherwise generate new
     if (storedId) return storedId;
@@ -469,9 +486,10 @@ export default function DashboardScreen() {
     }
   };
 
-  // Fetch reminders on component mount
+  // Fetch reminders on component mount + process offline queue
   useEffect(() => {
     fetchReminders();
+    processOfflineContactQueue();
   }, []);
 
   // Refresh reminders when screen is focused
@@ -799,7 +817,7 @@ export default function DashboardScreen() {
     ]);
   };
 
-  // Sync contacts to cloud for web dashboard
+  // Sync contacts to cloud for web dashboard (with offline queue)
   const syncContactsToCloud = async () => {
     setSyncLoading(true);
     try {
@@ -816,11 +834,11 @@ export default function DashboardScreen() {
       // Get total count first
       const { data: allContacts } = await Contacts.getContactsAsync({
         fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
-        pageSize: 50000, // Request all contacts at once
+        pageSize: 50000,
         pageOffset: 0,
       });
       
-      // Format ALL contacts for sync (no limit)
+      // Format ALL contacts for sync
       const contactsToSync = allContacts
         .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
         .map(c => ({
@@ -829,33 +847,67 @@ export default function DashboardScreen() {
           email: c.emails?.[0]?.email || null
         }));
       
-      // Upload in batches of 2000 for large contact lists
-      const batchSize = 2000;
-      let syncedCount = 0;
-      
-      for (let i = 0; i < contactsToSync.length; i += batchSize) {
-        const batch = contactsToSync.slice(i, i + batchSize);
-        const isFirstBatch = i === 0;
+      // Try to upload - if offline, queue for later
+      try {
+        const batchSize = 2000;
+        let syncedCount = 0;
         
-        await axios.post(`${BACKEND_URL}/api/sync/contacts`, {
-          device_id: deviceId,
-          contacts: batch,
-          append: !isFirstBatch // First batch replaces, rest append
-        });
-        syncedCount += batch.length;
-        
-        // Show progress for large syncs
-        if (contactsToSync.length > 5000) {
-          console.log(`Synced ${syncedCount} of ${contactsToSync.length} contacts`);
+        for (let i = 0; i < contactsToSync.length; i += batchSize) {
+          const batch = contactsToSync.slice(i, i + batchSize);
+          const isFirstBatch = i === 0;
+          
+          await axios.post(`${BACKEND_URL}/api/sync/contacts`, {
+            device_id: deviceId,
+            contacts: batch,
+            append: !isFirstBatch
+          }, { timeout: 30000 });
+          syncedCount += batch.length;
         }
+        
+        // Clear any queued contacts since we synced successfully
+        await AsyncStorage.removeItem('justblr_offline_contacts_queue');
+        Alert.alert('Success', `${syncedCount} contacts synced to cloud!`);
+      } catch (netError) {
+        // Network error - save contacts locally for later sync
+        console.log('Network error, queuing contacts for offline sync');
+        await AsyncStorage.setItem('justblr_offline_contacts_queue', JSON.stringify({
+          device_id: deviceId,
+          contacts: contactsToSync,
+          queued_at: new Date().toISOString()
+        }));
+        Alert.alert('Saved Offline', `${contactsToSync.length} contacts saved locally. They will auto-sync when you have network.`);
       }
-      
-      Alert.alert('Success', `${syncedCount} contacts synced to cloud!`);
     } catch (error) {
       console.log('Sync error:', error);
-      Alert.alert('Error', 'Failed to sync contacts: ' + String(error));
+      Alert.alert('Error', 'Failed to read contacts from phone');
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  // Process offline contact queue when app starts
+  const processOfflineContactQueue = async () => {
+    try {
+      const queueData = await AsyncStorage.getItem('justblr_offline_contacts_queue');
+      if (!queueData) return;
+      
+      const { device_id, contacts } = JSON.parse(queueData);
+      console.log('Processing offline contact queue:', contacts.length, 'contacts');
+      
+      const batchSize = 2000;
+      for (let i = 0; i < contacts.length; i += batchSize) {
+        const batch = contacts.slice(i, i + batchSize);
+        await axios.post(`${BACKEND_URL}/api/sync/contacts`, {
+          device_id: device_id,
+          contacts: batch,
+          append: i > 0
+        }, { timeout: 30000 });
+      }
+      
+      await AsyncStorage.removeItem('justblr_offline_contacts_queue');
+      console.log('Offline contact queue processed successfully');
+    } catch (e) {
+      console.log('Offline queue processing failed, will retry next launch');
     }
   };
 
@@ -1166,8 +1218,20 @@ export default function DashboardScreen() {
                     </View>
                   )}
                   
-                  {/* Contact name only */}
-                  <Text style={styles.compactName} numberOfLines={1}>{displayName}</Text>
+                  {/* Contact name + priority badge */}
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.compactName} numberOfLines={1}>{displayName}</Text>
+                    {reminder.priority === 'urgent' && (
+                      <View style={{ backgroundColor: '#fef3c7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#f59e0b' }}>URGENT</Text>
+                      </View>
+                    )}
+                    {reminder.priority === 'critical' && (
+                      <View style={{ backgroundColor: '#fef2f2', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 9, fontWeight: '700', color: '#ef4444' }}>CRITICAL</Text>
+                      </View>
+                    )}
+                  </View>
                   
                   {/* Action buttons on the right: Action > Edit > Delete */}
                   {!bulkSelectMode && (
@@ -1187,7 +1251,7 @@ export default function DashboardScreen() {
                       {/* Edit button */}
                       <TouchableOpacity 
                         style={styles.compactEditBtn}
-                        onPress={() => router.push(`/action?type=${reminder.reminder_type}&name=${selectedCategory.name}&edit=true&id=${reminder.id}&title=${encodeURIComponent(reminder.title || '')}&contact_name=${encodeURIComponent(reminder.contact_name || '')}&contact_phone=${encodeURIComponent(reminder.contact_phone || '')}&notes=${encodeURIComponent(reminder.notes || '')}&scheduled_time=${encodeURIComponent(reminder.scheduled_time || '')}`)}
+                        onPress={() => router.push(`/action?type=${reminder.reminder_type}&name=${selectedCategory.name}&edit=true&id=${reminder.id}&title=${encodeURIComponent(reminder.title || '')}&contact_name=${encodeURIComponent(reminder.contact_name || '')}&contact_phone=${encodeURIComponent(reminder.contact_phone || '')}&notes=${encodeURIComponent(reminder.notes || '')}&scheduled_time=${encodeURIComponent(reminder.scheduled_time || '')}&priority=${reminder.priority || 'normal'}`)}
                       >
                         <Ionicons name="create-outline" size={18} color="#667eea" />
                       </TouchableOpacity>

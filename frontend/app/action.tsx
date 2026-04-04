@@ -129,6 +129,9 @@ export default function ActionScreen() {
   const [refreshingContacts, setRefreshingContacts] = useState(false);
   const [isSaving, setIsSaving] = useState(false); // Prevent double tap
   
+  // Priority/urgency state (optional)
+  const [priority, setPriority] = useState(String(params.priority || 'normal'));
+  
   // Native picker mode (for Android - shows date first, then time)
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
 
@@ -499,7 +502,7 @@ export default function ActionScreen() {
         // Build SPECIFIC notification title with action type and contact
         const actionLabel = actionName.toUpperCase();
         const contactLabel = contactName ? contactName : (title.trim() || 'Reminder');
-        const notificationTitle = `⏰ ${actionLabel}: ${contactLabel}`;
+        const notificationTitle = `${actionLabel}: ${contactLabel}`;
         
         // Build SPECIFIC notification body with all details
         let bodyParts = [];
@@ -531,10 +534,9 @@ export default function ActionScreen() {
             vibrate: [0, 500, 200, 500, 200, 500, 200, 500],
           },
           trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-            seconds: Math.max(10, Math.floor((triggerDate.getTime() - now.getTime()) / 1000)),
-            repeats: false,
-            channelId: 'justblr-alarm-v3',
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+            channelId: 'justblr-alarm-v4',
           },
         });
         console.log('Alarm notification scheduled:', notificationId, 'Title:', notificationTitle, 'at', triggerDate.toLocaleString());
@@ -556,6 +558,14 @@ export default function ActionScreen() {
       console.log('Already saving, ignoring tap');
       return;
     }
+    
+    // VALIDATION: Block saving if scheduled time is in the past
+    const now = new Date();
+    if (scheduledTime.getTime() < now.getTime()) {
+      Alert.alert('Invalid Time', 'Cannot save a reminder in the past. Please select a future time.');
+      return;
+    }
+    
     setIsSaving(true);
     
     const MAX_RETRIES = 3;
@@ -588,6 +598,7 @@ export default function ActionScreen() {
           scheduled_time: scheduledTime.toISOString(),
           notes: content || undefined,
           auto_execute: autoExecute,
+          priority: priority,
         };
         console.log('Update payload:', JSON.stringify(updatePayload));
         
@@ -619,6 +630,7 @@ export default function ActionScreen() {
           notes: content || undefined,
           auto_execute: autoExecute,
           device_id: deviceId,
+          priority: priority,
         };
         
         response = await axios.post(`${BACKEND_URL}/api/reminders`, payload, axiosConfig);
@@ -1010,6 +1022,35 @@ export default function ActionScreen() {
           </View>
 
           {/* Notes Input */}
+          {/* Priority Selector - Optional */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Priority (Optional)</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {[
+                { key: 'normal', label: 'Normal', color: '#6c757d', bg: '#f8f9fa' },
+                { key: 'urgent', label: 'Urgent', color: '#f59e0b', bg: '#fef3c7' },
+                { key: 'critical', label: 'Critical', color: '#ef4444', bg: '#fef2f2' },
+              ].map(p => (
+                <TouchableOpacity
+                  key={p.key}
+                  onPress={() => setPriority(p.key)}
+                  style={{
+                    flex: 1, paddingVertical: 12, borderRadius: 10,
+                    backgroundColor: priority === p.key ? p.bg : '#fff',
+                    borderWidth: 2,
+                    borderColor: priority === p.key ? p.color : '#e9ecef',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 13, fontWeight: '700',
+                    color: priority === p.key ? p.color : '#adb5bd',
+                  }}>{p.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.label}>Notes (Optional)</Text>
             <View style={styles.inputRow}>
