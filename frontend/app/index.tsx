@@ -328,8 +328,6 @@ export default function DashboardScreen() {
     const subscription = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const actionId = response.actionIdentifier;
       const data = response.notification.request.content.data;
-      const title = response.notification.request.content.title || 'Reminder';
-      const body = response.notification.request.content.body || '';
       const actionType = data?.reminderType || data?.type;
       const phone = data?.contactPhone || data?.phone;
       const notes = data?.notes || '';
@@ -352,18 +350,38 @@ export default function DashboardScreen() {
         return;
       }
       
-      // User tapped the notification (from background/killed state)
-      // Show full-screen alarm modal with continuous sound so user must explicitly dismiss
-      console.log('User tapped notification - showing alarm modal');
-      setAlarmData({
-        title,
-        body,
-        reminderType: actionType,
-        contactPhone: phone,
-        contactName: data?.contactName || data?.contact,
-        notes: notes,
-      });
-      setAlarmActive(true);
+      if (!phone) return;
+      
+      // Clean phone number
+      let cleanPhone = phone.replace(/[^0-9+]/g, '');
+      if (!cleanPhone.startsWith('+')) {
+        cleanPhone = '+91' + cleanPhone;
+      }
+      
+      try {
+        if (actionType === 'whatsapp') {
+          const message = encodeURIComponent(notes || 'Hello!');
+          const phoneForWA = cleanPhone.replace('+', '');
+          const waUrl = `whatsapp://send?phone=${phoneForWA}&text=${message}`;
+          const canOpen = await Linking.canOpenURL(waUrl);
+          if (canOpen) {
+            await Linking.openURL(waUrl);
+          } else {
+            await Linking.openURL(`https://wa.me/${phoneForWA}?text=${message}`);
+          }
+        } else if (actionType === 'sms') {
+          const message = encodeURIComponent(notes || '');
+          const smsUrl = Platform.OS === 'ios' 
+            ? `sms:${cleanPhone}&body=${message}`
+            : `sms:${cleanPhone}?body=${message}`;
+          await Linking.openURL(smsUrl);
+        } else if (actionType === 'call') {
+          await Linking.openURL(`tel:${cleanPhone}`);
+        }
+      } catch (error) {
+        console.log('Error opening app:', error);
+        Alert.alert('Error', 'Could not open the app');
+      }
     });
     
     return () => subscription.remove();
@@ -1600,7 +1618,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#212529',
   },
@@ -1716,8 +1734,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
   sectionTitle: {
     fontSize: 16,

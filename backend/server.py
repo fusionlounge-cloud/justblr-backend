@@ -293,6 +293,7 @@ class ReminderCreate(BaseModel):
     notes: Optional[str] = None
     auto_execute: bool = False  # If true, auto-trigger at scheduled time
     device_id: Optional[str] = None  # For device-specific data
+    priority: Optional[str] = "normal"  # normal, urgent, critical
 
 class ReminderUpdate(BaseModel):
     title: Optional[str] = None
@@ -302,6 +303,7 @@ class ReminderUpdate(BaseModel):
     scheduled_time: Optional[datetime] = None
     notes: Optional[str] = None
     auto_execute: Optional[bool] = None
+    priority: Optional[str] = None
 
 class Reminder(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -317,6 +319,7 @@ class Reminder(BaseModel):
     auto_execute_triggered: bool = False
     triggered_at: Optional[datetime] = None
     device_id: Optional[str] = None  # For device-specific data
+    priority: Optional[str] = "normal"  # normal, urgent, critical
     
     class Config:
         json_encoders = {
