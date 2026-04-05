@@ -21,7 +21,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import { Audio } from 'expo-av';
 import axios from 'axios';
-import { getContactsCache, setContactsCache, isCacheValid, clearContactsCache } from '../utils/contactsCache';
+import { getContactsCache, setContactsCache, isCacheValid, clearContactsCache, loadCacheFromStorage } from '../utils/contactsCache';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
@@ -207,6 +207,17 @@ export default function ActionScreen() {
         return;
       }
       
+      // Try loading from persistent AsyncStorage (survives app restart)
+      const hasStoredCache = await loadCacheFromStorage();
+      if (hasStoredCache) {
+        const cached = getContactsCache();
+        setAllContacts(cached);
+        setContactsCount(cached.length);
+        setContactsPermission(true);
+        setLoadingContacts(false);
+        return;
+      }
+      
       setLoadingContacts(true);
       
       try {
@@ -266,7 +277,7 @@ export default function ActionScreen() {
           }
         });
         
-        setContactsCache(formatted);
+        await setContactsCache(formatted);
         setAllContacts(formatted);
         setContactsCount(formatted.length);
         
@@ -314,7 +325,7 @@ export default function ActionScreen() {
     if (Platform.OS === 'web') return;
     
     setRefreshingContacts(true);
-    clearContactsCache();
+    await clearContactsCache();
     
     try {
       const { status } = await Contacts.requestPermissionsAsync();
@@ -371,7 +382,7 @@ export default function ActionScreen() {
         }
       });
       
-      setContactsCache(formatted);
+      await setContactsCache(formatted);
       setAllContacts(formatted);
       setContactsCount(formatted.length);
       Alert.alert('Contacts Refreshed', `Loaded ${formatted.length} contacts`);
