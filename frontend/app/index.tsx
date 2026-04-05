@@ -225,6 +225,7 @@ export default function DashboardScreen() {
   const [alarmActive, setAlarmActive] = useState(false);
   const [alarmData, setAlarmData] = useState<any>(null);
   const alarmSoundRef = useRef<any>(null);
+  const isDismissingRef = useRef(false);
 
   // Auth states
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -249,12 +250,21 @@ export default function DashboardScreen() {
     if (Platform.OS === 'web') return;
 
     // Listen for notifications received while app is in foreground
-    const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
+    const foregroundSub = Notifications.addNotificationReceivedListener(async (notification) => {
+      // Guard: don't re-trigger if already dismissing or already active
+      if (isDismissingRef.current) return;
+
       const data = notification.request.content.data;
       const title = notification.request.content.title || 'Reminder';
       const body = notification.request.content.body || '';
 
       console.log('Foreground notification received:', title);
+
+      // Immediately dismiss the system notification so its sound stops
+      // Our app will take over with its own looping sound
+      try {
+        await Notifications.dismissNotificationAsync(notification.request.identifier);
+      } catch (e) { /* ignore */ }
 
       setAlarmData({
         title,
@@ -335,18 +345,7 @@ export default function DashboardScreen() {
       // Handle "STOP ALARM" button press from notification
       if (actionId === 'dismiss') {
         console.log('User pressed STOP ALARM on notification');
-        await Notifications.dismissAllNotificationsAsync();
-        Vibration.cancel();
-        // Also stop foreground alarm if active
-        if (alarmSoundRef.current) {
-          try {
-            await alarmSoundRef.current.stopAsync();
-            await alarmSoundRef.current.unloadAsync();
-          } catch (e) {}
-          alarmSoundRef.current = null;
-        }
-        setAlarmActive(false);
-        setAlarmData(null);
+        await dismissAlarm();
         return;
       }
       
@@ -623,32 +622,33 @@ export default function DashboardScreen() {
 
   // Dismiss the foreground alarm - stop sound and vibration
   const dismissAlarm = async () => {
-    // Stop the looping alarm sound first
-    try {
-      if (alarmSoundRef.current) {
-        await alarmSoundRef.current.stopAsync();
-        await alarmSoundRef.current.unloadAsync();
-        alarmSoundRef.current = null;
-        console.log('Alarm sound stopped');
-      }
-    } catch (e) {
-      console.error('Error stopping alarm sound:', e);
-      alarmSoundRef.current = null;
-    }
+    // Set guard IMMEDIATELY to prevent re-triggering
+    isDismissingRef.current = true;
 
-    // Stop vibration
-    Vibration.cancel();
-
-    // Clear alarm state
+    // 1. Clear alarm state FIRST so modal disappears instantly
     setAlarmActive(false);
     setAlarmData(null);
 
-    // Dismiss delivered notifications (not scheduled ones)
+    // 2. Stop vibration
+    Vibration.cancel();
+
+    // 3. Dismiss all system notifications (stops system sound)
     try {
       await Notifications.dismissAllNotificationsAsync();
-    } catch (e) {
-      console.error('Error dismissing notifications:', e);
+    } catch (e) { /* ignore */ }
+
+    // 4. Stop our app's looping sound
+    const soundRef = alarmSoundRef.current;
+    alarmSoundRef.current = null;
+    if (soundRef) {
+      try { await soundRef.stopAsync(); } catch (e) { /* ignore */ }
+      try { await soundRef.unloadAsync(); } catch (e) { /* ignore */ }
     }
+
+    // 5. Release guard after a brief delay to prevent re-trigger from dismissed notifications
+    setTimeout(() => {
+      isDismissingRef.current = false;
+    }, 1000);
   };
 
   // Dismiss alarm and execute the action (call/sms/whatsapp)
